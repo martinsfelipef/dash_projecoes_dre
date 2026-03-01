@@ -1,0 +1,22 @@
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Dados financeiros (sigilosos)
+*.xlsx
+*.xls
+*.csv
+data/
+
+# OS
+.DS_Store
+Thumbs.db
