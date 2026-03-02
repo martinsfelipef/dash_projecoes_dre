@@ -129,40 +129,216 @@ st.set_page_config(page_title="Dashboard Financeiro | Align",
                    initial_sidebar_state="expanded")
 
 # ── Autenticação ───────────────────────────────────────────────────────────────
-def _setup_auth():
-    """
-    Exibe tela de login se `credentials` estiver em st.secrets.
-    Retorna True quando autenticado (ou quando auth não está configurada).
-    """
+
+def _users_configured():
+    """Retorna True se [users] estiver configurado em st.secrets."""
     try:
-        creds = st.secrets.get("credentials")
-        if not creds:
-            return True  # sem auth configurada — modo dev local
+        return "users" in st.secrets and len(st.secrets["users"]) > 0
     except Exception:
-        return True  # sem secrets.toml — modo dev local
+        return False
 
-    import streamlit_authenticator as stauth
-    import json
-    creds_dict = json.loads(json.dumps(dict(st.secrets["credentials"])))
-    authenticator = stauth.Authenticate(
-        credentials=creds_dict,
-        cookie_name=st.secrets["cookie"]["name"],
-        cookie_key=st.secrets["cookie"]["key"],
-        cookie_expiry_days=st.secrets["cookie"]["expiry_days"],
-    )
-    authenticator.login()
-    auth_status = st.session_state.get("authentication_status")
-    if auth_status:
-        authenticator.logout("Sair", "sidebar")
-        return True
-    if auth_status is False:
-        st.error("Usuário ou senha incorretos.")
-    else:
-        st.info("Faça login para acessar o Dashboard Financeiro.")
-    return False
+def _admin_username():
+    """Retorna o username do admin (primeiro da lista)."""
+    try:
+        return list(st.secrets["users"].keys())[0]
+    except Exception:
+        return None
 
-if not _setup_auth():
-    st.stop()
+def _check_password(username, password):
+    """Verifica username e senha contra st.secrets['users']."""
+    try:
+        stored = st.secrets["users"].get(username)
+        return stored is not None and stored == password
+    except Exception:
+        return False
+
+# ── Helpers de Simulação ───────────────────────────────────────────────────────
+_POC_DEFS  = [3, 6, 10, 16, 22, 30, 40, 52, 62, 74, 86, 100]
+_COMP_DEFS = [0, 0, 0, 0, 180000, 250000, 320000, 400000, 250000, 280000, 220000, 350000]
+
+def _get_sim_params():
+    """Captura o estado atual dos parâmetros do sidebar para salvar em simulação."""
+    return {
+        "visao":    st.session_state.get("visao_sel", "💰 Caixa"),
+        "vgv_poc":  st.session_state.get("vgv_poc",  5_000_000.0),
+        "poc":      [st.session_state.get(f"poc{i}",  _POC_DEFS[i])  for i in range(12)],
+        "vgv_comp": [st.session_state.get(f"comp{i}", float(_COMP_DEFS[i])) for i in range(12)],
+    }
+
+def _apply_sim_params(params):
+    """Pré-popula as chaves de session_state para que os widgets carreguem os valores da simulação."""
+    if not params:
+        return
+    if "visao" in params:
+        st.session_state["visao_sel"] = params["visao"]
+    if "vgv_poc" in params:
+        st.session_state["vgv_poc"] = float(params["vgv_poc"])
+    if "poc" in params:
+        for i, v in enumerate(params["poc"][:12]):
+            st.session_state[f"poc{i}"] = int(v)
+    if "vgv_comp" in params:
+        for i, v in enumerate(params["vgv_comp"][:12]):
+            st.session_state[f"comp{i}"] = float(v)
+
+# ── Persistência de simulações (local + GitHub) ────────────────────────────────
+def _sims_local_path(username):
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        ".streamlit", f"sims_{username}.json")
+
+def _load_sims_local(username):
+    import json as _j
+    path = _sims_local_path(username)
+    try:
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                data = _j.load(f)
+            return data if isinstance(data, list) else []
+    except Exception:
+        pass
+    return []
+
+def _save_sims_local(username, sims):
+    import json as _j
+    path = _sims_local_path(username)
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            _j.dump(sims, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+def _load_sims(username):
+    """Carrega simulações: tenta GitHub primeiro, fallback local."""
+    try:
+        from github_storage import load_simulacoes
+        sims = load_simulacoes(username)
+        if sims:
+            return sims
+    except Exception:
+        pass
+    return _load_sims_local(username)
+
+def _save_sims(username, sims):
+    """Salva simulações local e no GitHub."""
+    _save_sims_local(username, sims)
+    try:
+        from github_storage import save_simulacoes
+        save_simulacoes(username, sims)
+    except Exception:
+        pass
+
+def _load_config_padrao():
+    """Carrega config padrão do admin."""
+    try:
+        from github_storage import load_config_padrao
+        return load_config_padrao()
+    except Exception:
+        return None
+
+def _save_config_padrao(params):
+    """Salva config padrão do admin."""
+    try:
+        from github_storage import save_config_padrao
+        save_config_padrao(params)
+    except Exception:
+        pass
+    # Também salva localmente como fallback
+    import json as _j
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        ".streamlit", "config_padrao.json")
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            _j.dump(params, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+def _load_config_padrao_local():
+    """Fallback local para config padrão."""
+    import json as _j
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        ".streamlit", "config_padrao.json")
+    try:
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                return _j.load(f)
+    except Exception:
+        pass
+    return None
+
+# ── Tela de Login ─────────────────────────────────────────────────────────────
+def _show_login():
+    """Exibe tela de login centralizada e bonita."""
+    st.markdown("""
+    <style>
+    [data-testid="stAppViewContainer"] > .main {background: #F0F4F9;}
+    .login-card {
+        max-width:420px; margin:60px auto 0;
+        background:#fff; padding:2.5rem 2.5rem 2rem;
+        border-radius:16px;
+        box-shadow:0 8px 32px rgba(10,37,64,.13);
+        border:1px solid #DDE4ED;
+    }
+    .login-logo {text-align:center; margin-bottom:1.2rem;}
+    .login-title {
+        color:#0A2540; font-size:1.45rem; font-weight:700;
+        margin:0 0 .2rem; text-align:center;
+    }
+    .login-sub {color:#6F7E8C; font-size:.88rem; text-align:center; margin-bottom:1.5rem;}
+    </style>
+    """, unsafe_allow_html=True)
+
+    col_l, col_m, col_r = st.columns([1, 2, 1])
+    with col_m:
+        st.markdown('<div class="login-card">', unsafe_allow_html=True)
+        st.markdown('<div class="login-logo">', unsafe_allow_html=True)
+        try:
+            st.image("https://alignconsultoria.com.br/wp-content/uploads/2024/01/logo-align-branca.png",
+                     width=160)
+        except Exception:
+            st.markdown("### 🏢 Align")
+        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('<p class="login-title">Dashboard Financeiro</p>', unsafe_allow_html=True)
+        st.markdown('<p class="login-sub">Faça login para continuar</p>', unsafe_allow_html=True)
+
+        username = st.text_input("Usuário", placeholder="seu.usuario", key="_li_user",
+                                 label_visibility="visible")
+        password = st.text_input("Senha", type="password", placeholder="••••••••",
+                                 key="_li_pass", label_visibility="visible")
+
+        if st.button("Entrar →", type="primary", use_container_width=True):
+            if _check_password(username, password):
+                admin_u = _admin_username()
+                role = "admin" if username == admin_u else "viewer"
+                st.session_state["_logged_in"] = True
+                st.session_state["_username"]   = username
+                st.session_state["_role"]       = role
+                # Carrega simulações na sessão
+                st.session_state["_sims"] = _load_sims(username)
+                # Viewer: aplica config padrão do admin ao fazer login
+                if role == "viewer":
+                    cfg = _load_config_padrao() or _load_config_padrao_local()
+                    if cfg:
+                        _apply_sim_params(cfg)
+                st.rerun()
+            else:
+                st.error("Usuário ou senha incorretos.")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+# ── Verificação de acesso ──────────────────────────────────────────────────────
+if _users_configured():
+    if not st.session_state.get("_logged_in"):
+        _show_login()
+        st.stop()
+
+# ── Aliases de sessão (atalhos de leitura) ────────────────────────────────────
+_USERNAME = st.session_state.get("_username", "dev")
+_ROLE     = st.session_state.get("_role", "admin")  # dev local = admin
+_IS_ADMIN = (_ROLE == "admin")
+
+# Garante que simulações estejam carregadas na sessão
+if "_sims" not in st.session_state:
+    st.session_state["_sims"] = _load_sims(_USERNAME)
 
 # ── Paleta ────────────────────────────────────────────────────────────────────
 NAVY="#0A2540"; BLUE="#2063A0"; BLIGHT="#EDF4FC"; GOLD="#C8941F"
@@ -332,6 +508,17 @@ with st.sidebar:
     except:
         st.markdown("**🏢 Align Gestão de Negócios**")
 
+    # ── Info do usuário logado ─────────────────────────────────────────
+    if _users_configured():
+        _role_label = "🔑 Admin" if _IS_ADMIN else "👁️ Visualizador"
+        _u1, _u2 = st.columns([3, 1])
+        _u1.markdown(f"**{_USERNAME}** · {_role_label}")
+        if _u2.button("Sair", key="_logout_btn", help="Encerrar sessão"):
+            for k in ["_logged_in", "_username", "_role", "_sims"]:
+                st.session_state.pop(k, None)
+            st.rerun()
+        st.divider()
+
     st.markdown("**📁 Cliente**")
     cliente_sel = st.selectbox("Cliente", list(st.session_state.clientes.keys()),
                                label_visibility="collapsed")
@@ -352,17 +539,18 @@ with st.sidebar:
         visao = st.pills("Visão de Receita",
                          ["💰 Caixa","📋 Competência","🏗️ POC"],
                          default="💰 Caixa",
+                         key="visao_sel",
                          label_visibility="collapsed")
         visao = visao or "💰 Caixa"
     except:
         visao = st.radio("Visão",[
             "💰 Caixa (realizado)","📋 Competência (vendas)","🏗️ POC (% avanço físico)"
-        ], label_visibility="collapsed")
+        ], key="visao_sel", label_visibility="collapsed")
 
     rec_override_map = {}
     if "POC" in visao:
         st.divider(); st.markdown("**⚙️ Parâmetros POC**")
-        vgv=st.number_input("VGV Total (R$)",value=5_000_000.0,step=100_000.0,format="%.0f")
+        vgv=st.number_input("VGV Total (R$)",value=5_000_000.0,step=100_000.0,format="%.0f",key="vgv_poc")
         poc,defs=[],[3,6,10,16,22,30,40,52,62,74,86,100]
         c1,c2=st.columns(2)
         for i,m in enumerate(MESES):
@@ -469,6 +657,81 @@ with st.sidebar:
                 st.session_state.clientes[novo.strip()]={"empresas":{}}
                 save_state(); safe_toast(f"Cliente {novo.strip()} criado!","✅")
                 st.rerun()
+    st.divider()
+
+    # ── Simulações ────────────────────────────────────────────────────────
+    st.markdown("**📋 Simulações**")
+    _MAX_SIMS = 5 if _IS_ADMIN else 3
+    _sims_atual = st.session_state.get("_sims", [])
+    _nomes_sims = [s["nome"] for s in _sims_atual]
+
+    if _sims_atual:
+        _sel_sim = st.selectbox("Selecionar simulação", _nomes_sims,
+                                key="_sel_sim", label_visibility="collapsed")
+        _c_load, _c_del = st.columns(2)
+        if _c_load.button("📂 Carregar", use_container_width=True, key="_btn_load_sim"):
+            _sim_data = next((s for s in _sims_atual if s["nome"] == _sel_sim), None)
+            if _sim_data:
+                _apply_sim_params(_sim_data.get("params", {}))
+                safe_toast(f"Simulação '{_sel_sim}' carregada!", "📂")
+                st.rerun()
+        if _c_del.button("🗑️ Deletar", use_container_width=True, key="_btn_del_sim"):
+            st.session_state["_sims"] = [s for s in _sims_atual if s["nome"] != _sel_sim]
+            _save_sims(_USERNAME, st.session_state["_sims"])
+            safe_toast(f"Simulação '{_sel_sim}' deletada.", "🗑️")
+            st.rerun()
+    else:
+        st.caption("Nenhuma simulação salva.")
+
+    _nome_nova = st.text_input("Nome da simulação:", key="_nome_sim",
+                                placeholder="Ex: Cenário Conservador",
+                                label_visibility="collapsed")
+    if st.button("💾 Salvar Simulação", use_container_width=True, key="_btn_save_sim"):
+        if not _nome_nova.strip():
+            st.warning("Digite um nome para a simulação.")
+        else:
+            _params_agora = _get_sim_params()
+            _nova_sim = {
+                "nome":   _nome_nova.strip(),
+                "data":   __import__("datetime").date.today().isoformat(),
+                "params": _params_agora,
+            }
+            _lista = list(st.session_state.get("_sims", []))
+            # Remove simulação com mesmo nome, se existir
+            _lista = [s for s in _lista if s["nome"] != _nova_sim["nome"]]
+            # Viewer: máx 3, substitui mais antiga ao exceder
+            if not _IS_ADMIN and len(_lista) >= _MAX_SIMS:
+                _lista = sorted(_lista, key=lambda s: s.get("data",""), reverse=True)
+                _lista = _lista[:_MAX_SIMS - 1]
+            # Admin: máx 5
+            if _IS_ADMIN and len(_lista) >= _MAX_SIMS:
+                st.warning(f"Limite de {_MAX_SIMS} simulações atingido. Delete uma antes de salvar.")
+            else:
+                _lista.append(_nova_sim)
+                st.session_state["_sims"] = _lista
+                _save_sims(_USERNAME, _lista)
+                safe_toast(f"Simulação '{_nova_sim['nome']}' salva!", "💾")
+                st.rerun()
+
+    # Admin: Salvar como Padrão
+    if _IS_ADMIN:
+        if st.button("💾 Salvar como Padrão", use_container_width=True, key="_btn_save_padrao",
+                     help="Salva a configuração atual como padrão para todos os Visualizadores"):
+            _save_config_padrao(_get_sim_params())
+            safe_toast("Configuração salva como padrão!", "✅")
+
+    # Viewer: Restaurar Padrão
+    if not _IS_ADMIN and _users_configured():
+        if st.button("🔄 Restaurar Padrão", use_container_width=True, key="_btn_restaurar",
+                     help="Volta para a configuração padrão definida pelo Admin"):
+            _cfg = _load_config_padrao() or _load_config_padrao_local()
+            if _cfg:
+                _apply_sim_params(_cfg)
+                safe_toast("Padrão restaurado!", "🔄")
+                st.rerun()
+            else:
+                st.info("Nenhum padrão definido pelo Admin ainda.")
+
     st.divider()
     st.caption("Align Gestão de Negócios © 2026")
 

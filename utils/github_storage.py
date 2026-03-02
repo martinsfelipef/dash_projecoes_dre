@@ -1,9 +1,14 @@
 """
 Persistência via GitHub API.
 
-Lê/escreve `dados.json` num repositório privado separado.
+Lê/escreve arquivos JSON num repositório privado separado.
 Só actua se `st.secrets["github"]` estiver configurado;
 em ambiente local sem secrets.toml é silenciosamente ignorado.
+
+Arquivos gerenciados:
+  dados.json                      — estado geral de clientes (legado)
+  data/config_padrao.json         — parâmetros padrão salvos pelo Admin
+  data/simulacoes/{username}.json — lista de simulações por usuário
 """
 import json
 import numpy as np
@@ -100,3 +105,81 @@ def save_state_github(clientes):
     except Exception as e:
         import streamlit as st
         st.warning(f"Aviso: não foi possível salvar no GitHub: {e}")
+
+
+# ── Funções genéricas de leitura/escrita ──────────────────────────────────────
+
+def _github_configured():
+    try:
+        import streamlit as st
+        return "github" in st.secrets
+    except Exception:
+        return False
+
+
+def _read_github_file(path):
+    """Lê um arquivo JSON do repo. Retorna dict/list ou None se não encontrado."""
+    try:
+        if not _github_configured():
+            return None
+        repo = _get_repo()
+        try:
+            file = repo.get_contents(path)
+            raw = file.decoded_content.decode("utf-8").strip()
+            if not raw:
+                return None
+            return json.loads(raw)
+        except Exception:
+            return None
+    except Exception:
+        return None
+
+
+def _write_github_file(path, data, commit_msg="dashboard: atualiza"):
+    """Escreve data como JSON no repo. Cria ou atualiza o arquivo."""
+    try:
+        if not _github_configured():
+            return False
+        repo = _get_repo()
+        content = json.dumps(data, ensure_ascii=False, indent=2, cls=_Encoder)
+        try:
+            file = repo.get_contents(path)
+            repo.update_file(path, commit_msg, content, file.sha)
+        except Exception:
+            repo.create_file(path, commit_msg, content)
+        return True
+    except Exception as e:
+        import streamlit as st
+        st.warning(f"Aviso: não foi possível salvar no GitHub ({path}): {e}")
+        return False
+
+
+# ── Config padrão (Admin) ─────────────────────────────────────────────────────
+
+def load_config_padrao():
+    """Lê data/config_padrao.json. Retorna dict ou None."""
+    return _read_github_file("data/config_padrao.json")
+
+
+def save_config_padrao(params):
+    """Salva params em data/config_padrao.json."""
+    return _write_github_file(
+        "data/config_padrao.json", params, "dashboard: config padrão atualizada"
+    )
+
+
+# ── Simulações por usuário ────────────────────────────────────────────────────
+
+def load_simulacoes(username):
+    """Lê data/simulacoes/{username}.json. Retorna lista ou []."""
+    result = _read_github_file(f"data/simulacoes/{username}.json")
+    return result if isinstance(result, list) else []
+
+
+def save_simulacoes(username, sims):
+    """Salva lista de simulações em data/simulacoes/{username}.json."""
+    return _write_github_file(
+        f"data/simulacoes/{username}.json",
+        sims,
+        f"dashboard: simulações de {username}",
+    )
