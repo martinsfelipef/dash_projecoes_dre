@@ -4,6 +4,55 @@ import plotly.graph_objects as go
 import numpy as np
 import io, sys, os, re
 
+_LOCAL_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                           ".streamlit", "dados_local.json")
+
+def _json_default(obj):
+    import numpy as np, pandas as pd
+    if isinstance(obj, np.ndarray):    return obj.tolist()
+    if isinstance(obj, pd.DataFrame):  return obj.to_dict("records")
+    if isinstance(obj, np.integer):    return int(obj)
+    if isinstance(obj, np.floating):   return float(obj)
+    return str(obj)
+
+def _load_state():
+    # 1. Tenta GitHub
+    try:
+        from github_storage import load_state_github
+        result = load_state_github()
+        if result is not None:
+            return result
+    except Exception:
+        pass
+    # 2. Fallback: arquivo local
+    try:
+        if os.path.exists(_LOCAL_FILE):
+            with open(_LOCAL_FILE, "r", encoding="utf-8") as f:
+                raw = f.read().strip()
+            if raw and raw != "{}":
+                import json
+                return json.loads(raw)
+    except Exception:
+        pass
+    return None
+
+def save_state():
+    # 1. Salva localmente (sempre, independente do GitHub)
+    try:
+        import json
+        os.makedirs(os.path.dirname(_LOCAL_FILE), exist_ok=True)
+        with open(_LOCAL_FILE, "w", encoding="utf-8") as f:
+            json.dump(dict(st.session_state.clientes), f,
+                      ensure_ascii=False, indent=2, default=_json_default)
+    except Exception as e:
+        st.warning(f"Aviso: não foi possível salvar localmente: {e}")
+    # 2. Tenta GitHub também (silencioso se não configurado)
+    try:
+        from github_storage import save_state_github
+        save_state_github(st.session_state.clientes)
+    except Exception:
+        pass
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "utils"))
 from parser_sienge   import parse_sienge
 
@@ -79,6 +128,42 @@ st.set_page_config(page_title="Dashboard Financeiro | Align",
                    page_icon="🏗️", layout="wide",
                    initial_sidebar_state="expanded")
 
+# ── Autenticação ───────────────────────────────────────────────────────────────
+def _setup_auth():
+    """
+    Exibe tela de login se `credentials` estiver em st.secrets.
+    Retorna True quando autenticado (ou quando auth não está configurada).
+    """
+    try:
+        creds = st.secrets.get("credentials")
+        if not creds:
+            return True  # sem auth configurada — modo dev local
+    except Exception:
+        return True  # sem secrets.toml — modo dev local
+
+    import streamlit_authenticator as stauth
+    import json
+    creds_dict = json.loads(json.dumps(dict(st.secrets["credentials"])))
+    authenticator = stauth.Authenticate(
+        credentials=creds_dict,
+        cookie_name=st.secrets["cookie"]["name"],
+        cookie_key=st.secrets["cookie"]["key"],
+        cookie_expiry_days=st.secrets["cookie"]["expiry_days"],
+    )
+    authenticator.login()
+    auth_status = st.session_state.get("authentication_status")
+    if auth_status:
+        authenticator.logout("Sair", "sidebar")
+        return True
+    if auth_status is False:
+        st.error("Usuário ou senha incorretos.")
+    else:
+        st.info("Faça login para acessar o Dashboard Financeiro.")
+    return False
+
+if not _setup_auth():
+    st.stop()
+
 # ── Paleta ────────────────────────────────────────────────────────────────────
 NAVY="#0A2540"; BLUE="#2063A0"; BLIGHT="#EDF4FC"; GOLD="#C8941F"
 WHITE="#FFFFFF"; TEXT="#1B2432"; GRAY="#6F7E8C"; BORDER="#DDE4ED"
@@ -110,6 +195,8 @@ CLIENTES_DEFAULT = {
             "desp_op":  [-18417.88,-16897.10,-18966.78,-37725.97,-30958.67,-40560.56,-48685.34,-41380.36,-49897.99,-57554.57,-55151.69,-67003.17],
             "res_fin":  [888.03,898.59,1688.75,2690.05,-50.17,246.01,-53.25,67.51,-76.02,208.02,109.74,170.91],
             "ir":       [0,0,0,0,0,0,-283.62,0,0,0,0,0],
+            "rec_bdi":  [0.0]*12,
+            "desp_bdi": [0.0]*12,
         },
         "SPE Tereza Cristina": {
             "nome":"Brocks Res. Tereza Cristina SPE Ltda","fonte":"Fixo",
@@ -119,12 +206,15 @@ CLIENTES_DEFAULT = {
             "desp_op":  [-7939.74,-3222.06,-1267.00,-8833.36,-17957.56,-106891.81,-103047.10,-189069.48,-97506.05,-131413.70,-109800.02,-113582.24],
             "res_fin":  [640.20,-0.01,0,155.70,20.24,0.87,55.31,6500.80,-87.60,-59.41,33.59,239.14],
             "ir":       [0,0,0,0,0,0,-1301.37,0,0,-11327.40,0,0],
+            "rec_bdi":  [0.0]*12,
+            "desp_bdi": [0.0]*12,
         }
     }}
 }
 
 if "clientes" not in st.session_state:
-    st.session_state.clientes = CLIENTES_DEFAULT.copy()
+    _saved = _load_state()
+    st.session_state.clientes = _saved if _saved is not None else CLIENTES_DEFAULT.copy()
 
 # ── Funções com cache ─────────────────────────────────────────────────────────
 @st.cache_data
@@ -302,7 +392,7 @@ with st.sidebar:
             if _cn2.button("🗑️", key=f"rm_dre_{_k}",
                            help="Remover esta DRE do sistema"):
                 del st.session_state.clientes[cliente_sel]["empresas"][_k]
-                safe_toast(f"{_k} removida.", "🗑️"); st.rerun()
+                save_state(); safe_toast(f"{_k} removida.", "🗑️"); st.rerun()
         else:
             _cn2.caption("🔒")  # DREs padrão, não removíveis
     st.divider()
@@ -347,6 +437,8 @@ with st.sidebar:
                               "imp_rec":d["imp_rec"],
                               "cpv":d["cpv"],"desp_op":d["desp_op"],
                               "res_fin":d["res_fin"],"ir":d["ir"],
+                              "rec_bdi": d.get("rec_bdi",  [0.0]*12),
+                              "desp_bdi":d.get("desp_bdi", [0.0]*12),
                               "raw_lines": _parse_sienge_full(bdata)}
                         if dest=="+ Novo cliente":
                             st.session_state.clientes[nome_in]=\
@@ -354,6 +446,7 @@ with st.sidebar:
                         else:
                             st.session_state.clientes[dest]\
                                 ["empresas"][nome_in]=nova
+                        save_state()
                         safe_toast(
                             f"✅ {nome_in} salva no sistema!","✅")
                         st.rerun()
@@ -367,14 +460,14 @@ with st.sidebar:
             cn2,cd=st.columns([3,1]); cn2.write(k)
             if cd.button("🗑️",key=f"del_{k}"):
                 del st.session_state.clientes[cliente_sel]["empresas"][k]
-                safe_toast(f"{k} removida","🗑️")
+                save_state(); safe_toast(f"{k} removida","🗑️")
                 st.rerun()
         st.divider()
         novo=st.text_input("Novo cliente:",key="novo_cli",placeholder="Ex: Loja ABC")
         if st.button("➕ Criar",use_container_width=True):
             if novo.strip():
                 st.session_state.clientes[novo.strip()]={"empresas":{}}
-                safe_toast(f"Cliente {novo.strip()} criado!","✅")
+                save_state(); safe_toast(f"Cliente {novo.strip()} criado!","✅")
                 st.rerun()
     st.divider()
     st.caption("Align Gestão de Negócios © 2026")
@@ -388,9 +481,13 @@ if empresa_sel=="Consolidado":
     chaves=list(dres.keys())
     final={key:sum(dres[k][key] for k in chaves) for key in dres[chaves[0]]}
     titulo=f"{cliente_sel} — Consolidado"; emp_base=list(empresas_cliente.values())[0]
+    final["rec_bdi"]  = sum(np.array(emp.get("rec_bdi",  [0.0]*12)) for emp in empresas_cliente.values())
+    final["desp_bdi"] = sum(np.array(emp.get("desp_bdi", [0.0]*12)) for emp in empresas_cliente.values())
 else:
     final=dres[empresa_sel]; titulo=empresas_cliente[empresa_sel]["nome"]
     emp_base=empresas_cliente[empresa_sel]
+    final["rec_bdi"]  = np.array(emp_base.get("rec_bdi",  [0.0]*12))
+    final["desp_bdi"] = np.array(emp_base.get("desp_bdi", [0.0]*12))
 
 rb_t=float(final["rec_bruta"].sum()); rl_t=float(final["rec_liq"].sum())
 lb_t=float(final["lucro_bruto"].sum()); ebt_t=float(final["ebitda"].sum())
@@ -480,9 +577,11 @@ def render_dre():
 
     st.divider()
     st.markdown(f"#### 📋 DRE Detalhada — {titulo}")
-    linhas=[("(=) Receita Bruta","rec_bruta",True),("(-) Impostos s/ Receita","imp_rec",False),
+    linhas=[("(=) Receita Bruta","rec_bruta",True),("   ↳ Receita de BDI","rec_bdi",False),
+            ("(-) Impostos s/ Receita","imp_rec",False),
             ("(=) Receita Líquida","rec_liq",True),("(-) CPV / CSP","cpv",False),
             ("(=) Lucro Bruto","lucro_bruto",True),("(-) Despesas Operacionais","desp_op",False),
+            ("   ↳ Despesa de BDI","desp_bdi",False),
             ("(=) EBITDA","ebitda",True),("(+/-) Resultado Financeiro","res_fin",False),
             ("(=) Lucro antes IR","lucro_antes_ir",True),("(-) IR / CSLL","ir",False),
             ("(=) Lucro Líquido","lucro_liq",True)]
@@ -496,10 +595,10 @@ def render_dre():
 
     # data_editor (editável) com fallback para dataframe
     try:
-        edited=st.data_editor(estilo_dre(df_t1,tots),use_container_width=True,height=430,
+        edited=st.data_editor(estilo_dre(df_t1,tots),use_container_width=True,height=510,
                               disabled=True)
     except:
-        st.dataframe(estilo_dre(df_t1,tots),use_container_width=True,height=430)
+        st.dataframe(estilo_dre(df_t1,tots),use_container_width=True,height=510)
 
     # Download
     st.download_button("📥 Exportar DRE em Excel",
@@ -1236,7 +1335,7 @@ def render_fcff_dcf():
 
     sens_rows = []
     for g_s in g_range:
-        row = {"g \ WACC": f"g={g_s:.1f}%"}
+        row = {"g \\ WACC": f"g={g_s:.1f}%"}
         for w_s in wacc_range:
             ev_s = ev_fcff  # mantém PV FCFFs
             vt_s = fcff_n*(1+g_s/100)/(w_s/100-g_s/100) if w_s>g_s else 0.0
@@ -1245,7 +1344,7 @@ def render_fcff_dcf():
             row[f"W={w_s:.1f}%"] = eq_s
         sens_rows.append(row)
 
-    df_sens = pd.DataFrame(sens_rows).set_index("g \ WACC")
+    df_sens = pd.DataFrame(sens_rows).set_index("g \\ WACC")
 
     def color_sens(v):
         try:

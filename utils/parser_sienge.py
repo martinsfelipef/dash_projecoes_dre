@@ -26,6 +26,12 @@ CONTAS_ALVO = {
     "14":  "lucro_liq",
 }
 
+# Sub-contas exibidas separadamente na DRE
+CONTAS_DETALHE = {
+    "01.04": "rec_bdi",
+    "06.03": "desp_bdi",
+}
+
 def _limpar_valor(v):
     """Converte células do Excel em float."""
     if v is None or (isinstance(v, float) and np.isnan(v)):
@@ -98,7 +104,7 @@ def parse_sienge(arquivo_bytes):
     periodo      = _extrair_periodo(df_raw)
 
     # Inicializa valores zerados para 12 meses
-    dados = {k: [0.0]*12 for k in CONTAS_ALVO.values()}
+    dados = {k: [0.0]*12 for k in list(CONTAS_ALVO.values()) + list(CONTAS_DETALHE.values())}
 
     # Encontra todas as seções de header (pode haver 2 no SIENGE: Jan-Set e Out-Dez)
     headers_encontrados = []
@@ -132,6 +138,15 @@ def parse_sienge(arquivo_bytes):
                     break
                 continue
 
+            # Verifica se é sub-conta de detalhe (ex: 01.04, 06.03)
+            if codigo in CONTAS_DETALHE:
+                chave = CONTAS_DETALHE[codigo]
+                for col_idx, mes_idx in col_mes.items():
+                    if col_idx < len(row):
+                        val = _limpar_valor(row.iloc[col_idx])
+                        dados[chave][mes_idx] += val
+                continue
+
             # Só processa códigos de 2 dígitos (contas principais, não subcategorias)
             if codigo not in CONTAS_ALVO:
                 continue
@@ -162,11 +177,13 @@ def parse_sienge(arquivo_bytes):
     MESES_LABELS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
     NOMES_LINHAS = {
         "rec_bruta":     "(=) Receita Bruta",
+        "rec_bdi":       "   ↳ Receita de BDI",
         "imp_rec":       "(-) Impostos s/ Receita",
         "rec_liq":       "(=) Receita Líquida",
         "cpv":           "(-) CPV / CSP",
         "lucro_bruto":   "(=) Lucro Bruto",
         "desp_op":       "(-) Despesas Operacionais",
+        "desp_bdi":      "   ↳ Despesa de BDI",
         "ebitda":        "(=) EBITDA",
         "res_fin":       "(+/-) Resultado Financeiro",
         "lucro_antes_ir":"(=) Lucro antes IR",

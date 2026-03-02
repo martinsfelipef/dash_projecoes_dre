@@ -11,6 +11,10 @@ __pycache__/
 # Streamlit
 .streamlit/secrets.toml
 
+# Estado local (dados financeiros sigilosos)
+.session_state.pkl
+.streamlit/dados_local.json
+
 # Dados financeiros (sigilosos)
 *.xlsx
 *.xls
