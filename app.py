@@ -881,22 +881,28 @@ mg_l=(ll_t/rb_t*100)  if rb_t!=0 else 0
 
 # ── Navegação ─────────────────────────────────────────────────────────────────
 TABS=["📊 DRE Analítica","📅 Rolling Forecast","🎯 Sensibilidade","📐 Indicadores","💰 FCFF & DCF"]
+if "tab_ativo" not in st.session_state or st.session_state.tab_ativo not in TABS:
+    st.session_state.tab_ativo=TABS[0]
 
-# Create clean native tabs instead of clunky buttons
-t1, t2, t3, t4, t5 = st.tabs(TABS)
+tc1,tc2,tc3,tc4,tc5=st.columns(5)
+for col,nome in zip([tc1,tc2,tc3,tc4,tc5],TABS):
+    tipo="primary" if st.session_state.tab_ativo==nome else "secondary"
+    if col.button(nome,use_container_width=True,type=tipo,key=f"btn_{nome}"):
+        st.session_state.tab_ativo=nome; st.rerun()
+st.divider()
+_tab=st.session_state.tab_ativo
 
-with t1:
-    @st.fragment
-    def render_dre():
-        c_title, c_year = st.columns([3, 1])
-        with c_title:
-            st.markdown(f"## 📊 {titulo}")
-        with c_year:
-            # FIX: Removed the unsupported 'header' argument
-            ano_analise = st.selectbox("Ano de Análise:", [2024, 2025, 2026, 2027], index=1)
-        
-        st.caption(f"Demonstrativo de Resultado Analítico · Jan–Dez {ano_analise} · Visão: {visao.split('(')[0].strip()}")
-        st.divider()
+# ══════════════════════════════════════════════════════════════════════ TAB 1
+@st.fragment
+def render_dre():
+    c_title, c_year = st.columns([3, 1])
+    with c_title:
+        st.markdown(f"## 📊 {titulo}")
+    with c_year:
+        ano_analise = st.selectbox("Ano de Análise:", [2024, 2025, 2026, 2027], index=1)
+    
+    st.caption(f"Demonstrativo de Resultado Analítico · Jan–Dez {ano_analise} · Visão: {visao.split('(')[0].strip()}")
+    st.divider()
     k1,k2,k3,k4,k5,k6=st.columns(6)
     kpi_popover(k1,"Receita Bruta",fmt(rb_t),
                 help_text="Total faturado antes de impostos e deduções.")
