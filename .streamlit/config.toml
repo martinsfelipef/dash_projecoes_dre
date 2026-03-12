@@ -1,11 +1,15 @@
 [theme]
-# A cor primária da Align
-primaryColor = "#2063A0"
+# A cor primária da Brocks
+primaryColor = "#F25C38"
 
-# O background do app 
-backgroundColor = "#F9FAFB"
-secondaryBackgroundColor = "#FFFFFF"
-textColor = "#1B2432"
+# O background geral do dashboard
+backgroundColor = "#FFFFFF"
 
-# A fonte moderna e neutra
+# O background do sidebar e cards
+secondaryBackgroundColor = "#F4F6F8"
+
+# Cor do Texto
+textColor = "#0A0A0A"
+
+# A fonte moderna
 font = "sans serif"

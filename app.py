@@ -271,32 +271,73 @@ def _show_login():
     """Exibe tela de login centralizada e bonita."""
     st.markdown("""
     <style>
-    [data-testid="stAppViewContainer"] > .main {background: #F0F4F9;}
-    .login-card {
-        max-width: 420px;
-        margin: 6vh auto;
-        background: #ffffff;
-        padding: 3rem 2.5rem;
-        border-radius: 20px;
-        box-shadow: 0 10px 40px -10px rgba(10,37,64,0.15), 0 0 1px rgba(10,37,64,0.1);
-        border: 1px solid rgba(221, 228, 237, 0.6);
-        backdrop-filter: blur(10px);
+    /* Background for the entire page */
+    [data-testid="stAppViewContainer"] > .main {
+        background: #0A1118;
     }
-    .login-logo { text-align: center; margin-bottom: 1.5rem; }
-    .login-title {
-        color: #0A2540; font-size: 1.6rem; font-family: 'Inter', sans-serif;
-        font-weight: 800; margin: 0 0 0.5rem; text-align: center; letter-spacing: -0.5px;
-    }
-    .login-sub { color: #6F7E8C; font-size: 0.95rem; text-align: center; margin-bottom: 2rem; font-weight: 400; }
     
-    /* Enhance inputs on login */
+    /* Centered Login Card */
+    .login-card {
+        max-width: 450px;
+        margin: 8vh auto;
+        background: #141A23;
+        padding: 3rem 2.5rem;
+        border-radius: 12px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .login-logo { text-align: center; margin-bottom: 2rem; }
+    
+    /* Typography inside the card */
+    .login-title {
+        color: #FFFFFF; font-size: 1.5rem; font-family: 'Inter', sans-serif;
+        font-weight: 700; margin: 0 0 0.5rem; text-align: center;
+    }
+    .login-sub { color: #8F9BA8; font-size: 0.95rem; text-align: center; margin-bottom: 2rem; }
+    
+    /* Inputs Styling specifically for login */
+    .stTextInput label {
+        color: #E2E8F0 !important;
+        font-weight: 500 !important;
+    }
     .stTextInput input {
-        border-radius: 8px; border: 1px solid #DDE4ED; padding: 0.6rem 1rem;
-        transition: all 0.2s ease;
+        background-color: #F8FAFC !important;
+        color: #0F172A !important;
+        border-radius: 6px; 
+        border: none !important; 
+        padding: 0.8rem 1rem;
     }
     .stTextInput input:focus {
-        border-color: #2063A0; box-shadow: 0 0 0 2px rgba(32, 99, 160, 0.2);
+        box-shadow: 0 0 0 2px #F25C38 !important;
     }
+    
+    /* The primary login button */
+    .stButton > button[kind="primary"] {
+        background-color: #F25C38 !important;
+        color: white !important;
+        border-radius: 8px !important;
+        padding: 0.6rem 2rem !important;
+        font-weight: 600 !important;
+        font-size: 1.05rem !important;
+        border: none !important;
+        transition: background-color 0.2s ease;
+    }
+    .stButton > button[kind="primary"]:hover {
+        background-color: #E04825 !important;
+    }
+    .login-tabs {
+        display: flex; gap: 8px; margin-bottom: 1.5rem;
+    }
+    .login-tab-btn {
+        flex: 1; text-align: center; padding: 0.6rem;
+        border-radius: 6px; font-weight: 600; font-size: 0.9rem;
+        cursor: pointer;
+    }
+    .tab-active { background: #0A1118; border: 1px solid #1A2433; color: white; }
+    .tab-inactive { color: #64748B; }
+    
+    /* Hide top padding and header initially to make login look full-screen */
+    header[data-testid="stHeader"] {display: none;}
     </style>
     """, unsafe_allow_html=True)
 
@@ -305,20 +346,24 @@ def _show_login():
         st.markdown('<div class="login-card">', unsafe_allow_html=True)
         st.markdown('<div class="login-logo">', unsafe_allow_html=True)
         try:
-            st.image("https://alignconsultoria.com.br/wp-content/uploads/2024/01/logo-align-branca.png",
-                     width=160)
+            # Substitua esta URL pela logo oficial branca/laranja da Brocks
+            st.image("https://raw.githubusercontent.com/martinsfelipef/dash_projecoes_dre/main/.streamlit/assets/logo_brocks.jpg", width=220)
         except Exception:
-            st.markdown("### 🏢 Align")
+            st.markdown('<p style="color:#F25C38; font-size: 2rem; font-weight:800; text-align:center;">BROCKS</p>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
-        st.markdown('<p class="login-title">Dashboard Financeiro</p>', unsafe_allow_html=True)
-        st.markdown('<p class="login-sub">Faça login para continuar</p>', unsafe_allow_html=True)
+        
+        # Tabs mock like reference image
+        st.markdown('''
+        <div class="login-tabs">
+            <div class="login-tab-btn tab-active">Entrar</div>
+            <div class="login-tab-btn tab-inactive">Cadastrar</div>
+        </div>
+        ''', unsafe_allow_html=True)
 
-        username = st.text_input("Usuário", placeholder="seu.usuario", key="_li_user",
-                                 label_visibility="visible")
-        password = st.text_input("Senha", type="password", placeholder="••••••••",
-                                 key="_li_pass", label_visibility="visible")
+        username = st.text_input("Usuário", placeholder="felipe@alignconsultoria.com.br", key="_li_user")
+        password = st.text_input("Senha", type="password", placeholder="••••••••", key="_li_pass")
 
-        if st.button("Entrar →", type="primary", use_container_width=True):
+        if st.button("Entrar", type="primary", use_container_width=True):
             if _check_password(username, password):
                 admin_u = _admin_username()
                 role = "admin" if username == admin_u else "viewer"
@@ -335,6 +380,8 @@ def _show_login():
                 st.rerun()
             else:
                 st.error("Usuário ou senha incorretos.")
+                
+        st.markdown('<p style="color:#64748B; text-align:center; font-size:0.85rem; margin-top:2rem; cursor:pointer;">Esqueci minha senha</p>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
 # ── Verificação de acesso ──────────────────────────────────────────────────────
@@ -833,29 +880,23 @@ mg_e=(ebt_t/rb_t*100) if rb_t!=0 else 0
 mg_l=(ll_t/rb_t*100)  if rb_t!=0 else 0
 
 # ── Navegação ─────────────────────────────────────────────────────────────────
-TABS=["📊  DRE Analítica","📅  Rolling Forecast","🎯  Sensibilidade","📐  Indicadores","💰  FCFF & DCF"]
-if "tab_ativo" not in st.session_state or st.session_state.tab_ativo not in TABS:
-    st.session_state.tab_ativo=TABS[0]
+TABS=["📊 DRE Analítica","📅 Rolling Forecast","🎯 Sensibilidade","📐 Indicadores","💰 FCFF & DCF"]
 
-tc1,tc2,tc3,tc4,tc5=st.columns(5)
-for col,nome in zip([tc1,tc2,tc3,tc4,tc5],TABS):
-    tipo="primary" if st.session_state.tab_ativo==nome else "secondary"
-    if col.button(nome,use_container_width=True,type=tipo,key=f"btn_{nome}"):
-        st.session_state.tab_ativo=nome; st.rerun()
-st.divider()
-_tab=st.session_state.tab_ativo
+# Create clean native tabs instead of clunky buttons
+t1, t2, t3, t4, t5 = st.tabs(TABS)
 
-# ══════════════════════════════════════════════════════════════════════ TAB 1
-@st.fragment
-def render_dre():
-    c_title, c_year = st.columns([3, 1])
-    with c_title:
-        st.markdown(f"## 📊 {titulo}")
-    with c_year:
-        ano_analise = st.selectbox("Ano de Análise", [2024, 2025, 2026, 2027], index=1, header="Ano")
-    
-    st.caption(f"Demonstrativo de Resultado Analítico · Jan–Dez {ano_analise} · Visão: {visao.split('(')[0].strip()}")
-    st.divider()
+with t1:
+    @st.fragment
+    def render_dre():
+        c_title, c_year = st.columns([3, 1])
+        with c_title:
+            st.markdown(f"## 📊 {titulo}")
+        with c_year:
+            # FIX: Removed the unsupported 'header' argument
+            ano_analise = st.selectbox("Ano de Análise:", [2024, 2025, 2026, 2027], index=1)
+        
+        st.caption(f"Demonstrativo de Resultado Analítico · Jan–Dez {ano_analise} · Visão: {visao.split('(')[0].strip()}")
+        st.divider()
     k1,k2,k3,k4,k5,k6=st.columns(6)
     kpi_popover(k1,"Receita Bruta",fmt(rb_t),
                 help_text="Total faturado antes de impostos e deduções.")
