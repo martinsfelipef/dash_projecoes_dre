@@ -1,0 +1,11 @@
+[theme]
+# A cor primária da Align
+primaryColor = "#2063A0"
+
+# O background do app 
+backgroundColor = "#F9FAFB"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#1B2432"
+
+# A fonte moderna e neutra
+font = "sans serif"

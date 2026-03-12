@@ -273,18 +273,30 @@ def _show_login():
     <style>
     [data-testid="stAppViewContainer"] > .main {background: #F0F4F9;}
     .login-card {
-        max-width:420px; margin:60px auto 0;
-        background:#fff; padding:2.5rem 2.5rem 2rem;
-        border-radius:16px;
-        box-shadow:0 8px 32px rgba(10,37,64,.13);
-        border:1px solid #DDE4ED;
+        max-width: 420px;
+        margin: 6vh auto;
+        background: #ffffff;
+        padding: 3rem 2.5rem;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px -10px rgba(10,37,64,0.15), 0 0 1px rgba(10,37,64,0.1);
+        border: 1px solid rgba(221, 228, 237, 0.6);
+        backdrop-filter: blur(10px);
     }
-    .login-logo {text-align:center; margin-bottom:1.2rem;}
+    .login-logo { text-align: center; margin-bottom: 1.5rem; }
     .login-title {
-        color:#0A2540; font-size:1.45rem; font-weight:700;
-        margin:0 0 .2rem; text-align:center;
+        color: #0A2540; font-size: 1.6rem; font-family: 'Inter', sans-serif;
+        font-weight: 800; margin: 0 0 0.5rem; text-align: center; letter-spacing: -0.5px;
     }
-    .login-sub {color:#6F7E8C; font-size:.88rem; text-align:center; margin-bottom:1.5rem;}
+    .login-sub { color: #6F7E8C; font-size: 0.95rem; text-align: center; margin-bottom: 2rem; font-weight: 400; }
+    
+    /* Enhance inputs on login */
+    .stTextInput input {
+        border-radius: 8px; border: 1px solid #DDE4ED; padding: 0.6rem 1rem;
+        transition: all 0.2s ease;
+    }
+    .stTextInput input:focus {
+        border-color: #2063A0; box-shadow: 0 0 0 2px rgba(32, 99, 160, 0.2);
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -347,14 +359,53 @@ SOFT_RED="#D9534F"; CHART_BLUE="#4A90D9"; CHART_NAVY="#163456"
 CHART_TEAL="#2D9B8A"; CHART_AMBER="#E8A838"
 
 st.markdown("""<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 html,body,[class*="css"]{font-family:'Inter',sans-serif;}
-.block-container{
-    padding-top:4rem !important;
-    padding-left:3rem !important;
-    padding-right:3rem !important;
-    padding-bottom:3rem !important;
-    max-width:100% !important;
+.block-container {
+    padding: 3rem 2rem !important;
+    max-width: 100% !important;
+}
+
+/* Modernize metrics into premium cards */
+[data-testid="stMetric"] {
+    background-color: #ffffff;
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    border: 1px solid #f0f4f8;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease;
+}
+[data-testid="stMetric"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+}
+[data-testid="stMetricLabel"] {
+    font-size: 0.9rem !important;
+    color: #6F7E8C !important;
+    font-weight: 500;
+    margin-bottom: 0.2rem;
+}
+[data-testid="stMetricValue"] {
+    font-size: 1.6rem !important;
+    color: #0A2540 !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.5px;
+}
+[data-testid="stMetricDelta"] {
+    font-size: 0.85rem !important;
+    font-weight: 500;
+}
+
+/* Buttons and Expanders */
+.stButton > button {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+[data-testid="stExpander"] {
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
 }
 </style>""", unsafe_allow_html=True)
 
@@ -643,6 +694,7 @@ with st.sidebar:
                                  use_container_width=True): st.rerun()
 
     st.divider()
+    st.divider()
     with st.expander("⚙️ Gerenciar empresas"):
         for k in list(empresas_cliente.keys()):
             cn2,cd=st.columns([3,1]); cn2.write(k)
@@ -657,6 +709,27 @@ with st.sidebar:
                 st.session_state.clientes[novo.strip()]={"empresas":{}}
                 save_state(); safe_toast(f"Cliente {novo.strip()} criado!","✅")
                 st.rerun()
+
+    st.divider()
+    st.markdown("**🛡️ Zona de Perigo**")
+    if st.button("🗑️ Redefinir App Completo", use_container_width=True, type="primary",
+                 help="Exclui todos os dados carregados localmente, simulações ativas e recarrega o estado inicial padrão de demonstração."):
+        
+        # Limpa session state
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+            
+        # Tenta excluir o arquivo json físico
+        import os
+        loc_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".streamlit", "dados_local.json")
+        try:
+            if os.path.exists(loc_file):
+                os.remove(loc_file)
+        except Exception as e:
+            pass
+            
+        st.toast("✅ App foi redefinido completamente.")
+        st.rerun()
     st.divider()
 
     # ── Simulações ────────────────────────────────────────────────────────
@@ -760,7 +833,7 @@ mg_e=(ebt_t/rb_t*100) if rb_t!=0 else 0
 mg_l=(ll_t/rb_t*100)  if rb_t!=0 else 0
 
 # ── Navegação ─────────────────────────────────────────────────────────────────
-TABS=["📊  DRE 2025","📅  Rolling Forecast","🎯  Sensibilidade","📐  Indicadores","💰  FCFF & DCF"]
+TABS=["📊  DRE Analítica","📅  Rolling Forecast","🎯  Sensibilidade","📐  Indicadores","💰  FCFF & DCF"]
 if "tab_ativo" not in st.session_state or st.session_state.tab_ativo not in TABS:
     st.session_state.tab_ativo=TABS[0]
 
@@ -775,8 +848,13 @@ _tab=st.session_state.tab_ativo
 # ══════════════════════════════════════════════════════════════════════ TAB 1
 @st.fragment
 def render_dre():
-    st.markdown(f"## 📊 {titulo}")
-    st.caption(f"Demonstrativo de Resultado · Jan–Dez 2025 · Visão: {visao.split('(')[0].strip()}")
+    c_title, c_year = st.columns([3, 1])
+    with c_title:
+        st.markdown(f"## 📊 {titulo}")
+    with c_year:
+        ano_analise = st.selectbox("Ano de Análise", [2024, 2025, 2026, 2027], index=1, header="Ano")
+    
+    st.caption(f"Demonstrativo de Resultado Analítico · Jan–Dez {ano_analise} · Visão: {visao.split('(')[0].strip()}")
     st.divider()
     k1,k2,k3,k4,k5,k6=st.columns(6)
     kpi_popover(k1,"Receita Bruta",fmt(rb_t),
