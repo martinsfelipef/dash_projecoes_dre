@@ -331,10 +331,8 @@ def _show_login():
     with col_m:
         st.markdown('<div class="login-card">', unsafe_allow_html=True)
         st.markdown('<div class="login-logo">', unsafe_allow_html=True)
-        try:
-            st.image("https://raw.githubusercontent.com/martinsfelipef/dash_projecoes_dre/main/.streamlit/assets/logo_brocks.jpg", width=220)
-        except Exception:
-            st.markdown('<p style="color:#F25C38; font-size: 2rem; font-weight:800; text-align:center;">BROCKS</p>', unsafe_allow_html=True)
+        st.markdown('<p style="color:#F25C38; font-size: 2.2rem; font-weight:800; text-align:center; letter-spacing:2px; margin:0;">BROCKS</p>', unsafe_allow_html=True)
+        st.markdown('<p style="color:#64748B; font-size: 0.75rem; text-align:center; margin:0; letter-spacing:1px;">EMPREENDIMENTOS</p>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('<p class="login-sub">Faça login para continuar</p>', unsafe_allow_html=True)
 
