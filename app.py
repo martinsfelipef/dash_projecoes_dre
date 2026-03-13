@@ -322,8 +322,10 @@ def _show_login():
         background-color: #E04825 !important;
     }
     
-    /* Hide top padding and header initially to make login look full-screen */
-    header[data-testid="stHeader"] {display: none;}
+    /* Hide header, sidebar and top padding on login */
+    header[data-testid="stHeader"] {display: none !important; height: 0 !important; min-height: 0 !important;}
+    [data-testid="stSidebar"] {display: none !important;}
+    .block-container {padding-top: 0 !important;}
     </style>
     """, unsafe_allow_html=True)
 
