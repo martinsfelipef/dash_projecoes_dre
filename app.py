@@ -561,7 +561,7 @@ def PL(h=340): return {**PL_BASE,"height":h}
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("**Align Gestão de Negócios**")
+    st.markdown("**Brocks Empreendimentos | Finanças**")
 
     # ── Info do usuário logado ─────────────────────────────────────────
     if _users_configured():
@@ -810,7 +810,8 @@ with st.sidebar:
                 st.info("Nenhum padrão definido pelo Admin ainda.")
 
     st.divider()
-    st.caption("Align Gestão de Negócios © 2026")
+    st.caption("desenvolvido por Align Gestão de Negócios | 2026")
+    st.caption("alignconsultoria.com.br")
 
 # ── Cálculos base ─────────────────────────────────────────────────────────────
 dres={k:dre(emp,rec_override_map.get(k)) for k,emp in empresas_cliente.items()}
