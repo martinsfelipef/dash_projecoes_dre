@@ -268,7 +268,7 @@ def _load_config_padrao_local():
 
 # ── Tela de Login ─────────────────────────────────────────────────────────────
 def _show_login():
-    """Exibe tela de login centralizada e bonita."""
+    """Exibe tela de login centralizada e limpa."""
     st.markdown("""
     <style>
     /* Background for the entire page */
@@ -278,8 +278,8 @@ def _show_login():
     
     /* Centered Login Card */
     .login-card {
-        max-width: 450px;
-        margin: 8vh auto;
+        max-width: 420px;
+        margin: 10vh auto;
         background: #141A23;
         padding: 3rem 2.5rem;
         border-radius: 12px;
@@ -289,10 +289,6 @@ def _show_login():
     .login-logo { text-align: center; margin-bottom: 2rem; }
     
     /* Typography inside the card */
-    .login-title {
-        color: #FFFFFF; font-size: 1.5rem; font-family: 'Inter', sans-serif;
-        font-weight: 700; margin: 0 0 0.5rem; text-align: center;
-    }
     .login-sub { color: #8F9BA8; font-size: 0.95rem; text-align: center; margin-bottom: 2rem; }
     
     /* Inputs Styling specifically for login */
@@ -325,16 +321,6 @@ def _show_login():
     .stButton > button[kind="primary"]:hover {
         background-color: #E04825 !important;
     }
-    .login-tabs {
-        display: flex; gap: 8px; margin-bottom: 1.5rem;
-    }
-    .login-tab-btn {
-        flex: 1; text-align: center; padding: 0.6rem;
-        border-radius: 6px; font-weight: 600; font-size: 0.9rem;
-        cursor: pointer;
-    }
-    .tab-active { background: #0A1118; border: 1px solid #1A2433; color: white; }
-    .tab-inactive { color: #64748B; }
     
     /* Hide top padding and header initially to make login look full-screen */
     header[data-testid="stHeader"] {display: none;}
@@ -346,22 +332,14 @@ def _show_login():
         st.markdown('<div class="login-card">', unsafe_allow_html=True)
         st.markdown('<div class="login-logo">', unsafe_allow_html=True)
         try:
-            # Substitua esta URL pela logo oficial branca/laranja da Brocks
             st.image("https://raw.githubusercontent.com/martinsfelipef/dash_projecoes_dre/main/.streamlit/assets/logo_brocks.jpg", width=220)
         except Exception:
             st.markdown('<p style="color:#F25C38; font-size: 2rem; font-weight:800; text-align:center;">BROCKS</p>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
-        
-        # Tabs mock like reference image
-        st.markdown('''
-        <div class="login-tabs">
-            <div class="login-tab-btn tab-active">Entrar</div>
-            <div class="login-tab-btn tab-inactive">Cadastrar</div>
-        </div>
-        ''', unsafe_allow_html=True)
+        st.markdown('<p class="login-sub">Faça login para continuar</p>', unsafe_allow_html=True)
 
-        username = st.text_input("Usuário", placeholder="felipe@alignconsultoria.com.br", key="_li_user")
-        password = st.text_input("Senha", type="password", placeholder="••••••••", key="_li_pass")
+        username = st.text_input("Usuário", placeholder="seu usuário", key="_li_user")
+        password = st.text_input("Senha", type="password", placeholder="sua senha", key="_li_pass")
 
         if st.button("Entrar", type="primary", use_container_width=True):
             if _check_password(username, password):
@@ -370,9 +348,7 @@ def _show_login():
                 st.session_state["_logged_in"] = True
                 st.session_state["_username"]   = username
                 st.session_state["_role"]       = role
-                # Carrega simulações na sessão
                 st.session_state["_sims"] = _load_sims(username)
-                # Viewer: aplica config padrão do admin ao fazer login
                 if role == "viewer":
                     cfg = _load_config_padrao() or _load_config_padrao_local()
                     if cfg:
@@ -380,8 +356,6 @@ def _show_login():
                 st.rerun()
             else:
                 st.error("Usuário ou senha incorretos.")
-                
-        st.markdown('<p style="color:#64748B; text-align:center; font-size:0.85rem; margin-top:2rem; cursor:pointer;">Esqueci minha senha</p>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
 # ── Verificação de acesso ──────────────────────────────────────────────────────
