@@ -19,7 +19,7 @@ __pycache__/
 *.xlsx
 *.xls
 *.csv
-data/
+data/*.json
 
 # OS
 .DS_Store

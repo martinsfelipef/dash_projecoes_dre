@@ -5,7 +5,7 @@ import numpy as np
 import io, sys, os, re
 
 _LOCAL_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                           ".streamlit", "dados_local.json")
+                           "data", "dados_dre.json")
 
 def _json_default(obj):
     import numpy as np, pandas as pd
@@ -114,14 +114,14 @@ except ImportError:
         df.columns=[str(c).strip().lower() for c in df.columns]
         _m={'jan':0,'fev':1,'mar':2,'abr':3,'mai':4,'jun':5,
             'jul':6,'ago':7,'set':8,'out':9,'nov':10,'dez':11}
-        res={'cpv':[0.0]*12,'desp_op':[0.0]*12}
+        res={'cpv_real':[0.0]*12,'dop_real':[0.0]*12,'rf_real':[0.0]*12,'ir_real':[0.0]*12}
         for col in df.columns:
             for ab,ix in _m.items():
                 if ab in col:
                     for row in df.itertuples():
                         try: v=float(getattr(row,col.replace(' ','_'),0) or 0)
                         except: v=0.0
-                        res['cpv'][ix]+=v
+                        res['cpv_real'][ix]+=v
         return res
 
 st.set_page_config(page_title="Dashboard Financeiro | Align",
@@ -768,7 +768,7 @@ with st.sidebar:
             
         # Tenta excluir o arquivo json físico
         import os
-        loc_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".streamlit", "dados_local.json")
+        loc_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "dados_dre.json")
         try:
             if os.path.exists(loc_file):
                 os.remove(loc_file)
