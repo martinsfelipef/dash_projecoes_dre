@@ -810,8 +810,10 @@ with st.sidebar:
                 st.info("Nenhum padrão definido pelo Admin ainda.")
 
     st.divider()
-    st.caption("desenvolvido por Align Gestão de Negócios | 2026")
-    st.caption("alignconsultoria.com.br")
+    st.caption("Desenvolvido por:")
+    st.caption("Align Gestão de Negócios")
+    st.caption("@2026")
+    st.caption("Acesse: [alignconsultoria.com.br](https://alignconsultoria.com.br)")
 
 # ── Cálculos base ─────────────────────────────────────────────────────────────
 dres={k:dre(emp,rec_override_map.get(k)) for k,emp in empresas_cliente.items()}
