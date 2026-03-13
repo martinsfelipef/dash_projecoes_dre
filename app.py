@@ -561,12 +561,7 @@ def PL(h=340): return {**PL_BASE,"height":h}
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
-    # Logo Align
-    try:
-        st.logo("https://alignconsultoria.com.br/wp-content/uploads/2024/01/logo-align-branca.png",
-                link="https://alignconsultoria.com.br")
-    except:
-        st.markdown("**🏢 Align Gestão de Negócios**")
+    st.markdown("**Align Gestão de Negócios**")
 
     # ── Info do usuário logado ─────────────────────────────────────────
     if _users_configured():
@@ -579,19 +574,38 @@ with st.sidebar:
             st.rerun()
         st.divider()
 
-    st.markdown("**📁 Cliente**")
-    cliente_sel = st.selectbox("Cliente", list(st.session_state.clientes.keys()),
-                               label_visibility="collapsed")
-    st.markdown(f"## {cliente_sel}")
-    st.caption("Dashboard Financeiro")
-    st.divider()
+    cliente_sel = "Brocks Empreendimentos"
 
     empresas_cliente = st.session_state.clientes[cliente_sel]["empresas"]
-    opcoes = ["Consolidado"] + list(empresas_cliente.keys())
+
+    # Inicializa estado ativo/inativo de cada empresa
+    if "empresas_ativas" not in st.session_state:
+        st.session_state["empresas_ativas"] = {k: True for k in empresas_cliente}
+    # Garante que novas empresas apareçam como ativas
+    for k in empresas_cliente:
+        if k not in st.session_state["empresas_ativas"]:
+            st.session_state["empresas_ativas"][k] = True
+
     st.markdown("**🏢 Empresa**")
+    for k, emp in empresas_cliente.items():
+        c_tog, c_nome = st.columns([1, 5])
+        ativa = st.session_state["empresas_ativas"].get(k, True)
+        with c_tog:
+            novo = st.checkbox("a", value=ativa, key=f"_tog_{k}", label_visibility="collapsed")
+            if novo != ativa:
+                st.session_state["empresas_ativas"][k] = novo
+                st.rerun()
+        with c_nome:
+            if ativa:
+                st.caption(f"{'🟢' if emp.get('fonte','Fixo')!='Fixo' else '⚪'} {k}")
+            else:
+                st.caption(f"⬜ ~~{k}~~")
+
+    # Filtra apenas empresas ativas para cálculos e seletor
+    empresas_cliente = {k: v for k, v in empresas_cliente.items()
+                        if st.session_state["empresas_ativas"].get(k, True)}
+    opcoes = ["Consolidado"] + list(empresas_cliente.keys())
     empresa_sel = st.selectbox("Empresa", opcoes, label_visibility="collapsed")
-    for k,emp in empresas_cliente.items():
-        st.caption(f"{'🟢' if emp.get('fonte','Fixo')!='Fixo' else '⚪'} {k}")
 
     st.divider()
     st.markdown("**📊 Visão de Receita**")
@@ -719,27 +733,8 @@ with st.sidebar:
                 save_state(); safe_toast(f"Cliente {novo.strip()} criado!","✅")
                 st.rerun()
 
-    st.divider()
-    st.markdown("**🛡️ Zona de Perigo**")
-    if st.button("🗑️ Redefinir App Completo", use_container_width=True, type="primary",
-                 help="Exclui todos os dados carregados localmente, simulações ativas e recarrega o estado inicial padrão de demonstração."):
-        
-        # Limpa session state
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
-            
-        # Tenta excluir o arquivo json físico
-        import os
-        loc_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "dados_dre.json")
-        try:
-            if os.path.exists(loc_file):
-                os.remove(loc_file)
-        except Exception as e:
-            pass
-            
-        st.toast("✅ App foi redefinido completamente.")
-        st.rerun()
-    st.divider()
+
+
 
     # ── Simulações ────────────────────────────────────────────────────────
     st.markdown("**📋 Simulações**")
