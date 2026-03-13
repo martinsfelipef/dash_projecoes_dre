@@ -276,17 +276,7 @@ def _show_login():
         background: #0A1118;
     }
     
-    /* Centered Login Card */
-    .login-card {
-        max-width: 420px;
-        margin: 10vh auto;
-        background: #141A23;
-        padding: 3rem 2.5rem;
-        border-radius: 12px;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    .login-logo { text-align: center; margin-bottom: 2rem; }
+    
     
     /* Typography inside the card */
     .login-sub { color: #8F9BA8; font-size: 0.95rem; text-align: center; margin-bottom: 2rem; }
@@ -331,12 +321,11 @@ def _show_login():
 
     col_l, col_m, col_r = st.columns([1, 2, 1])
     with col_m:
-        st.markdown('<div class="login-card">', unsafe_allow_html=True)
-        st.markdown('<div class="login-logo">', unsafe_allow_html=True)
-        st.markdown('<p style="color:#F25C38; font-size: 2.2rem; font-weight:800; text-align:center; letter-spacing:2px; margin:0;">BROCKS</p>', unsafe_allow_html=True)
-        st.markdown('<p style="color:#64748B; font-size: 0.75rem; text-align:center; margin:0; letter-spacing:1px;">EMPREENDIMENTOS</p>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-        st.markdown('<p class="login-sub">Faça login para continuar</p>', unsafe_allow_html=True)
+        st.markdown("""
+        <p style="color:#F25C38; font-size: 2.2rem; font-weight:800; text-align:center; letter-spacing:2px; margin:2rem 0 0;">BROCKS</p>
+        <p style="color:#64748B; font-size: 0.75rem; text-align:center; margin:0 0 0.5rem; letter-spacing:1px;">EMPREENDIMENTOS</p>
+        <p style="color:#8F9BA8; font-size: 0.95rem; text-align:center; margin-bottom: 1.5rem;">Faça login para continuar</p>
+        """, unsafe_allow_html=True)
 
         username = st.text_input("Usuário", placeholder="seu usuário", key="_li_user")
         password = st.text_input("Senha", type="password", placeholder="sua senha", key="_li_pass")
@@ -356,7 +345,6 @@ def _show_login():
                 st.rerun()
             else:
                 st.error("Usuário ou senha incorretos.")
-        st.markdown('</div>', unsafe_allow_html=True)
 
 # ── Verificação de acesso ──────────────────────────────────────────────────────
 if _users_configured():
