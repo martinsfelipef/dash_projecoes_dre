@@ -105,24 +105,7 @@ def _parse_sienge_full(data: bytes) -> list:
 from parser_template import parse_template_align
 from rolling_forecast import (calc_competencia,calc_caixa,calc_poc,
                                build_dre_rolling,bdi_matriz_mensal)
-try:
-    from parser_cronograma_sienge import parse_cronograma_sienge
-except ImportError:
-    import pandas as _pd_s
-    def parse_cronograma_sienge(data):
-        df=_pd_s.read_excel(data,header=0)
-        df.columns=[str(c).strip().lower() for c in df.columns]
-        _m={'jan':0,'fev':1,'mar':2,'abr':3,'mai':4,'jun':5,
-            'jul':6,'ago':7,'set':8,'out':9,'nov':10,'dez':11}
-        res={'cpv_real':[0.0]*12,'dop_real':[0.0]*12,'rf_real':[0.0]*12,'ir_real':[0.0]*12}
-        for col in df.columns:
-            for ab,ix in _m.items():
-                if ab in col:
-                    for row in df.itertuples():
-                        try: v=float(getattr(row,col.replace(' ','_'),0) or 0)
-                        except: v=0.0
-                        res['cpv_real'][ix]+=v
-        return res
+from parser_cronograma_sienge import parse_cronograma_sienge
 
 st.set_page_config(page_title="Dashboard Financeiro | Align",
                    page_icon="🏗️", layout="wide",
@@ -494,15 +477,17 @@ def get_rolling_state(nome: str) -> dict:
         st.session_state.rolling[nome] = {
             "meses_reais":  {},
             "cron_orc":     {},
-            "vgv":          {m+1:{"unidades":0,"preco":350000.0} for m in range(12)},
-            "poc_acum":     [8,17,26,35,44,53,62,71,80,89,95,100],
+            "vgv":          {m+1:{"unidades":0,"preco":350000.0} for m in range(24)},
+            "poc_acum":     [8,17,26,35,44,53,62,71,80,89,95,100] + [100]*12,
             "bdi_rate":     14.0,
+            "bdi_mensal":   [14.0]*24,
+            "cub_mensal":   0.5,
             "pct_entrada":  7.0,
             "parcela_un":   1500.0,
             "mes_entrega":  12,
             "g_custos":     10.0,
-            "horizonte":    24,
             "data_inicio":  {"ano":2026,"mes":1},
+            "data_fim":     {"ano":2027,"mes":12},
         }
     return st.session_state.rolling[nome]
 
@@ -957,6 +942,7 @@ def render_dre():
 # ══════════════════════════════════════════════════════════════════════ TAB 2
 @st.fragment
 def render_rolling():
+    import datetime
     MESES_NOME_MAP = {i+1:m for i,m in enumerate(MESES)}
     st.markdown(f"## 📅 Rolling Forecast — {titulo}")
     st.caption("Custos reais via upload SIENGE mensal. Receita projetada por 3 métodos: Competência, Caixa e POC.")
@@ -964,350 +950,631 @@ def render_rolling():
 
     estado = get_rolling_state(titulo)
     _tkey = re.sub(r"\W+","_",titulo)
-    _hc1,_hc2 = st.columns([1,4])
-    N = _hc1.selectbox("⏱️ Horizonte",[12,24,36,48],
-        index=[12,24,36,48].index(estado["horizonte"]),key=f"hz_{_tkey}")
-    _di = estado["data_inicio"]
-    _ao = list(range(2024,2031)); _mo = list(range(1,13))
-    _dc1,_dc2 = _hc2.columns(2)
-    _di_ano = _dc1.selectbox("Ano início",_ao,
-        index=_ao.index(_di["ano"]),key=f"di_ano_{_tkey}")
-    _di_mes = _dc2.selectbox("Mês início",_mo,
-        index=_mo.index(_di["mes"]),  # FIX: sem -1
-        format_func=lambda x:MESES[x-1],key=f"di_mes_{_tkey}")
-    estado["horizonte"]=N
-    estado["data_inicio"]={"ano":_di_ano,"mes":_di_mes}
-    LABELS=gen_labels(N,estado["data_inicio"])
-    if len(estado["vgv"])!=N:
-        estado["vgv"]={m+1:estado["vgv"].get(m+1,{"unidades":0,"preco":350000.0}) for m in range(N)}
-    if len(estado["poc_acum"])!=N:
-        _op=estado["poc_acum"]; estado["poc_acum"]=(_op+[100]*(N-len(_op)))[:N]
+
+    # ── Sub-navegação interna (Fase 6) ─────────────────────────────────
+    _sub_aba = st.radio(
+        "Visualização:",
+        ["⚙️ Configurações", "📊 Resultados"],
+        horizontal=True,
+        key=f"sub_aba_{_tkey}",
+        label_visibility="collapsed"
+    )
+    st.divider()
+
+    # ── PERÍODO DA OBRA (Fase 2) ───────────────────────────────────────
+    st.markdown("**📅 Período da Obra**")
+    _dc1, _dc2, _dc3, _dc4 = st.columns(4)
+    _anos = list(range(2024, 2032))
+    _meses_sel = list(range(1, 13))
+
+    # Garante que data_fim exista (migração de estados antigos)
+    if "data_fim" not in estado:
+        estado["data_fim"] = {"ano": 2027, "mes": 12}
+    # Remove horizonte legado se existir
+    estado.pop("horizonte", None)
+
+    _di_ano = _dc1.selectbox("Ano início", _anos,
+        index=_anos.index(estado["data_inicio"]["ano"]),
+        key=f"di_ano_{_tkey}")
+    _di_mes = _dc2.selectbox("Mês início", _meses_sel,
+        index=_meses_sel.index(estado["data_inicio"]["mes"]),
+        format_func=lambda x: MESES[x-1], key=f"di_mes_{_tkey}")
+    _df_ano = _dc3.selectbox("Ano fim", _anos,
+        index=_anos.index(estado["data_fim"]["ano"]),
+        key=f"df_ano_{_tkey}")
+    _df_mes = _dc4.selectbox("Mês fim", _meses_sel,
+        index=_meses_sel.index(estado["data_fim"]["mes"]),
+        format_func=lambda x: MESES[x-1], key=f"df_mes_{_tkey}")
+
+    estado["data_inicio"] = {"ano": _di_ano, "mes": _di_mes}
+    estado["data_fim"]    = {"ano": _df_ano, "mes": _df_mes}
+
+    # Calcula número de meses entre início e fim (inclusive)
+    _inicio = datetime.date(_di_ano, _di_mes, 1)
+    _fim    = datetime.date(_df_ano, _df_mes, 1)
+    N = (_fim.year - _inicio.year) * 12 + (_fim.month - _inicio.month) + 1
+
+    if N < 1:
+        st.error("⚠️ A data de fim deve ser posterior à data de início.")
+        st.stop()
+    if N > 120:
+        st.error("⚠️ Período máximo: 120 meses (10 anos).")
+        st.stop()
+
+    # ── Ajuste de tamanho das listas (Fase 2.4) ───────────────────────
+    estado["vgv"] = {
+        m+1: estado["vgv"].get(m+1, {"unidades": 0, "preco": 350000.0})
+        for m in range(N)
+    }
+    _op = estado["poc_acum"]
+    if len(_op) < N:
+        _op = _op + [100] * (N - len(_op))
+    estado["poc_acum"] = _op[:N]
+
+    if "bdi_mensal" not in estado:
+        estado["bdi_mensal"] = [estado.get("bdi_rate", 14.0)] * N
+    _bm = estado["bdi_mensal"]
+    if len(_bm) < N:
+        _bm = _bm + [_bm[-1] if _bm else 14.0] * (N - len(_bm))
+    estado["bdi_mensal"] = _bm[:N]
+
+    LABELS = gen_labels(N, estado["data_inicio"])
+
     is_matriz = "matriz" in titulo.lower()
-    # defaults para Matriz (não executa VGV/POC direto)
     poc_vals = list(estado["poc_acum"])
-    vgv_list = [estado["vgv"].get(m+1,{"unidades":0,"preco":350000.0})
+    if len(poc_vals) < N:
+        poc_vals = poc_vals + [100] * (N - len(poc_vals))
+    poc_vals = poc_vals[:N]
+    vgv_list = [estado["vgv"].get(m+1, {"unidades": 0, "preco": 350000.0})
                 for m in range(N)]
 
-    # ── SEÇÃO 1: CONFIGURAÇÕES ────────────────────────────────────────────
-    with st.expander("⚙️ Configurações da Obra / SPE", expanded=False):
-        cf1,cf2,cf3,cf4,cf5 = st.columns(5)
-        bdi_rate   = cf1.number_input("BDI Matriz (%)",   value=estado["bdi_rate"],  step=0.5, format="%.1f",
-                                       help="% cobrado sobre CPV da obra — receita da Matriz")
-        pct_ent    = cf2.number_input("Entrada (%)",       value=estado["pct_entrada"],step=0.5, format="%.1f",
-                                       help="% do VGV pago na assinatura/venda")
-        parc_un    = cf3.number_input("Parcela/Un (R$)",   value=estado["parcela_un"], step=100.0,format="%.0f",
-                                       help="Valor da parcela mensal por unidade durante a obra")
-        mes_ent    = int(cf4.number_input("Mês de Entrega",value=float(estado["mes_entrega"]),
-                                           min_value=1.,max_value=float(N),step=1.,format="%.0f",
-                                           help="Índice do mês de entrega no horizonte (1-N)"))
-        g_cust     = cf5.number_input("Δ Custos (%)",      value=estado["g_custos"],  step=1.0, format="%.1f",
-                                       help="Crescimento anual dos custos sobre a base 2025")
-        estado.update({"bdi_rate":bdi_rate,"pct_entrada":pct_ent,"parcela_un":parc_un,
-                       "mes_entrega":mes_ent,"g_custos":g_cust})
+    st.caption(f"🗓️ Horizonte: **{N} meses** ({MESES[_di_mes-1]}/{_di_ano} → {MESES[_df_mes-1]}/{_df_ano})")
 
-    # ── SEÇÃO 2: UPLOAD MENSAL SIENGE ────────────────────────────────────
-    st.markdown("### 📎 Dados Reais — Upload Mensal SIENGE")
-    # Status dos meses
-    badges = ""
-    for m in range(12):
-        tem = (m+1) in estado["meses_reais"]
-        cor = "#16a34a" if tem else "#94a3b8"
-        badges += f'<span style="background:{cor};color:#fff;padding:2px 8px;border-radius:12px;margin:2px;font-size:12px">{MESES[m]}</span>'
-    st.markdown(badges, unsafe_allow_html=True)
+    # ═══════════════════════════ ABA CONFIGURAÇÕES ═════════════════════
+    if _sub_aba == "⚙️ Configurações":
+        # ── SEÇÃO 1: CONFIGURAÇÕES ────────────────────────────────────
+        with st.expander("⚙️ Configurações da Obra / SPE", expanded=False):
+            cf1,cf2,cf3,cf4,cf5 = st.columns(5)
+            bdi_rate   = cf1.number_input("BDI Matriz (%)",   value=estado["bdi_rate"],  step=0.5, format="%.1f",
+                                           help="% cobrado sobre CPV da obra — receita da Matriz")
+            pct_ent    = cf2.number_input("Entrada (%)",       value=estado["pct_entrada"],step=0.5, format="%.1f",
+                                           help="% do VGV pago na assinatura/venda")
+            parc_un    = cf3.number_input("Parcela/Un (R$)",   value=estado["parcela_un"], step=100.0,format="%.0f",
+                                           help="Valor da parcela mensal por unidade durante a obra")
+            mes_ent    = int(cf4.number_input("Mês de Entrega",value=float(estado["mes_entrega"]),
+                                               min_value=1.,max_value=float(N),step=1.,format="%.0f",
+                                               help="Índice do mês de entrega no horizonte (1-N)"))
+            g_cust     = cf5.number_input("Δ Custos (%)",      value=estado["g_custos"],  step=1.0, format="%.1f",
+                                           help="Crescimento anual dos custos sobre a base 2025")
+            estado.update({"bdi_rate":bdi_rate,"pct_entrada":pct_ent,"parcela_un":parc_un,
+                           "mes_entrega":mes_ent,"g_custos":g_cust})
 
-    up_col1, up_col2 = st.columns([1,2])
-    with up_col1:
-        mes_up = st.selectbox("Mês do arquivo:", options=list(range(1,13)),
-                              format_func=lambda x: MESES[x-1], key="mes_up_sel")
-    with up_col2:
-        arq_up = st.file_uploader("Selecione o arquivo SIENGE deste mês",
-                                   type=["xlsx","xls"], key=f"up_mensal_{mes_up}",
-                                   label_visibility="collapsed")
-        if arq_up:
-            _raw = parse_cronograma_sienge(arq_up.read())
-            if "erro" in _raw:
-                st.error(_raw["erro"])
+            # ── BDI mensal (Fase 4) ───────────────────────────────────
+            st.divider()
+            st.markdown("**📊 BDI por Mês (% sobre CPV projetado)**")
+            st.caption("O BDI do passado já foi calculado. Aqui você define apenas os meses futuros.")
+            _meses_futuros = [m+1 for m in range(N) if (m+1) not in estado["meses_reais"]]
+            if _meses_futuros:
+                _bdi_df = pd.DataFrame({
+                    "Mês": [LABELS[m-1] for m in _meses_futuros],
+                    "BDI (%)": [estado["bdi_mensal"][m-1] for m in _meses_futuros],
+                })
+                try:
+                    _bdi_ed = st.data_editor(
+                        _bdi_df,
+                        column_config={
+                            "Mês": st.column_config.TextColumn("Mês", disabled=True),
+                            "BDI (%)": st.column_config.NumberColumn(
+                                "BDI (%)", min_value=0.0, max_value=100.0,
+                                step=0.5, format="%.1f%%"
+                            ),
+                        },
+                        hide_index=True,
+                        use_container_width=True,
+                        key=f"bdi_ed_{_tkey}"
+                    )
+                    for _i, _m in enumerate(_meses_futuros):
+                        estado["bdi_mensal"][_m-1] = float(_bdi_ed.iloc[_i]["BDI (%)"])
+                except Exception:
+                    st.dataframe(_bdi_df, use_container_width=True)
             else:
-                res_up = {
-                    "ok":      True,
-                    "cpv":    -abs(_raw["cpv_real"]),
-                    "desp_op":-abs(_raw["dop_real"]),
-                    "res_fin":-abs(_raw["rf_real"]),
-                    "ir":     -abs(_raw["ir_real"]),
-                    "imp_rec": 0.0,
-                }
-                estado["meses_reais"][mes_up] = res_up
-                safe_toast(f"{MESES[mes_up-1]} carregado — CPV {fmt(abs(res_up['cpv']))}", "✅")
-                st.rerun()
+                st.info("Todos os meses já têm dados reais. Nenhum BDI futuro a configurar.")
 
-    if estado["meses_reais"]:
-        with st.expander(f"📋 Ver custos reais carregados ({len(estado['meses_reais'])} meses)"):
-            rows_r = []
-            for mes_k in sorted(estado["meses_reais"]):
-                rd = estado["meses_reais"][mes_k]
-                rows_r.append({"Mês":MESES[mes_k-1],
-                               "CPV":rd.get("cpv",0),"Desp.Op.":rd.get("desp_op",0),
-                               "Res.Fin.":rd.get("res_fin",0),"IR":rd.get("ir",0)})
-            df_r = pd.DataFrame(rows_r).set_index("Mês")
-            st.dataframe(df_r.style.format("R$ {:,.0f}"), use_container_width=True)
+            # ── CUB mensal (Fase 4) ───────────────────────────────────
+            st.divider()
+            st.markdown("**📈 Atualização pelo CUB**")
+            st.caption("O CUB atualiza os custos projetados e as parcelas a receber. Insira o % de variação mensal esperado.")
+            _cub_col1, _cub_col2 = st.columns(2)
+            cub_mensal = _cub_col1.number_input(
+                "CUB mensal esperado (%)",
+                value=estado.get("cub_mensal", 0.5),
+                min_value=0.0, max_value=5.0,
+                step=0.1, format="%.2f",
+                help="Inflação mensal da construção civil. Atualiza custos futuros e parcelas."
+            )
+            estado["cub_mensal"] = cub_mensal
+            st.caption(f"Impacto: custo e parcelas crescem {cub_mensal:.2f}% ao mês na projeção.")
 
-    st.divider()
-    # ── SEÇÃO 3: VGV + POC ───────────────────────────────────────────────
-    if not is_matriz:  # LOG-03
-        sv1, sv2 = st.columns([3,2])
-        with sv1:
-            st.markdown("### 🏠 Projeção de Vendas — VGV")
-            st.caption(f"⚙️ Configurado para: **{titulo}**")
-            _titulo_safe = re.sub(r"\W+","_",titulo)
-            def _save_vgv():
-                _ed=st.session_state.get(f"vgv_ed_{_titulo_safe}")
-                if _ed is not None:
-                    for _m in range(12):
-                        estado["vgv"][_m+1]["unidades"]=float(_ed.iloc[_m]["Unidades"])
-                        estado["vgv"][_m+1]["preco"]   =float(_ed.iloc[_m]["Preço/Un"])
-            vgv_df_in = pd.DataFrame({
-                "Mês":     LABELS,
-                "Unidades":[int(estado["vgv"][m+1]["unidades"]) for m in range(N)],
-                "Preço/Un":[float(estado["vgv"][m+1]["preco"])  for m in range(N)],
-            })
-            try:
-                vgv_ed = st.data_editor(
-                    vgv_df_in,
-                    column_config={
-                        "Mês":      st.column_config.TextColumn("Mês",  disabled=True),
-                        "Unidades": st.column_config.NumberColumn("Unidades",min_value=0,step=1),
-                        "Preço/Un": st.column_config.NumberColumn("Preço/Un (R$)",min_value=0,format="R$ %.0f"),
-                    },
-                    hide_index=True, use_container_width=True, height=460,
-                key=f"vgv_ed_{_titulo_safe}", on_change=_save_vgv
+            # ── Upload Cronograma (Fase 3) ────────────────────────────
+            st.divider()
+            st.markdown("**📂 Cronograma Físico-Financeiro**")
+            st.caption("Suba aqui o Excel do SIENGE com os custos planejados mês a mês para toda a obra.")
+            arq_cron = st.file_uploader(
+                "Cronograma (.xlsx)",
+                type=["xlsx", "xls"],
+                key=f"up_cronograma_{_tkey}",
+                label_visibility="collapsed"
+            )
+            if arq_cron:
+                _cron_raw = parse_cronograma_sienge(arq_cron.read())
+                if "erro" in _cron_raw:
+                    st.error(f"❌ {_cron_raw['erro']}")
+                else:
+                    estado["cronograma"] = _cron_raw
+                    estado["data_fim"] = _cron_raw["data_fim"]
+                    _fim_sel = estado["data_fim"]
+                    _fim_arq = _cron_raw["data_fim"]
+                    if _fim_sel != _fim_arq:
+                        st.warning(
+                            f"⚠️ O mês de fim selecionado "
+                            f"({MESES[_fim_sel['mes']-1]}/{_fim_sel['ano']}) "
+                            f"não bate com o último mês do arquivo "
+                            f"({MESES[_fim_arq['mes']-1]}/{_fim_arq['ano']}). "
+                            f"As datas foram ajustadas automaticamente."
+                        )
+                    safe_toast(
+                        f"Cronograma carregado: "
+                        f"{MESES[_cron_raw['data_inicio']['mes']-1]}/{_cron_raw['data_inicio']['ano']} "
+                        f"→ {MESES[_cron_raw['data_fim']['mes']-1]}/{_cron_raw['data_fim']['ano']} "
+                        f"({_cron_raw['n_meses']} meses)", "✅"
+                    )
+                    st.rerun()
+
+            if "cronograma" in estado:
+                _cr = estado["cronograma"]
+                st.success(
+                    f"✅ Cronograma carregado: "
+                    f"{MESES[_cr['data_inicio']['mes']-1]}/{_cr['data_inicio']['ano']} → "
+                    f"{MESES[_cr['data_fim']['mes']-1]}/{_cr['data_fim']['ano']} · "
+                    f"{_cr['n_meses']} meses · "
+                    f"Total: R$ {sum(_cr['custos_por_mes']):,.0f}"
                 )
-                for m in range(12):
-                    estado["vgv"][m+1]["unidades"] = float(vgv_ed.iloc[m]["Unidades"])
-                    estado["vgv"][m+1]["preco"]    = float(vgv_ed.iloc[m]["Preço/Un"])
-            except Exception:
-                st.dataframe(vgv_df_in, use_container_width=True)
-            vgv_total = sum(estado["vgv"][m+1]["unidades"]*estado["vgv"][m+1]["preco"] for m in range(12))
-            st.metric("VGV Total Projetado", fmt(vgv_total))
 
-        with sv2:
-            st.markdown("### 📈 Avanço Físico — POC (% acumulado)")
-            st.caption("% de obra concluída ao fim de cada mês (0–100).")
-            poc_vals=[]
-            for _gs in range(0,N,3):
-                _grp=list(range(_gs,min(_gs+3,N)))
-                _pc=st.columns(len(_grp))
-                for _ci,i in enumerate(_grp):
-                    with _pc[_ci]:
-                        poc_vals.append(st.number_input(
-                            LABELS[i],0,100,estado["poc_acum"][i],
-                            step=1,key=f"poc_{i}_{_titulo_safe}"))
-            estado["poc_acum"]=poc_vals
+        # ── SEÇÃO 2: UPLOAD MENSAL SIENGE ────────────────────────────
+        st.markdown("### 📎 Dados Reais — Upload Mensal SIENGE")
+        badges = ""
+        for m in range(N):
+            tem = (m+1) in estado["meses_reais"]
+            cor = "#16a34a" if tem else "#94a3b8"
+            badges += f'<span style="background:{cor};color:#fff;padding:2px 8px;border-radius:12px;margin:2px;font-size:12px">{LABELS[m]}</span>'
+        st.markdown(badges, unsafe_allow_html=True)
 
-            # Mini Curva S
-            poc_arr = np.array(poc_vals)
-            fg_poc = go.Figure()
-            fg_poc.add_scatter(x=MESES, y=poc_arr, mode="lines+markers",
-                               line=dict(color=CHART_BLUE,width=2),
-                               fill="tozeroy", fillcolor="rgba(37,99,235,0.12)",
-                               marker=dict(size=5))
-            fg_poc.update_layout(
-        title="Curva S", height=200, plot_bgcolor=WHITE, paper_bgcolor=WHITE,
-        font=dict(family="Inter,sans-serif",color=TEXT,size=11),
-        template="plotly_white", showlegend=False, margin=dict(l=0,r=0,t=35,b=20))
-            fg_poc.update_yaxes(ticksuffix="%", gridcolor=BORDER, range=[0,110])
-            fg_poc.update_xaxes(showgrid=False, tickfont=dict(size=9))
-            st.plotly_chart(fg_poc, use_container_width=True)
+        up_col1, up_col2 = st.columns([1,2])
+        with up_col1:
+            _mes_opcoes = list(range(1, N+1))
+            mes_up = st.selectbox("Mês do arquivo:", options=_mes_opcoes,
+                                  format_func=lambda x: LABELS[x-1] if x <= len(LABELS) else str(x),
+                                  key="mes_up_sel")
+        with up_col2:
+            arq_up = st.file_uploader("Selecione o arquivo SIENGE deste mês",
+                                       type=["xlsx","xls"], key=f"up_mensal_{mes_up}",
+                                       label_visibility="collapsed")
+            if arq_up:
+                from parser_sienge import parse_sienge
+                _raw = parse_sienge(arq_up.read())
+                if "erro" in _raw:
+                    st.error(_raw["erro"])
+                else:
+                    _dados = _raw["dados"]
+                    # Pega o índice do mês dentro do array de 12
+                    _m_idx = (mes_up - 1) % 12
+                    res_up = {
+                        "ok":      True,
+                        "cpv":     float(_dados["cpv"][_m_idx]) if _m_idx < len(_dados["cpv"]) else 0.0,
+                        "desp_op": float(_dados["desp_op"][_m_idx]) if _m_idx < len(_dados["desp_op"]) else 0.0,
+                        "res_fin": float(_dados["res_fin"][_m_idx]) if _m_idx < len(_dados["res_fin"]) else 0.0,
+                        "ir":      float(_dados["ir"][_m_idx]) if _m_idx < len(_dados["ir"]) else 0.0,
+                        "imp_rec": float(_dados["imp_rec"][_m_idx]) if _m_idx < len(_dados["imp_rec"]) else 0.0,
+                    }
+                    estado["meses_reais"][mes_up] = res_up
+                    # Auto-avança início da projeção (Fase 3.3)
+                    if estado["meses_reais"]:
+                        _ultimo_real = max(estado["meses_reais"].keys())
+                        _base_dt = datetime.date(
+                            estado["data_inicio"]["ano"],
+                            estado["data_inicio"]["mes"], 1
+                        )
+                        _prox_mes_idx = _ultimo_real
+                        _prox_dt = datetime.date(
+                            _base_dt.year + (_base_dt.month + _prox_mes_idx - 1) // 12,
+                            (_base_dt.month + _prox_mes_idx - 1) % 12 + 1, 1
+                        )
+                        estado["inicio_projecao"] = {"ano": _prox_dt.year, "mes": _prox_dt.month}
+                    safe_toast(f"{LABELS[mes_up-1]} carregado — CPV {fmt(abs(res_up['cpv']))}", "✅")
+                    st.rerun()
 
+        if estado["meses_reais"]:
+            with st.expander(f"📋 Ver custos reais carregados ({len(estado['meses_reais'])} meses)"):
+                rows_r = []
+                for mes_k in sorted(estado["meses_reais"]):
+                    rd = estado["meses_reais"][mes_k]
+                    lbl_k = LABELS[mes_k-1] if mes_k <= len(LABELS) else f"M{mes_k}"
+                    rows_r.append({"Mês":lbl_k,
+                                   "CPV":rd.get("cpv",0),"Desp.Op.":rd.get("desp_op",0),
+                                   "Res.Fin.":rd.get("res_fin",0),"IR":rd.get("ir",0)})
+                df_r = pd.DataFrame(rows_r).set_index("Mês")
+                st.dataframe(df_r.style.format("R$ {:,.0f}"), use_container_width=True)
 
-    else:  # LOG-03 Matriz
-        st.markdown("### 🏦 Receita BDI — Matriz")
-        st.info("A **Matriz** não executa obra. Receita = BDI sobre CPV das SPEs.", icon="ℹ️")
+        st.divider()
+        # ── SEÇÃO 3: VGV + POC ───────────────────────────────────────
+        if not is_matriz:
+            sv1, sv2 = st.columns([3,2])
+            with sv1:
+                st.markdown("### 🏠 Projeção de Vendas — VGV")
+                st.caption(f"⚙️ Configurado para: **{titulo}**")
+                _titulo_safe = re.sub(r"\W+","_",titulo)
+                def _save_vgv():
+                    _ed=st.session_state.get(f"vgv_ed_{_titulo_safe}")
+                    if _ed is not None:
+                        for _m in range(N):
+                            estado["vgv"][_m+1]["unidades"]=float(_ed.iloc[_m]["Unidades"])
+                            estado["vgv"][_m+1]["preco"]   =float(_ed.iloc[_m]["Preço/Un"])
+                vgv_df_in = pd.DataFrame({
+                    "Mês":     LABELS,
+                    "Unidades":[int(estado["vgv"][m+1]["unidades"]) for m in range(N)],
+                    "Preço/Un":[float(estado["vgv"][m+1]["preco"])  for m in range(N)],
+                })
+                try:
+                    vgv_ed = st.data_editor(
+                        vgv_df_in,
+                        column_config={
+                            "Mês":      st.column_config.TextColumn("Mês",  disabled=True),
+                            "Unidades": st.column_config.NumberColumn("Unidades",min_value=0,step=1),
+                            "Preço/Un": st.column_config.NumberColumn("Preço/Un (R$)",min_value=0,format="R$ %.0f"),
+                        },
+                        hide_index=True, use_container_width=True, height=460,
+                    key=f"vgv_ed_{_titulo_safe}", on_change=_save_vgv
+                    )
+                    for m in range(N):
+                        estado["vgv"][m+1]["unidades"] = float(vgv_ed.iloc[m]["Unidades"])
+                        estado["vgv"][m+1]["preco"]    = float(vgv_ed.iloc[m]["Preço/Un"])
+                except Exception:
+                    st.dataframe(vgv_df_in, use_container_width=True)
+                vgv_total = sum(estado["vgv"][m+1]["unidades"]*estado["vgv"][m+1]["preco"] for m in range(N))
+                st.metric("VGV Total Projetado", fmt(vgv_total))
+
+            with sv2:
+                st.markdown("### 📈 Avanço Físico — POC (% acumulado)")
+                st.caption("% de obra concluída ao fim de cada mês (0–100).")
+                poc_vals=[]
+                for _gs in range(0,N,3):
+                    _grp=list(range(_gs,min(_gs+3,N)))
+                    _pc=st.columns(len(_grp))
+                    for _ci,i in enumerate(_grp):
+                        with _pc[_ci]:
+                            poc_vals.append(st.number_input(
+                                LABELS[i],0,100,estado["poc_acum"][i],
+                                step=1,key=f"poc_{i}_{_titulo_safe}"))
+                estado["poc_acum"]=poc_vals
+
+                # Mini Curva S
+                poc_arr = np.array(poc_vals)
+                fg_poc = go.Figure()
+                fg_poc.add_scatter(x=LABELS, y=poc_arr, mode="lines+markers",
+                                   line=dict(color=CHART_BLUE,width=2),
+                                   fill="tozeroy", fillcolor="rgba(37,99,235,0.12)",
+                                   marker=dict(size=5))
+                fg_poc.update_layout(
+            title="Curva S", height=200, plot_bgcolor=WHITE, paper_bgcolor=WHITE,
+            font=dict(family="Inter,sans-serif",color=TEXT,size=11),
+            template="plotly_white", showlegend=False, margin=dict(l=0,r=0,t=35,b=20))
+                fg_poc.update_yaxes(ticksuffix="%", gridcolor=BORDER, range=[0,110])
+                fg_poc.update_xaxes(showgrid=False, tickfont=dict(size=9))
+                st.plotly_chart(fg_poc, use_container_width=True)
+
+        else:
+            st.markdown("### 🏦 Receita BDI — Matriz")
+            st.info("A **Matriz** não executa obra. Receita = BDI sobre CPV das SPEs.", icon="ℹ️")
+            if "rolling" in st.session_state:
+                _spes={k:v for k,v in st.session_state.rolling.items() if k!=titulo}
+                if _spes:
+                    _rows=[{"SPE":k,"BDI (%)":f'{estado["bdi_rate"]:.1f}%'} for k,v in _spes.items()]
+                    st.dataframe(pd.DataFrame(_rows),use_container_width=True,hide_index=True)
+                else: st.caption("Nenhuma SPE carregada ainda.")
+
+        # Atualiza vgv_list e poc_vals após edição
+        vgv_list = [estado["vgv"].get(m+1,{"unidades":0,"preco":350000.0}) for m in range(N)]
+        poc_vals = list(estado["poc_acum"])
+        if len(poc_vals) < N:
+            poc_vals = poc_vals + [100] * (N - len(poc_vals))
+        poc_vals = poc_vals[:N]
+
+    # ═══════════════════════════ ABA RESULTADOS ════════════════════════
+    # Prepara dados comuns para ambas as abas (cron_orc, receitas)
+    # ── Monta cron_orc a partir do cronograma carregado (Fase 3.2) ────
+    cron_orc_proj = {}
+    if "cronograma" in estado:
+        _cr = estado["cronograma"]
+        _cr_inicio_mes = _cr["data_inicio"]["mes"]
+        _cr_inicio_ano = _cr["data_inicio"]["ano"]
+        for _m_idx in range(N):
+            _base = datetime.date(estado["data_inicio"]["ano"],
+                                  estado["data_inicio"]["mes"], 1)
+            _atual = datetime.date(
+                _base.year + (_base.month + _m_idx - 1) // 12,
+                (_base.month + _m_idx - 1) % 12 + 1, 1
+            )
+            _offset_cron = (
+                (_atual.year - _cr_inicio_ano) * 12 +
+                (_atual.month - _cr_inicio_mes)
+            )
+            if 0 <= _offset_cron < _cr["n_meses"]:
+                _custo_cron = _cr["custos_por_mes"][_offset_cron]
+                _mes_num = _m_idx + 1
+                if _mes_num not in estado["meses_reais"]:
+                    cron_orc_proj[_mes_num] = {
+                        "cpv": -abs(_custo_cron),
+                        "desp_op": 0.0
+                    }
+
+    # Aplica CUB acumulado (Fase 4.3)
+    _n_real = len(estado["meses_reais"])
+    for _m_idx in range(N):
+        _mes_num = _m_idx + 1
+        if _mes_num in cron_orc_proj:
+            _meses_apos_real = _mes_num - _n_real
+            if _meses_apos_real > 0:
+                _fator_cub = (1 + estado.get("cub_mensal", 0.5) / 100) ** _meses_apos_real
+                cron_orc_proj[_mes_num]["cpv"] *= _fator_cub
+
+    estado["cron_orc"] = cron_orc_proj
+
+    # Variáveis de configuração (podem não estar definidas se veio direto para Resultados)
+    bdi_rate = estado["bdi_rate"]
+    pct_ent  = estado["pct_entrada"]
+    parc_un  = estado["parcela_un"]
+    mes_ent  = estado["mes_entrega"]
+    g_cust   = estado["g_custos"]
+
+    if _sub_aba == "📊 Resultados":
+        # Verifica se há dados suficientes
+        _tem_vgv = any(estado["vgv"][m+1]["unidades"] > 0 for m in range(N))
+        if not _tem_vgv and not is_matriz:
+            st.info("ℹ️ Configure os dados na aba ⚙️ Configurações para ver os resultados.")
+            return
+
+        # ── KPIs de progresso da obra (Fase 5) ───────────────────────
+        valor_total_cronograma = 0.0
+        valor_ja_gasto = 0.0
+        valor_falta_gastar = 0.0
+
+        if "cronograma" in estado:
+            _cr = estado["cronograma"]
+            valor_total_cronograma = sum(_cr["custos_por_mes"])
+            for _mes_k, _rd in estado["meses_reais"].items():
+                valor_ja_gasto += abs(_rd.get("cpv", 0))
+            valor_falta_gastar = max(valor_total_cronograma - valor_ja_gasto, 0)
+
+            st.markdown("### 🏗️ Progresso da Obra")
+            _pk1, _pk2, _pk3, _pk4 = st.columns(4)
+            _pk1.metric("Orçamento Total", fmt(valor_total_cronograma))
+            _pk2.metric("Já Gasto (real)", fmt(valor_ja_gasto))
+            _pk3.metric("Falta Gastar", fmt(valor_falta_gastar))
+            _pct_exec = (valor_ja_gasto / valor_total_cronograma * 100) if valor_total_cronograma > 0 else 0
+            _pk4.metric("% Executado", f"{_pct_exec:.1f}%")
+            st.progress(min(_pct_exec / 100, 1.0))
+
+        # ── Gráfico Planejado vs Real (Fase 5) ───────────────────────
+        if "cronograma" in estado and estado["meses_reais"]:
+            st.markdown("### 📊 Custo Mensal: Planejado vs Real")
+            _cr = estado["cronograma"]
+            _labels_graf = LABELS
+            _planejado = [0.0] * N
+            _realizado  = [0.0] * N
+
+            for _m_idx in range(N):
+                _base = datetime.date(estado["data_inicio"]["ano"],
+                                      estado["data_inicio"]["mes"], 1)
+                _atual = datetime.date(
+                    _base.year + (_base.month + _m_idx - 1) // 12,
+                    (_base.month + _m_idx - 1) % 12 + 1, 1
+                )
+                _offset = (
+                    (_atual.year - _cr["data_inicio"]["ano"]) * 12 +
+                    (_atual.month - _cr["data_inicio"]["mes"])
+                )
+                if 0 <= _offset < _cr["n_meses"]:
+                    _planejado[_m_idx] = _cr["custos_por_mes"][_offset]
+
+            for _mes_k, _rd in estado["meses_reais"].items():
+                if 1 <= _mes_k <= N:
+                    _realizado[_mes_k - 1] = abs(_rd.get("cpv", 0))
+
+            fg_pv = go.Figure()
+            fg_pv.add_bar(x=_labels_graf, y=_planejado, name="Planejado",
+                          marker_color=CHART_BLUE, opacity=0.7)
+            fg_pv.add_bar(x=_labels_graf, y=_realizado, name="Realizado",
+                          marker_color=CHART_TEAL, opacity=0.9)
+            fg_pv.update_layout(
+                title="Custo Mensal — Planejado vs Realizado",
+                barmode="group", **PL(360)
+            )
+            fg_pv.update_xaxes(showgrid=False)
+            fg_pv.update_yaxes(gridcolor=BORDER, tickprefix="R$ ", tickformat=",.0f")
+            st.plotly_chart(fg_pv, use_container_width=True)
+
+        st.divider()
+        # ── SEÇÃO 4: DRE ROLLING — 3 MÉTODOS ────────────────────────
+        st.markdown("### 💰 DRE Rolling Forecast — 3 Métodos de Receita")
+        vgv_list = [estado["vgv"].get(m+1,{"unidades":0,"preco":350000.0}) for m in range(N)]
+
+        rec_comp  = calc_competencia(vgv_list)
+        rec_caixa = calc_caixa(vgv_list, pct_ent, parc_un, mes_ent)
+        rec_poc   = calc_poc(vgv_list, poc_vals)
+
+        bdi_rec = np.zeros(N)
         if "rolling" in st.session_state:
-            _spes={k:v for k,v in st.session_state.rolling.items() if k!=titulo}
-            if _spes:
-                _rows=[{"SPE":k,"BDI (%)":f'{estado["bdi_rate"]:.1f}%'} for k,v in _spes.items()]
-                st.dataframe(pd.DataFrame(_rows),use_container_width=True,hide_index=True)
-            else: st.caption("Nenhuma SPE carregada ainda.")
+            spes = {k:v for k,v in st.session_state.rolling.items() if k != titulo}
+            if spes:
+                bdi_rec = bdi_matriz_mensal(spes, N)
 
-    st.divider()
-    # ── SEÇÃO 4: DRE ROLLING — 3 MÉTODOS ────────────────────────────────
-    st.markdown("### 💰 DRE Rolling Forecast — 3 Métodos de Receita")
-    vgv_list = [estado["vgv"].get(m+1,{"unidades":0,"preco":350000.0}) for m in range(N)]
+        METODOS = [
+            ("💰 Competência", rec_comp,  "Reconhece VGV no mês da venda"),
+            ("🏦 Caixa",        rec_caixa, f"Entrada {pct_ent:.0f}% + R${parc_un:,.0f}/mês + saldo entrega"),
+            ("📊 POC",          rec_poc,   "VGV acumulado × avanço físico incremental"),
+            ("⚖️ Comparativo",  None,      ""),
+        ]
+        tabs_m = st.tabs([m[0] for m in METODOS])
 
-    rec_comp  = calc_competencia(vgv_list)
-    rec_caixa = calc_caixa(vgv_list, pct_ent, parc_un, mes_ent)
-    rec_poc   = calc_poc(vgv_list, poc_vals)
+        def _render_metodo(tab, rec_arr, nome_met, descr):
+            with tab:
+                if rec_arr is None: return
+                res = build_dre_rolling(emp_base, estado["meses_reais"],
+                                        rec_arr, estado["cron_orc"], g_cust)
+                dr = res["dre"]; ir = res["is_real"]
 
-    bdi_rec = np.zeros(12)
-    if "rolling" in st.session_state:
-        spes = {k:v for k,v in st.session_state.rolling.items() if k != titulo}
-        if spes:
-            bdi_rec = bdi_matriz_mensal(spes)
+                rb_t  = float(dr["rec_bruta"].sum()); ebt_t = float(dr["ebitda"].sum())
+                ll_t  = float(dr["lucro_liq"].sum())
+                mg_e  = ebt_t/rb_t*100 if rb_t!=0 else 0
+                mg_l  = ll_t/rb_t*100  if rb_t!=0 else 0
+                n_real= int(ir.sum())
 
-    METODOS = [
-        ("💰 Competência", rec_comp,  "Reconhece VGV no mês da venda"),
-        ("🏦 Caixa",        rec_caixa, f"Entrada {pct_ent:.0f}% + R${parc_un:,.0f}/mês + saldo entrega"),
-        ("📊 POC",          rec_poc,   "VGV acumulado × avanço físico incremental"),
-        ("⚖️ Comparativo",  None,      ""),
-    ]
-    tabs_m = st.tabs([m[0] for m in METODOS])
+                st.caption(f"**{nome_met}** — {descr} | 🟦 {n_real} mês(es) real(is) | ░ projetado")
+                km1,km2,km3,km4 = st.columns(4)
+                km1.metric("Receita Bruta", fmt(rb_t))
+                km2.metric("EBITDA",        fmt(ebt_t), f"{mg_e:+.1f}%", delta_color="normal")
+                km3.metric("Lucro Líquido", fmt(ll_t),  f"{mg_l:+.1f}%", delta_color="normal")
+                km4.metric("BDI Matriz",    fmt(float(bdi_rec.sum())),
+                           "sobre CPV das SPEs", delta_color="off")
 
-    def _render_metodo(tab, rec_arr, nome_met, descr):
-        with tab:
-            if rec_arr is None: return
-            res = build_dre_rolling(emp_base, estado["meses_reais"],
-                                    rec_arr, estado["cron_orc"], g_cust)
-            dr = res["dre"]; ir = res["is_real"]
+                def bar_colors(base_hex, is_real_mask, alpha_proj=0.35):
+                    import re as _re
+                    r,g,b = tuple(int(base_hex.lstrip("#")[i:i+2],16) for i in (0,2,4))
+                    return [base_hex if r_flag else
+                            f"rgba({r},{g},{b},{alpha_proj})"
+                            for r_flag in is_real_mask]
 
-            rb_t  = float(dr["rec_bruta"].sum()); ebt_t = float(dr["ebitda"].sum())
-            ll_t  = float(dr["lucro_liq"].sum())
-            mg_e  = ebt_t/rb_t*100 if rb_t!=0 else 0
-            mg_l  = ll_t/rb_t*100  if rb_t!=0 else 0
-            n_real= int(ir.sum())
+                fg = go.Figure()
+                fg.add_bar(x=LABELS, y=dr["rec_bruta"], name="Receita Bruta",
+                           marker_color=bar_colors(CHART_BLUE,    ir))
+                fg.add_bar(x=LABELS, y=dr["cpv"],       name="CPV",
+                           marker_color=bar_colors(SOFT_RED,      ir))
+                fg.add_bar(x=LABELS, y=dr["desp_op"],   name="Desp.Op.",
+                           marker_color=bar_colors(CHART_NAVY,    ir))
+                fg.add_scatter(x=LABELS, y=dr["ebitda"], name="EBITDA",
+                               mode="lines+markers",
+                               line=dict(color=GOLD,width=2.5,
+                                         dash="solid" if ir.all() else "dot"),
+                               marker=dict(size=7,
+                                           color=[GOLD if r else f"rgba(234,179,8,0.4)" for r in ir]))
+                if n_real > 0 and n_real < N:
+                    fg.add_vline(x=n_real-0.5, line_dash="dash", line_color=GRAY,
+                                 line_width=1.5,
+                                 annotation_text="Real | Proj",
+                                 annotation_font_size=10)
+                fg.update_layout(title=f"DRE Mensal — {nome_met}",
+                                 barmode="relative", **PL(360))
+                fg.update_xaxes(showgrid=False)
+                fg.update_yaxes(gridcolor=BORDER,tickprefix="R$ ",tickformat=",.0f")
+                st.plotly_chart(fg, use_container_width=True)
 
-            st.caption(f"**{nome_met}** — {descr} | 🟦 {n_real} mês(es) real(is) | ░ projetado")
-            km1,km2,km3,km4 = st.columns(4)
-            km1.metric("Receita Bruta", fmt(rb_t))
-            km2.metric("EBITDA",        fmt(ebt_t), f"{mg_e:+.1f}%", delta_color="normal")
-            km3.metric("Lucro Líquido", fmt(ll_t),  f"{mg_l:+.1f}%", delta_color="normal")
-            km4.metric("BDI Matriz",    fmt(float(bdi_rec.sum())),
-                       "sobre CPV das SPEs", delta_color="off")
+                # Tabela DRE
+                LINHAS = [("Receita Bruta","rec_bruta"),("Impostos","imp_rec"),
+                          ("Receita Líquida","rec_liq"),("CPV","cpv"),
+                          ("Lucro Bruto","lucro_bruto"),("Desp. Op.","desp_op"),
+                          ("EBITDA","ebitda"),("Res. Financeiro","res_fin"),
+                          ("IR / CSLL","ir"),("Lucro Líquido","lucro_liq")]
+                TOTS = {"Receita Líquida","Lucro Bruto","EBITDA","Lucro Líquido"}
+                col_lbl = []
+                for m_i in range(N):
+                    col_lbl.append(f"✅{LABELS[m_i]}" if ir[m_i] else LABELS[m_i])
+                rows_t = []
+                for lbl,key in LINHAS:
+                    row={"Linha DRE":lbl}
+                    for m_i,cl in enumerate(col_lbl):
+                        row[cl]=float(dr[key][m_i])
+                    row["TOTAL"]=float(dr[key].sum())
+                    rows_t.append(row)
+                df_t = pd.DataFrame(rows_t).set_index("Linha DRE")
 
-            # Cores: real=sólido | proj=transparente
-            def bar_colors(base_hex, is_real_mask, alpha_proj=0.35):
-                import re as _re
-                r,g,b = tuple(int(base_hex.lstrip("#")[i:i+2],16) for i in (0,2,4))
-                return [base_hex if r_flag else
-                        f"rgba({r},{g},{b},{alpha_proj})"
-                        for r_flag in is_real_mask]
+                def hl_t(r):
+                    return ([f"background-color:{BLIGHT};font-weight:700;color:{NAVY}"]*len(r)
+                            if r.name in TOTS else [""]*len(r))
+                def cn_t(v):
+                    try: return f"color:{SOFT_RED}" if float(v)<0 else ""
+                    except: return ""
+                fmt_t = {c:"R$ {:,.0f}" for c in df_t.columns}
+                try:    st_df = df_t.style.format(fmt_t).apply(hl_t,axis=1).map(cn_t)
+                except: st_df = df_t.style.format(fmt_t).apply(hl_t,axis=1).applymap(cn_t)
+                st.dataframe(st_df, use_container_width=True, height=380)
 
-            fg = go.Figure()
-            fg.add_bar(x=MESES, y=dr["rec_bruta"], name="Receita Bruta",
-                       marker_color=bar_colors(CHART_BLUE,    ir))
-            fg.add_bar(x=MESES, y=dr["cpv"],       name="CPV",
-                       marker_color=bar_colors(SOFT_RED,      ir))
-            fg.add_bar(x=MESES, y=dr["desp_op"],   name="Desp.Op.",
-                       marker_color=bar_colors(CHART_NAVY,    ir))
-            fg.add_scatter(x=MESES, y=dr["ebitda"], name="EBITDA",
-                           mode="lines+markers",
-                           line=dict(color=GOLD,width=2.5,
-                                     dash="solid" if ir.all() else "dot"),
-                           marker=dict(size=7,
-                                       color=[GOLD if r else f"rgba(234,179,8,0.4)" for r in ir]))
-            if n_real > 0 and n_real < 12:
-                fg.add_vline(x=n_real-0.5, line_dash="dash", line_color=GRAY,
-                             line_width=1.5,
-                             annotation_text="Real | Proj",
-                             annotation_font_size=10)
-            fg.update_layout(title=f"DRE Mensal — {nome_met}",
-                             barmode="relative", **PL(360))
-            fg.update_xaxes(showgrid=False)
-            fg.update_yaxes(gridcolor=BORDER,tickprefix="R$ ",tickformat=",.0f")
-            st.plotly_chart(fg, use_container_width=True)
+                st.download_button(f"📥 Exportar {nome_met} em Excel",
+                                   data=excel_dre(df_t, f"RF_{nome_met}"),
+                                   file_name=f"RF_{nome_met}_{titulo.replace(' ','_')}.xlsx",
+                                   mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                   key=f"dl_rf_{nome_met}")
 
-            # Tabela DRE
-            LINHAS = [("Receita Bruta","rec_bruta"),("Impostos","imp_rec"),
-                      ("Receita Líquida","rec_liq"),("CPV","cpv"),
-                      ("Lucro Bruto","lucro_bruto"),("Desp. Op.","desp_op"),
-                      ("EBITDA","ebitda"),("Res. Financeiro","res_fin"),
-                      ("IR / CSLL","ir"),("Lucro Líquido","lucro_liq")]
-            TOTS = {"Receita Líquida","Lucro Bruto","EBITDA","Lucro Líquido"}
-            # Cabeçalhos: mês real = negrito, proj = normal
-            col_lbl = []
-            for m_i in range(12):
-                col_lbl.append(f"✅{MESES[m_i]}" if ir[m_i] else MESES[m_i])
-            rows_t = []
-            for lbl,key in LINHAS:
-                row={"Linha DRE":lbl}
-                for m_i,cl in enumerate(col_lbl):
-                    row[cl]=float(dr[key][m_i])
-                row["TOTAL"]=float(dr[key].sum())
-                rows_t.append(row)
-            df_t = pd.DataFrame(rows_t).set_index("Linha DRE")
+        for (nome_m,rec_m,desc_m),tab_m in zip(METODOS[:3], tabs_m[:3]):
+            _render_metodo(tab_m, rec_m, nome_m, desc_m)
 
-            def hl_t(r):
-                return ([f"background-color:{BLIGHT};font-weight:700;color:{NAVY}"]*len(r)
-                        if r.name in TOTS else [""]*len(r))
-            def cn_t(v):
+        # ── Tab Comparativo ──────────────────────────────────────────
+        with tabs_m[3]:
+            st.markdown("#### ⚖️ Comparativo dos 3 Métodos — Receita e EBITDA Anuais")
+            metodos_res = {}
+            for nome_m, rec_m, _ in METODOS[:3]:
+                if rec_m is None: continue
+                r2 = build_dre_rolling(emp_base, estado["meses_reais"],
+                                       rec_m, estado["cron_orc"], g_cust)["dre"]
+                metodos_res[nome_m] = r2
+
+            ck = st.columns(3)
+            for i,(nm,r2) in enumerate(metodos_res.items()):
+                rb2 = float(r2["rec_bruta"].sum())
+                eb2 = float(r2["ebitda"].sum())
+                ck[i].metric(nm, fmt(rb2), f"EBITDA {fmt(eb2)}", delta_color="off")
+
+            fg_c = go.Figure()
+            cores_c = [CHART_BLUE, CHART_TEAL, GOLD]
+            dashes_c = ["solid","dash","dot"]
+            for (nm,r2),cor,dash in zip(metodos_res.items(),cores_c,dashes_c):
+                fg_c.add_scatter(x=LABELS,y=r2["rec_bruta"],name=nm,
+                                 mode="lines+markers",
+                                 line=dict(color=cor,width=2.5,dash=dash),
+                                 marker=dict(size=7))
+            fg_c.update_layout(title="Receita Bruta — 3 Métodos",**PL(320))
+            fg_c.update_xaxes(showgrid=False)
+            fg_c.update_yaxes(gridcolor=BORDER,tickprefix="R$ ",tickformat=",.0f")
+            st.plotly_chart(fg_c, use_container_width=True)
+
+            fg_e = go.Figure()
+            for (nm,r2),cor,dash in zip(metodos_res.items(),cores_c,dashes_c):
+                fg_e.add_scatter(x=LABELS,y=r2["ebitda"],name=nm,
+                                 mode="lines+markers",
+                                 line=dict(color=cor,width=2.5,dash=dash),
+                                 marker=dict(size=7))
+            fg_e.add_hline(y=0,line_dash="dash",line_color=GRAY,line_width=1)
+            fg_e.update_layout(title="EBITDA — 3 Métodos",**PL(320))
+            fg_e.update_xaxes(showgrid=False)
+            fg_e.update_yaxes(gridcolor=BORDER,tickprefix="R$ ",tickformat=",.0f")
+            st.plotly_chart(fg_e, use_container_width=True)
+
+            linhas_c = ["Receita Bruta","EBITDA","Lucro Líquido"]
+            keys_c   = ["rec_bruta","ebitda","lucro_liq"]
+            rows_c   = []
+            for lbl,key in zip(linhas_c,keys_c):
+                row={"Linha":lbl}
+                for nm,r2 in metodos_res.items():
+                    row[nm] = float(r2[key].sum())
+                rows_c.append(row)
+            df_c = pd.DataFrame(rows_c).set_index("Linha")
+            def cn_c(v):
                 try: return f"color:{SOFT_RED}" if float(v)<0 else ""
                 except: return ""
-            fmt_t = {c:"R$ {:,.0f}" for c in df_t.columns}
-            try:    st_df = df_t.style.format(fmt_t).apply(hl_t,axis=1).map(cn_t)
-            except: st_df = df_t.style.format(fmt_t).apply(hl_t,axis=1).applymap(cn_t)
-            st.dataframe(st_df, use_container_width=True, height=380)
-
-            st.download_button(f"📥 Exportar {nome_met} em Excel",
-                               data=excel_dre(df_t, f"RF_{nome_met}"),
-                               file_name=f"RF_{nome_met}_{titulo.replace(' ','_')}.xlsx",
-                               mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                               key=f"dl_rf_{nome_met}")
-
-    for (nome_m,rec_m,desc_m),tab_m in zip(METODOS[:3], tabs_m[:3]):
-        _render_metodo(tab_m, rec_m, nome_m, desc_m)
-
-    # ── Tab Comparativo ──────────────────────────────────────────────────
-    with tabs_m[3]:
-        st.markdown("#### ⚖️ Comparativo dos 3 Métodos — Receita e EBITDA Anuais")
-        metodos_res = {}
-        for nome_m, rec_m, _ in METODOS[:3]:
-            if rec_m is None: continue
-            r2 = build_dre_rolling(emp_base, estado["meses_reais"],
-                                   rec_m, estado["cron_orc"], g_cust)["dre"]
-            metodos_res[nome_m] = r2
-
-        # KPIs comparativos
-        ck = st.columns(3)
-        for i,(nm,r2) in enumerate(metodos_res.items()):
-            rb2 = float(r2["rec_bruta"].sum())
-            eb2 = float(r2["ebitda"].sum())
-            ck[i].metric(nm, fmt(rb2), f"EBITDA {fmt(eb2)}", delta_color="off")
-
-        # Gráfico comparativo receita mensal
-        fg_c = go.Figure()
-        cores_c = [CHART_BLUE, CHART_TEAL, GOLD]
-        dashes_c = ["solid","dash","dot"]
-        for (nm,r2),cor,dash in zip(metodos_res.items(),cores_c,dashes_c):
-            fg_c.add_scatter(x=MESES,y=r2["rec_bruta"],name=nm,
-                             mode="lines+markers",
-                             line=dict(color=cor,width=2.5,dash=dash),
-                             marker=dict(size=7))
-        fg_c.update_layout(title="Receita Bruta — 3 Métodos",**PL(320))
-        fg_c.update_xaxes(showgrid=False)
-        fg_c.update_yaxes(gridcolor=BORDER,tickprefix="R$ ",tickformat=",.0f")
-        st.plotly_chart(fg_c, use_container_width=True)
-
-        # Gráfico EBITDA comparativo
-        fg_e = go.Figure()
-        for (nm,r2),cor,dash in zip(metodos_res.items(),cores_c,dashes_c):
-            fg_e.add_scatter(x=MESES,y=r2["ebitda"],name=nm,
-                             mode="lines+markers",
-                             line=dict(color=cor,width=2.5,dash=dash),
-                             marker=dict(size=7))
-        fg_e.add_hline(y=0,line_dash="dash",line_color=GRAY,line_width=1)
-        fg_e.update_layout(title="EBITDA — 3 Métodos",**PL(320))
-        fg_e.update_xaxes(showgrid=False)
-        fg_e.update_yaxes(gridcolor=BORDER,tickprefix="R$ ",tickformat=",.0f")
-        st.plotly_chart(fg_e, use_container_width=True)
-
-        # Tabela-resumo anual 3 métodos
-        linhas_c = ["Receita Bruta","EBITDA","Lucro Líquido"]
-        keys_c   = ["rec_bruta","ebitda","lucro_liq"]
-        rows_c   = []
-        for lbl,key in zip(linhas_c,keys_c):
-            row={"Linha":lbl}
-            for nm,r2 in metodos_res.items():
-                row[nm] = float(r2[key].sum())
-            rows_c.append(row)
-        df_c = pd.DataFrame(rows_c).set_index("Linha")
-        def cn_c(v):
-            try: return f"color:{SOFT_RED}" if float(v)<0 else ""
-            except: return ""
-        fmt_c = {c:"R$ {:,.0f}" for c in df_c.columns}
-        try:    sc = df_c.style.format(fmt_c).map(cn_c)
-        except: sc = df_c.style.format(fmt_c).applymap(cn_c)
-        st.dataframe(sc, use_container_width=True)
-        st.caption("💡 Mesmo CPV e Despesas para os 3 métodos — diferença está apenas no timing de reconhecimento da receita.")
-
+            fmt_c = {c:"R$ {:,.0f}" for c in df_c.columns}
+            try:    sc = df_c.style.format(fmt_c).map(cn_c)
+            except: sc = df_c.style.format(fmt_c).applymap(cn_c)
+            st.dataframe(sc, use_container_width=True)
+            st.caption("💡 Mesmo CPV e Despesas para os 3 métodos — diferença está apenas no timing de reconhecimento da receita.")
 
 
 
