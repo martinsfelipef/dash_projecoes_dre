@@ -1213,34 +1213,39 @@ def render_rolling():
                 st.markdown("### 🏠 Projeção de Vendas — VGV")
                 st.caption(f"⚙️ Configurado para: **{titulo}**")
                 _titulo_safe = re.sub(r"\W+","_",titulo)
-                def _save_vgv():
-                    _ed=st.session_state.get(f"vgv_ed_{_titulo_safe}")
-                    if _ed is not None:
-                        for _m in range(N):
-                            estado["vgv"][_m+1]["unidades"]=float(_ed.iloc[_m]["Unidades"])
-                            estado["vgv"][_m+1]["preco"]   =float(_ed.iloc[_m]["Preço/Un"])
                 vgv_df_in = pd.DataFrame({
-                    "Mês":     LABELS,
-                    "Unidades":[int(estado["vgv"][m+1]["unidades"]) for m in range(N)],
-                    "Preço/Un":[float(estado["vgv"][m+1]["preco"])  for m in range(N)],
+                    "Mês":     LABELS[:N],
+                    "Unidades":[int(estado["vgv"].get(m+1, {"unidades":0})["unidades"]) for m in range(N)],
+                    "Preço/Un":[float(estado["vgv"].get(m+1, {"preco":350000.0})["preco"]) for m in range(N)],
                 })
+
                 try:
                     vgv_ed = st.data_editor(
                         vgv_df_in,
                         column_config={
-                            "Mês":      st.column_config.TextColumn("Mês",  disabled=True),
-                            "Unidades": st.column_config.NumberColumn("Unidades",min_value=0,step=1),
-                            "Preço/Un": st.column_config.NumberColumn("Preço/Un (R$)",min_value=0,format="R$ %.0f"),
+                            "Mês":      st.column_config.TextColumn("Mês", disabled=True),
+                            "Unidades": st.column_config.NumberColumn("Unidades", min_value=0, step=1),
+                            "Preço/Un": st.column_config.NumberColumn("Preço/Un (R$)", min_value=0, format="R$ %.0f"),
                         },
-                        hide_index=True, use_container_width=True, height=460,
-                    key=f"vgv_ed_{_titulo_safe}", on_change=_save_vgv
+                        hide_index=True,
+                        use_container_width=True,
+                        height=460,
+                        key=f"vgv_ed_{_titulo_safe}"
                     )
+                    # Lê diretamente do retorno — forma correta no Streamlit
                     for m in range(N):
-                        estado["vgv"][m+1]["unidades"] = float(vgv_ed.iloc[m]["Unidades"])
-                        estado["vgv"][m+1]["preco"]    = float(vgv_ed.iloc[m]["Preço/Un"])
-                except Exception:
+                        if m < len(vgv_ed):
+                            estado["vgv"][m+1]["unidades"] = float(vgv_ed.iloc[m]["Unidades"])
+                            estado["vgv"][m+1]["preco"]    = float(vgv_ed.iloc[m]["Preço/Un"])
+                except Exception as e:
+                    st.warning(f"Tabela VGV não pôde ser renderizada: {e}")
                     st.dataframe(vgv_df_in, use_container_width=True)
-                vgv_total = sum(estado["vgv"][m+1]["unidades"]*estado["vgv"][m+1]["preco"] for m in range(N))
+
+                vgv_total = sum(
+                    estado["vgv"].get(m+1, {"unidades":0,"preco":0})["unidades"] *
+                    estado["vgv"].get(m+1, {"unidades":0,"preco":0})["preco"]
+                    for m in range(N)
+                )
                 st.metric("VGV Total Projetado", fmt(vgv_total))
 
             with sv2:
