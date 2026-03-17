@@ -1160,24 +1160,23 @@ def render_rolling():
                                        type=["xlsx","xls"], key=f"up_mensal_{mes_up}",
                                        label_visibility="collapsed")
             if arq_up:
-                from parser_sienge import parse_sienge
-                _raw = parse_sienge(arq_up.read())
+                _raw = parse_cronograma_sienge(arq_up.read())
                 if "erro" in _raw:
-                    st.error(_raw["erro"])
+                    st.error(f"❌ {_raw['erro']}")
                 else:
-                    _dados = _raw["dados"]
-                    # Pega o índice do mês dentro do array de 12
-                    _m_idx = (mes_up - 1) % 12
+                    # parse_cronograma_sienge retorna custos_por_mes como lista
+                    # Soma todos os custos do arquivo como CPV do mês
+                    _cpv_total = sum(_raw.get("custos_por_mes", [0.0]))
                     res_up = {
                         "ok":      True,
-                        "cpv":     float(_dados["cpv"][_m_idx]) if _m_idx < len(_dados["cpv"]) else 0.0,
-                        "desp_op": float(_dados["desp_op"][_m_idx]) if _m_idx < len(_dados["desp_op"]) else 0.0,
-                        "res_fin": float(_dados["res_fin"][_m_idx]) if _m_idx < len(_dados["res_fin"]) else 0.0,
-                        "ir":      float(_dados["ir"][_m_idx]) if _m_idx < len(_dados["ir"]) else 0.0,
-                        "imp_rec": float(_dados["imp_rec"][_m_idx]) if _m_idx < len(_dados["imp_rec"]) else 0.0,
+                        "cpv":    -abs(_cpv_total),   # negativo = custo
+                        "desp_op": 0.0,
+                        "res_fin": 0.0,
+                        "ir":      0.0,
+                        "imp_rec": 0.0,
                     }
                     estado["meses_reais"][mes_up] = res_up
-                    # Auto-avança início da projeção (Fase 3.3)
+                    # Auto-avança início da projeção
                     if estado["meses_reais"]:
                         _ultimo_real = max(estado["meses_reais"].keys())
                         _base_dt = datetime.date(
