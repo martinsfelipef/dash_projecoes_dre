@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git commit -m \"$\\(cat <<'EOF'\nfeat: commit inicial do Dashboard Financeiro\n\nDashboard Streamlit para gestão financeira da Brocks Empreendimentos,\ndesenvolvido pela Align Gestão de Negócios. Inclui DRE, Rolling Forecast,\nanálise de sensibilidade, indicadores financeiros e valuation DCF.\n\nCo-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git remote add origin https://github.com/martinsfelipef/dash_projecoes_dre.git)",
+      "Bash(git branch -M main && git push -u origin main 2>&1)",
+      "Bash(ssh -T git@github.com 2>&1)",
+      "Bash(ssh-keyscan github.com >> ~/.ssh/known_hosts 2>&1 && ssh -T git@github.com 2>&1)",
+      "Bash(git remote set-url origin git@github.com:martinsfelipef/dash_projecoes_dre.git && git push -u origin main 2>&1)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:docs.streamlit.io)",
+      "WebFetch(domain:pygithub.readthedocs.io)",
+      "WebFetch(domain:streamlit-authenticator.readthedocs.io)",
+      "Bash(pip show PyGithub 2>/dev/null | head -5 || echo \"not installed\")",
+      "Bash(python3 -m pip show streamlit-authenticator 2>/dev/null | head -5 || echo \"not installed\")",
+      "Bash(python3 -m pip show PyGithub 2>/dev/null | head -5 || echo \"not installed\")",
+      "Bash(source .venv/bin/activate 2>/dev/null; python -c \"import sys; sys.path.insert\\(0, 'utils'\\); import app\" 2>&1 | head -50)",
+      "Bash(source .venv/bin/activate && pip list 2>/dev/null | grep -iE \"streamlit|auth|github|bcrypt\")",
+      "Bash(source .venv/bin/activate && pip install \"streamlit-authenticator>=0.3.3\" \"PyGithub>=2.3.0\" \"bcrypt>=4.0.0\" 2>&1 | tail -10)",
+      "Bash(source .venv/bin/activate && python -c \"\nimport sys, os\nsys.path.insert\\(0, 'utils'\\)\nimport streamlit_authenticator\nimport PyGithub\nimport bcrypt\nprint\\('Todos os módulos OK'\\)\n\" 2>&1)",
+      "Bash(source .venv/bin/activate && python -c \"import github; print\\(github.__version__\\)\" 2>&1)",
+      "Bash(source .venv/bin/activate && python -c \"from github import Github; print\\('PyGithub OK'\\)\" 2>&1)",
+      "Bash(source .venv/bin/activate && python -c \"\nimport sys, os\nsys.path.insert\\(0, 'utils'\\)\nimport streamlit_authenticator\nfrom github import Github\nimport bcrypt\nprint\\('Todos os módulos OK'\\)\n\" 2>&1 | grep -v \"WARNING\\\\|ScriptRunContext\")",
+      "Bash(source .venv/bin/activate && python -c \"\nimport sys, os\nsys.path.insert\\(0, 'utils'\\)\nos.environ['STREAMLIT_SERVER_HEADLESS'] = 'true'\n\n# Testa o carregamento das funções sem rodar o app completo\nimport ast, tokenize, io\n\nwith open\\('app.py', 'r'\\) as f:\n    source = f.read\\(\\)\n\ntry:\n    ast.parse\\(source\\)\n    print\\('app.py: sintaxe OK'\\)\nexcept SyntaxError as e:\n    print\\(f'ERRO de sintaxe: {e}'\\)\n\" 2>&1)"
+    ]
+  }
+}

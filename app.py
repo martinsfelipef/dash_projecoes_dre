@@ -609,6 +609,9 @@ with st.sidebar:
     rec_override_map = {}
     if "POC" in visao:
         st.divider(); st.markdown("**⚙️ Parâmetros POC**")
+        st.caption("⚠️ Estes parâmetros afetam apenas a **DRE Analítica (Tab 1)** "
+                   "— visão histórica de como a receita passada é reconhecida. "
+                   "Para projeções futuras, use a aba Rolling Forecast.")
         vgv=st.number_input("VGV Total (R$)",value=5_000_000.0,step=100_000.0,format="%.0f",key="vgv_poc")
         poc,defs=[],[3,6,10,16,22,30,40,52,62,74,86,100]
         c1,c2=st.columns(2)
@@ -619,6 +622,9 @@ with st.sidebar:
         for k in empresas_cliente: rec_override_map[k]=(vgv*delta_poc).tolist()
     elif "Competência" in visao:
         st.divider(); st.markdown("**⚙️ VGV Vendas por Mês**")
+        st.caption("⚠️ Estes valores representam as vendas **já realizadas**, "
+                   "para fins de reconhecimento de receita na DRE histórica. "
+                   "Para projetar vendas futuras, use a aba Rolling Forecast.")
         vgv_comp,defs=[],[0,0,0,0,180000,250000,320000,400000,250000,280000,220000,350000]
         c1,c2=st.columns(2)
         for i,m in enumerate(MESES):
@@ -964,7 +970,7 @@ def render_rolling():
     # ── PERÍODO DA OBRA (Fase 2) ───────────────────────────────────────
     st.markdown("**📅 Período da Obra**")
     _dc1, _dc2, _dc3, _dc4 = st.columns(4)
-    _anos = list(range(2024, 2032))
+    _anos = list(range(2023, 2041))
     _meses_sel = list(range(1, 13))
 
     # Garante que data_fim exista (migração de estados antigos)
@@ -1210,6 +1216,9 @@ def render_rolling():
             sv1, sv2 = st.columns([3,2])
             with sv1:
                 st.markdown("### 🏠 Projeção de Vendas — VGV")
+                st.info("📌 **Como preencher:** insira o plano de vendas do empreendimento — "
+                        "quantas unidades prevê vender em cada mês e a que preço. "
+                        "Preencha uma vez e atualize apenas se o plano de vendas mudar.", icon="ℹ️")
                 st.caption(f"⚙️ Configurado para: **{titulo}**")
                 _titulo_safe = re.sub(r"\W+","_",titulo)
                 vgv_df_in = pd.DataFrame({
@@ -1249,6 +1258,9 @@ def render_rolling():
 
             with sv2:
                 st.markdown("### 📈 Avanço Físico — POC (% acumulado)")
+                st.caption("📌 Preencha o % de obra concluída ao fim de cada mês conforme "
+                           "o planejado. Atualize os meses passados com o valor real "
+                           "quando disponível. Os meses futuros ficam como planejado.")
                 st.caption("% de obra concluída ao fim de cada mês (0–100).")
                 poc_vals=[]
                 for _gs in range(0,N,3):
@@ -1341,10 +1353,17 @@ def render_rolling():
     g_cust   = estado["g_custos"]
 
     if _sub_aba == "📊 Resultados":
-        # Verifica se há dados suficientes
-        _tem_vgv = any(estado["vgv"][m+1]["unidades"] > 0 for m in range(N))
-        if not _tem_vgv and not is_matriz:
-            st.info("ℹ️ Configure os dados na aba ⚙️ Configurações para ver os resultados.")
+        # Verifica se há dados suficientes para mostrar resultados
+        _tem_vgv = any(estado["vgv"].get(m+1, {}).get("unidades", 0) > 0 for m in range(N))
+        _tem_cronograma = "cronograma" in estado
+        _tem_reais = len(estado["meses_reais"]) > 0
+
+        # Só bloqueia se não tem NADA: nem VGV, nem cronograma, nem dados reais
+        if not _tem_vgv and not _tem_cronograma and not _tem_reais and not is_matriz:
+            st.info("ℹ️ Para ver os resultados, configure ao menos um dos itens:\n"
+                    "- Cronograma Físico-Financeiro (custos projetados)\n"
+                    "- VGV de vendas (receita projetada)\n"
+                    "- Upload de meses reais (SIENGE)")
             return
 
         # ── KPIs de progresso da obra (Fase 5) ───────────────────────
