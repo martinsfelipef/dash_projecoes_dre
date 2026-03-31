@@ -471,25 +471,82 @@ def projeta(rb,imp,cpv_b,dop_b,rf_b,ir_b, g_rec,g_cpv,g_dop,rf_mult,ir_mult):
 
 
 def get_rolling_state(nome: str) -> dict:
+    """
+    Retorna o estado do Rolling Forecast para uma empresa.
+    Tenta carregar do GitHub se não estiver na memória.
+    """
     if "rolling" not in st.session_state:
         st.session_state.rolling = {}
+
     if nome not in st.session_state.rolling:
-        st.session_state.rolling[nome] = {
-            "meses_reais":  {},
-            "cron_orc":     {},
-            "vgv":          {m+1:{"unidades":0,"preco":350000.0} for m in range(24)},
-            "poc_acum":     [8,17,26,35,44,53,62,71,80,89,95,100] + [100]*12,
-            "bdi_rate":     14.0,
-            "bdi_mensal":   [14.0]*24,
-            "cub_mensal":   0.5,
-            "pct_entrada":  7.0,
-            "parcela_un":   1500.0,
-            "mes_entrega":  12,
-            "g_custos":     10.0,
-            "data_inicio":  {"ano":2026,"mes":1},
-            "data_fim":     {"ano":2027,"mes":12},
-        }
+        # Tenta carregar do GitHub primeiro
+        _loaded = None
+        try:
+            from utils.github_storage import load_rolling_state
+            _loaded = load_rolling_state(nome)
+        except Exception:
+            pass
+
+        if _loaded is not None:
+            # Garante que chaves obrigatórias existam (migração de versões antigas)
+            _defaults = {
+                "meses_reais":  {},
+                "cron_orc":     {},
+                "vgv":          {m+1: {"unidades": 0, "preco": 350000.0} for m in range(24)},
+                "poc_acum":     [8,17,26,35,44,53,62,71,80,89,95,100] + [100]*12,
+                "bdi_rate":     14.0,
+                "bdi_mensal":   [14.0] * 24,
+                "cub_mensal":   0.5,
+                "pct_entrada":  7.0,
+                "parcela_un":   1500.0,
+                "mes_entrega":  12,
+                "g_custos":     10.0,
+                "data_inicio":  {"ano": 2026, "mes": 1},
+                "data_fim":     {"ano": 2027, "mes": 12},
+            }
+            for _k, _v in _defaults.items():
+                if _k not in _loaded:
+                    _loaded[_k] = _v
+            # Converte chaves numéricas do VGV (JSON salva como string)
+            if "vgv" in _loaded and isinstance(_loaded["vgv"], dict):
+                _loaded["vgv"] = {int(k): v for k, v in _loaded["vgv"].items()}
+            # Converte chaves numéricas dos meses_reais
+            if "meses_reais" in _loaded and isinstance(_loaded["meses_reais"], dict):
+                _loaded["meses_reais"] = {int(k): v for k, v in _loaded["meses_reais"].items()}
+            st.session_state.rolling[nome] = _loaded
+        else:
+            # Estado inicial padrão
+            st.session_state.rolling[nome] = {
+                "meses_reais":  {},
+                "cron_orc":     {},
+                "vgv":          {m+1: {"unidades": 0, "preco": 350000.0} for m in range(24)},
+                "poc_acum":     [8,17,26,35,44,53,62,71,80,89,95,100] + [100]*12,
+                "bdi_rate":     14.0,
+                "bdi_mensal":   [14.0] * 24,
+                "cub_mensal":   0.5,
+                "pct_entrada":  7.0,
+                "parcela_un":   1500.0,
+                "mes_entrega":  12,
+                "g_custos":     10.0,
+                "data_inicio":  {"ano": 2026, "mes": 1},
+                "data_fim":     {"ano": 2027, "mes": 12},
+            }
+
     return st.session_state.rolling[nome]
+
+
+def save_rolling(nome: str):
+    """
+    Salva o estado atual do Rolling Forecast de uma empresa no GitHub.
+    Chamar após qualquer mudança importante no estado.
+    """
+    try:
+        from utils.github_storage import save_rolling_state
+        if "rolling" in st.session_state and nome in st.session_state.rolling:
+            save_rolling_state(nome, st.session_state.rolling[nome])
+    except Exception as e:
+        safe_toast(f"Aviso: não foi possível salvar: {e}", "⚠️")
+
 
 def gen_labels(N, di):
     lbs=[]; m=di["mes"]-1; a=di["ano"]
@@ -1054,6 +1111,12 @@ def render_rolling():
                                            help="Crescimento anual dos custos sobre a base 2025")
             estado.update({"bdi_rate":bdi_rate,"pct_entrada":pct_ent,"parcela_un":parc_un,
                            "mes_entrega":mes_ent,"g_custos":g_cust})
+            # Salva no GitHub quando configurações mudam
+            _cfg_key = f"_cfg_hash_{titulo}"
+            _cfg_atual = str(estado["bdi_rate"]) + str(estado["cub_mensal"])
+            if st.session_state.get(_cfg_key) != _cfg_atual:
+                st.session_state[_cfg_key] = _cfg_atual
+                save_rolling(titulo)
 
             # ── BDI mensal (Fase 4) ───────────────────────────────────
             st.divider()
@@ -1134,6 +1197,7 @@ def render_rolling():
                         f"→ {MESES[_cron_raw['data_fim']['mes']-1]}/{_cron_raw['data_fim']['ano']} "
                         f"({_cron_raw['n_meses']} meses)", "✅"
                     )
+                    save_rolling(titulo)
                     st.rerun()
 
             if "cronograma" in estado:
@@ -1201,6 +1265,7 @@ def render_rolling():
                             (_base_dt.month + _prox_mes_idx - 1) % 12 + 1, 1
                         )
                         estado["inicio_projecao"] = {"ano": _prox_dt.year, "mes": _prox_dt.month}
+                    save_rolling(titulo)
                     safe_toast(f"{LABELS[mes_up-1]} carregado — CPV {fmt(abs(res_up['cpv']))}", "✅")
                     st.rerun()
 
@@ -1251,6 +1316,14 @@ def render_rolling():
                         if m < len(vgv_ed):
                             estado["vgv"][m+1]["unidades"] = float(vgv_ed.iloc[m]["Unidades"])
                             estado["vgv"][m+1]["preco"]    = float(vgv_ed.iloc[m]["Preço/Un"])
+                    # Salva VGV quando alterado
+                    _vgv_key = f"_vgv_hash_{titulo}"
+                    _vgv_hash = str(sum(
+                        estado["vgv"].get(m+1, {}).get("unidades", 0) for m in range(N)
+                    ))
+                    if st.session_state.get(_vgv_key) != _vgv_hash:
+                        st.session_state[_vgv_key] = _vgv_hash
+                        save_rolling(titulo)
                 except Exception as e:
                     st.warning(f"Tabela VGV não pôde ser renderizada: {e}")
                     st.dataframe(vgv_df_in, use_container_width=True)
@@ -1278,6 +1351,12 @@ def render_rolling():
                                 LABELS[i],0,100,estado["poc_acum"][i],
                                 step=1,key=f"poc_{i}_{_titulo_safe}"))
                 estado["poc_acum"]=poc_vals
+                # Salva POC quando alterado
+                _poc_key = f"_poc_hash_{titulo}"
+                _poc_hash = str(sum(poc_vals))
+                if st.session_state.get(_poc_key) != _poc_hash:
+                    st.session_state[_poc_key] = _poc_hash
+                    save_rolling(titulo)
 
                 # Mini Curva S
                 poc_arr = np.array(poc_vals)

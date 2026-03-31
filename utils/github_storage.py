@@ -183,3 +183,34 @@ def save_simulacoes(username, sims):
         sims,
         f"dashboard: simulações de {username}",
     )
+
+
+# ── Rolling Forecast: salvar e carregar por empresa ──────────────────────────
+
+import re as _re_gs
+
+
+def _rolling_filename(titulo: str) -> str:
+    """Gera nome de arquivo seguro a partir do título da empresa."""
+    safe = _re_gs.sub(r'[^\w]', '_', titulo).strip('_')
+    return f"data/rolling_{safe}.json"
+
+
+def save_rolling_state(titulo: str, estado: dict):
+    """
+    Salva o estado do Rolling Forecast de uma empresa no GitHub.
+    Usa _write_github_file que já trata serialização numpy e falhas.
+    """
+    return _write_github_file(
+        _rolling_filename(titulo),
+        estado,
+        f"rolling forecast: {titulo}",
+    )
+
+
+def load_rolling_state(titulo: str) -> dict | None:
+    """
+    Carrega o estado do Rolling Forecast de uma empresa do GitHub.
+    Retorna None se não encontrar.
+    """
+    return _read_github_file(_rolling_filename(titulo))
