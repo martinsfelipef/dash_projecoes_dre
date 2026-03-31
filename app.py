@@ -1145,6 +1145,12 @@ def render_rolling():
                     f"{_cr['n_meses']} meses · "
                     f"Total: R$ {sum(_cr['custos_por_mes']):,.0f}"
                 )
+                # Botão para limpar e subir novo cronograma
+                if st.button("🔄 Substituir cronograma", key=f"clear_cron_{_tkey}",
+                             help="Remove o cronograma atual para subir uma versão atualizada"):
+                    del estado["cronograma"]
+                    safe_toast("Cronograma removido. Suba a nova versão.", "🔄")
+                    st.rerun()
 
         # ── SEÇÃO 2: UPLOAD MENSAL SIENGE ────────────────────────────
         st.markdown("### 📎 Dados Reais — Upload Mensal SIENGE")
