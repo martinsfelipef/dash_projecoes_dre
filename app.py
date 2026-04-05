@@ -535,15 +535,24 @@ def get_rolling_state(nome: str) -> dict:
     return st.session_state.rolling[nome]
 
 
-def save_rolling(nome: str):
+def mark_rolling_dirty(nome: str):
+    """Marca o estado do rolling como modificado — será salvo no próximo ciclo."""
+    st.session_state[f"_rolling_dirty_{nome}"] = True
+
+
+def save_rolling(nome: str, force: bool = False):
     """
-    Salva o estado atual do Rolling Forecast de uma empresa no GitHub.
-    Chamar após qualquer mudança importante no estado.
+    Salva o estado do Rolling no GitHub APENAS se houver mudança pendente.
+    Use force=True para salvar imediatamente (ex: após upload de arquivo).
     """
+    _flag = f"_rolling_dirty_{nome}"
+    if not force and not st.session_state.get(_flag, False):
+        return  # Nada mudou, não salva
     try:
         from github_storage import save_rolling_state
         if "rolling" in st.session_state and nome in st.session_state.rolling:
             save_rolling_state(nome, st.session_state.rolling[nome])
+            st.session_state[_flag] = False  # limpa o flag após salvar
     except Exception as e:
         safe_toast(f"Aviso: não foi possível salvar: {e}", "⚠️")
 
@@ -1116,7 +1125,7 @@ def render_rolling():
             _cfg_atual = str(estado["bdi_rate"]) + str(estado["cub_mensal"])
             if st.session_state.get(_cfg_key) != _cfg_atual:
                 st.session_state[_cfg_key] = _cfg_atual
-                save_rolling(titulo)
+                mark_rolling_dirty(titulo)
 
             # ── BDI mensal (Fase 4) ───────────────────────────────────
             st.divider()
@@ -1197,7 +1206,7 @@ def render_rolling():
                         f"→ {MESES[_cron_raw['data_fim']['mes']-1]}/{_cron_raw['data_fim']['ano']} "
                         f"({_cron_raw['n_meses']} meses)", "✅"
                     )
-                    save_rolling(titulo)
+                    save_rolling(titulo, force=True)
                     st.rerun()
 
             if "cronograma" in estado:
@@ -1265,7 +1274,7 @@ def render_rolling():
                             (_base_dt.month + _prox_mes_idx - 1) % 12 + 1, 1
                         )
                         estado["inicio_projecao"] = {"ano": _prox_dt.year, "mes": _prox_dt.month}
-                    save_rolling(titulo)
+                    save_rolling(titulo, force=True)
                     safe_toast(f"{LABELS[mes_up-1]} carregado — CPV {fmt(abs(res_up['cpv']))}", "✅")
                     st.rerun()
 
@@ -1323,7 +1332,7 @@ def render_rolling():
                     ))
                     if st.session_state.get(_vgv_key) != _vgv_hash:
                         st.session_state[_vgv_key] = _vgv_hash
-                        save_rolling(titulo)
+                        mark_rolling_dirty(titulo)
                 except Exception as e:
                     st.warning(f"Tabela VGV não pôde ser renderizada: {e}")
                     st.dataframe(vgv_df_in, use_container_width=True)
@@ -1356,7 +1365,7 @@ def render_rolling():
                 _poc_hash = str(sum(poc_vals))
                 if st.session_state.get(_poc_key) != _poc_hash:
                     st.session_state[_poc_key] = _poc_hash
-                    save_rolling(titulo)
+                    mark_rolling_dirty(titulo)
 
                 # Mini Curva S
                 poc_arr = np.array(poc_vals)
@@ -1382,6 +1391,15 @@ def render_rolling():
                     _rows=[{"SPE":k,"BDI (%)":f'{estado["bdi_rate"]:.1f}%'} for k,v in _spes.items()]
                     st.dataframe(pd.DataFrame(_rows),use_container_width=True,hide_index=True)
                 else: st.caption("Nenhuma SPE carregada ainda.")
+
+        # Botão de salvar configurações
+        st.divider()
+        _col_save, _ = st.columns([1, 3])
+        with _col_save:
+            if st.button("💾 Salvar configurações", key=f"btn_save_rolling_{_tkey}",
+                         use_container_width=True, type="primary"):
+                save_rolling(titulo, force=True)
+                safe_toast("Configurações salvas!", "💾")
 
         # Atualiza vgv_list e poc_vals após edição
         vgv_list = [estado["vgv"].get(m+1,{"unidades":0,"preco":350000.0}) for m in range(N)]
