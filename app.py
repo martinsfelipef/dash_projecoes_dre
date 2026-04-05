@@ -1210,36 +1210,29 @@ def render_rolling():
                 label_visibility="collapsed"
             )
             if arq_cron:
+                _nome_arq_cron = arq_cron.name
                 _cron_raw = parse_cronograma_sienge(arq_cron.read())
                 if "erro" in _cron_raw:
                     st.error(f"❌ {_cron_raw['erro']}")
                 else:
                     estado["cronograma"] = _cron_raw
                     estado["data_fim"] = _cron_raw["data_fim"]
-                    _fim_sel = estado["data_fim"]
-                    _fim_arq = _cron_raw["data_fim"]
-                    if _fim_sel != _fim_arq:
-                        st.warning(
-                            f"⚠️ O mês de fim selecionado "
-                            f"({MESES[_fim_sel['mes']-1]}/{_fim_sel['ano']}) "
-                            f"não bate com o último mês do arquivo "
-                            f"({MESES[_fim_arq['mes']-1]}/{_fim_arq['ano']}). "
-                            f"As datas foram ajustadas automaticamente."
-                        )
+                    # Guarda nome do arquivo para exibir após rerun
+                    st.session_state[f"_cron_arquivo_{_tkey}"] = _nome_arq_cron
+                    mark_rolling_dirty(titulo)
                     safe_toast(
-                        f"Cronograma carregado: "
+                        f"✅ Cronograma '{_nome_arq_cron}' processado — "
                         f"{MESES[_cron_raw['data_inicio']['mes']-1]}/{_cron_raw['data_inicio']['ano']} "
-                        f"→ {MESES[_cron_raw['data_fim']['mes']-1]}/{_cron_raw['data_fim']['ano']} "
-                        f"({_cron_raw['n_meses']} meses)", "✅"
+                        f"→ {MESES[_cron_raw['data_fim']['mes']-1]}/{_cron_raw['data_fim']['ano']}", "✅"
                     )
-                    with st.spinner("💾 Salvando cronograma..."):
-                        save_rolling(titulo, force=True)
                     st.rerun()
 
             if "cronograma" in estado:
                 _cr = estado["cronograma"]
+                _arq_exibido = st.session_state.get(f"_cron_arquivo_{_tkey}", "")
+                _arq_txt = f" · Arquivo: **{_arq_exibido}**" if _arq_exibido else ""
                 st.success(
-                    f"✅ Cronograma carregado: "
+                    f"✅ Cronograma **{titulo}**{_arq_txt}\n\n"
                     f"{MESES[_cr['data_inicio']['mes']-1]}/{_cr['data_inicio']['ano']} → "
                     f"{MESES[_cr['data_fim']['mes']-1]}/{_cr['data_fim']['ano']} · "
                     f"{_cr['n_meses']} meses · "
@@ -1249,6 +1242,7 @@ def render_rolling():
                 if st.button("🔄 Substituir cronograma", key=f"clear_cron_{_tkey}",
                              help="Remove o cronograma atual para subir uma versão atualizada"):
                     del estado["cronograma"]
+                    st.session_state.pop(f"_cron_arquivo_{_tkey}", None)
                     safe_toast("Cronograma removido. Suba a nova versão.", "🔄")
                     st.rerun()
 
@@ -1272,23 +1266,21 @@ def render_rolling():
                                        type=["xlsx","xls"], key=f"up_mensal_{mes_up}",
                                        label_visibility="collapsed")
             if arq_up:
+                _nome_arq_up = arq_up.name
                 _raw = parse_cronograma_sienge(arq_up.read())
                 if "erro" in _raw:
                     st.error(f"❌ {_raw['erro']}")
                 else:
-                    # parse_cronograma_sienge retorna custos_por_mes como lista
-                    # Soma todos os custos do arquivo como CPV do mês
                     _cpv_total = sum(_raw.get("custos_por_mes", [0.0]))
                     res_up = {
                         "ok":      True,
-                        "cpv":    -abs(_cpv_total),   # negativo = custo
+                        "cpv":    -abs(_cpv_total),
                         "desp_op": 0.0,
                         "res_fin": 0.0,
                         "ir":      0.0,
                         "imp_rec": 0.0,
                     }
                     estado["meses_reais"][mes_up] = res_up
-                    # Auto-avança início da projeção
                     if estado["meses_reais"]:
                         _ultimo_real = max(estado["meses_reais"].keys())
                         _base_dt = datetime.date(
@@ -1301,9 +1293,11 @@ def render_rolling():
                             (_base_dt.month + _prox_mes_idx - 1) % 12 + 1, 1
                         )
                         estado["inicio_projecao"] = {"ano": _prox_dt.year, "mes": _prox_dt.month}
-                    with st.spinner("💾 Salvando dados reais..."):
-                        save_rolling(titulo, force=True)
-                    safe_toast(f"{LABELS[mes_up-1]} carregado — CPV {fmt(abs(res_up['cpv']))}", "✅")
+                    mark_rolling_dirty(titulo)
+                    safe_toast(
+                        f"✅ {LABELS[mes_up-1]} ({_nome_arq_up}) carregado — CPV {fmt(abs(res_up['cpv']))}",
+                        "✅"
+                    )
                     st.rerun()
 
         if estado["meses_reais"]:
