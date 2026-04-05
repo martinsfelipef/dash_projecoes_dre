@@ -482,7 +482,7 @@ def get_rolling_state(nome: str) -> dict:
         # Tenta carregar do GitHub primeiro
         _loaded = None
         try:
-            from utils.github_storage import load_rolling_state
+            from github_storage import load_rolling_state
             _loaded = load_rolling_state(nome)
         except Exception:
             pass
@@ -541,7 +541,7 @@ def save_rolling(nome: str):
     Chamar após qualquer mudança importante no estado.
     """
     try:
-        from utils.github_storage import save_rolling_state
+        from github_storage import save_rolling_state
         if "rolling" in st.session_state and nome in st.session_state.rolling:
             save_rolling_state(nome, st.session_state.rolling[nome])
     except Exception as e:
