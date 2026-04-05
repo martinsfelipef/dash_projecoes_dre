@@ -1016,6 +1016,32 @@ def render_dre():
 def render_rolling():
     import datetime
     MESES_NOME_MAP = {i+1:m for i,m in enumerate(MESES)}
+
+    # ── Seletor de empresa (independente da sidebar) ────────────────────
+    _todas_empresas = list(st.session_state.clientes[cliente_sel]["empresas"].keys())
+    _spes = [k for k in _todas_empresas if "matriz" not in k.lower()]
+    _opcoes_roll = _spes if _spes else _todas_empresas
+
+    _roll_emp_key = "_rolling_empresa_sel"
+    # Usa a empresa da sidebar como default (se for uma SPE específica)
+    _default_roll = (
+        empresa_sel if empresa_sel in _opcoes_roll
+        else (_opcoes_roll[0] if _opcoes_roll else None)
+    )
+    if _default_roll and st.session_state.get(_roll_emp_key) not in _opcoes_roll:
+        st.session_state[_roll_emp_key] = _default_roll
+
+    _re1, _re2 = st.columns([2, 3])
+    with _re1:
+        _empresa_roll = st.selectbox(
+            "🏢 Empresa",
+            _opcoes_roll,
+            index=_opcoes_roll.index(st.session_state.get(_roll_emp_key, _opcoes_roll[0])),
+            key=_roll_emp_key,
+            label_visibility="visible"
+        )
+    titulo = st.session_state.clientes[cliente_sel]["empresas"][_empresa_roll].get("nome", _empresa_roll)
+
     st.markdown(f"## 📅 Rolling Forecast — {titulo}")
     st.caption("Custos reais via upload SIENGE mensal. Receita projetada por 3 métodos: Competência, Caixa e POC.")
     st.divider()
@@ -1206,7 +1232,8 @@ def render_rolling():
                         f"→ {MESES[_cron_raw['data_fim']['mes']-1]}/{_cron_raw['data_fim']['ano']} "
                         f"({_cron_raw['n_meses']} meses)", "✅"
                     )
-                    save_rolling(titulo, force=True)
+                    with st.spinner("💾 Salvando cronograma..."):
+                        save_rolling(titulo, force=True)
                     st.rerun()
 
             if "cronograma" in estado:
@@ -1274,7 +1301,8 @@ def render_rolling():
                             (_base_dt.month + _prox_mes_idx - 1) % 12 + 1, 1
                         )
                         estado["inicio_projecao"] = {"ano": _prox_dt.year, "mes": _prox_dt.month}
-                    save_rolling(titulo, force=True)
+                    with st.spinner("💾 Salvando dados reais..."):
+                        save_rolling(titulo, force=True)
                     safe_toast(f"{LABELS[mes_up-1]} carregado — CPV {fmt(abs(res_up['cpv']))}", "✅")
                     st.rerun()
 
