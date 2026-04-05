@@ -147,7 +147,7 @@
       "preco": 350000.0
     },
     "37": {
-      "unidades": 0,
+      "unidades": 0.0,
       "preco": 350000.0
     }
   },
@@ -240,8 +240,8 @@
     "mes": 8
   },
   "data_fim": {
-    "mes": 8,
-    "ano": 2028
+    "ano": 2028,
+    "mes": 8
   },
   "cronograma": {
     "obra_nome": "85 - Residencial Tereza Cristina",
