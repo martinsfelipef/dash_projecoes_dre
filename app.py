@@ -1017,39 +1017,60 @@ def render_rolling():
     import datetime
     MESES_NOME_MAP = {i+1:m for i,m in enumerate(MESES)}
 
-    # ── Seletor de empresa (independente da sidebar) ────────────────────
+    # ── Lista de SPEs disponíveis ─────────────────────────────────────
     _todas_empresas = list(st.session_state.clientes[cliente_sel]["empresas"].keys())
-    _spes = [k for k in _todas_empresas if "matriz" not in k.lower()]
-    _opcoes_roll = _spes if _spes else _todas_empresas
+    _spes_ativas = [
+        k for k in _todas_empresas
+        if st.session_state.get("empresas_ativas", {}).get(k, True)
+        and "matriz" not in k.lower()
+    ]
+    if not _spes_ativas:
+        st.warning("Nenhuma SPE ativa. Ative ao menos uma empresa na sidebar.")
+        return
 
     _roll_emp_key = "_rolling_empresa_sel"
 
-    # SEMPRE sincroniza com a sidebar quando uma SPE específica está selecionada
-    if empresa_sel in _opcoes_roll:
+    # Sincroniza com sidebar se SPE específica selecionada
+    if empresa_sel in _spes_ativas:
         st.session_state[_roll_emp_key] = empresa_sel
-    elif st.session_state.get(_roll_emp_key) not in _opcoes_roll:
-        # Fallback: primeira SPE disponível
-        st.session_state[_roll_emp_key] = _opcoes_roll[0] if _opcoes_roll else None
+    elif st.session_state.get(_roll_emp_key) not in _spes_ativas:
+        st.session_state[_roll_emp_key] = _spes_ativas[0]
 
-    st.markdown("**🏢 Configurando dados para:**")
-    _re1, _re2 = st.columns([2, 3])
-    with _re1:
-        _empresa_roll = st.selectbox(
-            "Selecione a SPE",
-            _opcoes_roll,
-            index=_opcoes_roll.index(st.session_state.get(_roll_emp_key, _opcoes_roll[0])),
-            key=_roll_emp_key,
-            label_visibility="collapsed"
-        )
-    with _re2:
-        st.info(
-            f"⚠️ Você está configurando dados de **{_empresa_roll}**. "
-            f"Cada SPE tem seu cronograma e dados independentes.",
-            icon="ℹ️"
-        )
-    titulo = st.session_state.clientes[cliente_sel]["empresas"][_empresa_roll].get("nome", _empresa_roll)
+    _empresa_roll = st.session_state.get(_roll_emp_key, _spes_ativas[0])
 
-    st.markdown(f"## 📅 Rolling Forecast — {titulo}")
+    # ── Botões visuais de seleção de SPE ─────────────────────────────
+    st.markdown("**🏢 Selecione a obra:**")
+    _col_spes = st.columns(min(len(_spes_ativas), 3))
+    for _i, _spe_k in enumerate(_spes_ativas):
+        with _col_spes[_i % 3]:
+            _is_sel = (_spe_k == _empresa_roll)
+            _emp_d  = st.session_state.clientes[cliente_sel]["empresas"][_spe_k]
+            _tit_k  = _emp_d.get("nome", _spe_k)
+            _est_k  = get_rolling_state(_tit_k)
+            _tem_cron_spe = "cronograma" in _est_k
+            _icone  = "✅" if _tem_cron_spe else "⬜"
+            if st.button(
+                f"{_icone} {_spe_k}",
+                key=f"_roll_btn_{_spe_k}",
+                type="primary" if _is_sel else "secondary",
+                use_container_width=True,
+                help="Cronograma carregado" if _tem_cron_spe else "Sem cronograma"
+            ):
+                st.session_state[_roll_emp_key] = _spe_k
+                st.rerun()
+
+    _empresa_roll = st.session_state.get(_roll_emp_key, _spes_ativas[0])
+    titulo = st.session_state.clientes[cliente_sel]["empresas"][_empresa_roll].get(
+        "nome", _empresa_roll
+    )
+
+    st.caption(
+        f"Configurando: **{_empresa_roll}** · "
+        f"{'✅ Cronograma carregado' if 'cronograma' in get_rolling_state(titulo) else '⬜ Sem cronograma'}"
+    )
+    st.divider()
+
+    st.markdown(f"## 📅 Rolling Forecast — {_empresa_roll}")
     st.caption("Custos reais via upload SIENGE mensal. Receita projetada por 3 métodos: Competência, Caixa e POC.")
     st.divider()
 
@@ -1227,7 +1248,7 @@ def render_rolling():
                     estado["data_fim"] = _cron_raw["data_fim"]
                     # Guarda nome do arquivo para exibir após rerun
                     st.session_state[f"_cron_arquivo_{_tkey}"] = _nome_arq_cron
-                    mark_rolling_dirty(titulo)
+                    save_rolling(titulo, force=True)
                     safe_toast(
                         f"✅ Cronograma '{_nome_arq_cron}' processado — "
                         f"{MESES[_cron_raw['data_inicio']['mes']-1]}/{_cron_raw['data_inicio']['ano']} "
@@ -1301,7 +1322,7 @@ def render_rolling():
                             (_base_dt.month + _prox_mes_idx - 1) % 12 + 1, 1
                         )
                         estado["inicio_projecao"] = {"ano": _prox_dt.year, "mes": _prox_dt.month}
-                    mark_rolling_dirty(titulo)
+                    save_rolling(titulo, force=True)
                     safe_toast(
                         f"✅ {LABELS[mes_up-1]} ({_nome_arq_up}) carregado — CPV {fmt(abs(res_up['cpv']))}",
                         "✅"
@@ -1484,6 +1505,60 @@ def render_rolling():
     parc_un  = estado["parcela_un"]
     mes_ent  = estado["mes_entrega"]
     g_cust   = estado["g_custos"]
+
+    # ── Modo Consolidado: resumo de todas as SPEs ─────────────────────
+    if _sub_aba == "📊 Resultados" and empresa_sel == "Consolidado":
+        st.markdown("### 📊 Resumo Consolidado das Obras")
+        _rows_cons  = []
+        _total_orc  = 0.0
+        _total_real = 0.0
+        for _spe_k in _spes_ativas:
+            _emp_d  = st.session_state.clientes[cliente_sel]["empresas"][_spe_k]
+            _tit_k  = _emp_d.get("nome", _spe_k)
+            _est_k  = get_rolling_state(_tit_k)
+            _cr_k   = _est_k.get("cronograma", {})
+            _orc_k  = _cr_k.get("total_obra", 0.0)
+            _real_k = sum(abs(_rd.get("cpv", 0)) for _rd in _est_k["meses_reais"].values())
+            _total_orc  += _orc_k
+            _total_real += _real_k
+            _rows_cons.append({
+                "Obra":          _spe_k,
+                "Orçamento":     _orc_k,
+                "Já Executado":  _real_k,
+                "Saldo":         max(_orc_k - _real_k, 0),
+                "% Exec.":       f"{(_real_k / _orc_k * 100) if _orc_k > 0 else 0:.1f}%",
+                "Cronograma":    "✅" if _cr_k else "⬜ Não carregado",
+            })
+        if _rows_cons:
+            _df_cons  = pd.DataFrame(_rows_cons)
+            _fmt_cons = {
+                "Orçamento":    "R$ {:,.0f}",
+                "Já Executado": "R$ {:,.0f}",
+                "Saldo":        "R$ {:,.0f}",
+            }
+            try:
+                st.dataframe(
+                    _df_cons.style.format(_fmt_cons),
+                    use_container_width=True,
+                    hide_index=True
+                )
+            except Exception:
+                st.dataframe(_df_cons, use_container_width=True, hide_index=True)
+
+            st.divider()
+            _cc1, _cc2, _cc3 = st.columns(3)
+            _cc1.metric("Total Orçado",      fmt(_total_orc))
+            _cc2.metric("Total Executado",   fmt(_total_real))
+            _cc3.metric("Total a Executar",  fmt(max(_total_orc - _total_real, 0)))
+        else:
+            st.info("Nenhuma SPE tem cronograma carregado ainda.")
+
+        st.divider()
+        st.info(
+            "💡 Para ver o detalhe e configurar cada obra, "
+            "selecione a SPE específica na sidebar ou clique nos botões acima."
+        )
+        return
 
     if _sub_aba == "📊 Resultados":
         import datetime as _dt
