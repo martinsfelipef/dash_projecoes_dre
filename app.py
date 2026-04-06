@@ -493,7 +493,7 @@ def get_rolling_state(nome: str) -> dict:
                 "meses_reais":  {},
                 "cron_orc":     {},
                 "vgv":          {m+1: {"unidades": 0, "preco": 350000.0} for m in range(24)},
-                "poc_acum":     [8,17,26,35,44,53,62,71,80,89,95,100] + [100]*12,
+                "poc_acum":     [0] * 24,
                 "bdi_rate":     14.0,
                 "bdi_mensal":   [14.0] * 24,
                 "cub_mensal":   0.5,
@@ -520,7 +520,7 @@ def get_rolling_state(nome: str) -> dict:
                 "meses_reais":  {},
                 "cron_orc":     {},
                 "vgv":          {m+1: {"unidades": 0, "preco": 350000.0} for m in range(24)},
-                "poc_acum":     [8,17,26,35,44,53,62,71,80,89,95,100] + [100]*12,
+                "poc_acum":     [0] * 24,
                 "bdi_rate":     14.0,
                 "bdi_mensal":   [14.0] * 24,
                 "cub_mensal":   0.5,
@@ -1031,14 +1031,21 @@ def render_rolling():
     if _default_roll and st.session_state.get(_roll_emp_key) not in _opcoes_roll:
         st.session_state[_roll_emp_key] = _default_roll
 
+    st.markdown("**🏢 Configurando dados para:**")
     _re1, _re2 = st.columns([2, 3])
     with _re1:
         _empresa_roll = st.selectbox(
-            "🏢 Empresa",
+            "Selecione a SPE",
             _opcoes_roll,
             index=_opcoes_roll.index(st.session_state.get(_roll_emp_key, _opcoes_roll[0])),
             key=_roll_emp_key,
-            label_visibility="visible"
+            label_visibility="collapsed"
+        )
+    with _re2:
+        st.info(
+            f"⚠️ Você está configurando dados de **{_empresa_roll}**. "
+            f"Cada SPE tem seu cronograma e dados independentes.",
+            icon="ℹ️"
         )
     titulo = st.session_state.clientes[cliente_sel]["empresas"][_empresa_roll].get("nome", _empresa_roll)
 
@@ -1216,6 +1223,7 @@ def render_rolling():
                     st.error(f"❌ {_cron_raw['erro']}")
                 else:
                     estado["cronograma"] = _cron_raw
+                    estado["cronograma"]["arquivo_nome"] = arq_cron.name
                     estado["data_fim"] = _cron_raw["data_fim"]
                     # Guarda nome do arquivo para exibir após rerun
                     st.session_state[f"_cron_arquivo_{_tkey}"] = _nome_arq_cron
@@ -1229,8 +1237,8 @@ def render_rolling():
 
             if "cronograma" in estado:
                 _cr = estado["cronograma"]
-                _arq_exibido = st.session_state.get(f"_cron_arquivo_{_tkey}", "")
-                _arq_txt = f" · Arquivo: **{_arq_exibido}**" if _arq_exibido else ""
+                _arq_exibido = _cr.get("arquivo_nome", "")
+                _arq_txt = f" · 📄 **{_arq_exibido}**" if _arq_exibido else ""
                 st.success(
                     f"✅ Cronograma **{titulo}**{_arq_txt}\n\n"
                     f"{MESES[_cr['data_inicio']['mes']-1]}/{_cr['data_inicio']['ano']} → "
