@@ -1023,13 +1023,13 @@ def render_rolling():
     _opcoes_roll = _spes if _spes else _todas_empresas
 
     _roll_emp_key = "_rolling_empresa_sel"
-    # Usa a empresa da sidebar como default (se for uma SPE específica)
-    _default_roll = (
-        empresa_sel if empresa_sel in _opcoes_roll
-        else (_opcoes_roll[0] if _opcoes_roll else None)
-    )
-    if _default_roll and st.session_state.get(_roll_emp_key) not in _opcoes_roll:
-        st.session_state[_roll_emp_key] = _default_roll
+
+    # SEMPRE sincroniza com a sidebar quando uma SPE específica está selecionada
+    if empresa_sel in _opcoes_roll:
+        st.session_state[_roll_emp_key] = empresa_sel
+    elif st.session_state.get(_roll_emp_key) not in _opcoes_roll:
+        # Fallback: primeira SPE disponível
+        st.session_state[_roll_emp_key] = _opcoes_roll[0] if _opcoes_roll else None
 
     st.markdown("**🏢 Configurando dados para:**")
     _re1, _re2 = st.columns([2, 3])
