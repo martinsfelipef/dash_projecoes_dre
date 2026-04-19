@@ -904,12 +904,20 @@ mg_e=(ebt_t/rb_t*100) if rb_t!=0 else 0
 mg_l=(ll_t/rb_t*100)  if rb_t!=0 else 0
 
 # ── Navegação ─────────────────────────────────────────────────────────────────
-TABS=["📊 DRE Analítica","📅 Rolling Forecast","🎯 Sensibilidade","📐 Indicadores","💰 FCFF & DCF"]
+TABS=[
+    "⚙️ Configurações",
+    "📊 DRE Analítica",
+    "🏗️ Resumo de Obras",
+    "📅 Rolling Forecast",
+    "📐 Indicadores",
+    "🎯 Sensibilidade",
+    "💰 FCFF & DCF",
+]
 if "tab_ativo" not in st.session_state or st.session_state.tab_ativo not in TABS:
     st.session_state.tab_ativo=TABS[0]
 
-tc1,tc2,tc3,tc4,tc5=st.columns(5)
-for col,nome in zip([tc1,tc2,tc3,tc4,tc5],TABS):
+_abas_cols = st.columns(len(TABS))
+for col,nome in zip(_abas_cols,TABS):
     tipo="primary" if st.session_state.tab_ativo==nome else "secondary"
     if col.button(nome,use_container_width=True,type=tipo,key=f"btn_{nome}"):
         st.session_state.tab_ativo=nome; st.rerun()
@@ -1020,7 +1028,7 @@ def render_dre():
 
 # ══════════════════════════════════════════════════════════════════════ TAB 2
 @st.fragment
-def render_rolling():
+def render_resumo_obras():
     import datetime
     MESES_NOME_MAP = {i+1:m for i,m in enumerate(MESES)}
 
@@ -1077,566 +1085,44 @@ def render_rolling():
     )
     st.divider()
 
-    st.markdown(f"## 📅 Rolling Forecast — {_empresa_roll}")
-    st.caption("Custos reais via upload SIENGE mensal. Receita projetada por 3 métodos: Competência, Caixa e POC.")
+    st.markdown(f"## 🏗️ Resumo de Obras — {_empresa_roll}")
+    st.caption("Cronograma físico-financeiro, Custo por Nível e indicadores EVM da obra.")
     st.divider()
 
     estado = get_rolling_state(titulo)
     _tkey = re.sub(r"\W+","_",titulo)
 
-    # ── Sub-navegação interna (Fase 6) ─────────────────────────────────
-    _sub_aba = st.radio(
-        "Visualização:",
-        ["⚙️ Configurações", "📊 Resultados"],
-        horizontal=True,
-        key=f"sub_aba_{_tkey}",
-        label_visibility="collapsed"
-    )
-    st.divider()
+    # Sem sub-abas — Resumo de Obras é apenas visual
+    _sub_aba = "📊 Resultados"
 
-    # ── PERÍODO DA OBRA (Fase 2) ───────────────────────────────────────
-    st.markdown("**📅 Período da Obra**")
-    _dc1, _dc2, _dc3, _dc4 = st.columns(4)
-    _anos = list(range(2023, 2041))
-    _meses_sel = list(range(1, 13))
 
-    # Garante que data_fim exista (migração de estados antigos)
-    if "data_fim" not in estado:
-        estado["data_fim"] = {"ano": 2027, "mes": 12}
-    # Remove horizonte legado se existir
-    estado.pop("horizonte", None)
 
-    _di_ano = _dc1.selectbox("Ano início", _anos,
-        index=_anos.index(estado["data_inicio"]["ano"]),
-        key=f"di_ano_{_tkey}")
-    _di_mes = _dc2.selectbox("Mês início", _meses_sel,
-        index=_meses_sel.index(estado["data_inicio"]["mes"]),
-        format_func=lambda x: MESES[x-1], key=f"di_mes_{_tkey}")
-    _df_ano = _dc3.selectbox("Ano fim", _anos,
-        index=_anos.index(estado["data_fim"]["ano"]),
-        key=f"df_ano_{_tkey}")
-    _df_mes = _dc4.selectbox("Mês fim", _meses_sel,
-        index=_meses_sel.index(estado["data_fim"]["mes"]),
-        format_func=lambda x: MESES[x-1], key=f"df_mes_{_tkey}")
+    # ── Período automático baseado no CFF ─────────────────────────────
+    _cr_tmp = estado.get("cronograma", {})
+    if _cr_tmp:
+        _di_auto = _cr_tmp.get("data_inicio", {"ano": 2024, "mes": 1})
+        _df_auto = _cr_tmp.get("data_fim",    {"ano": 2026, "mes": 12})
+        estado["data_inicio"] = _di_auto
+        estado["data_fim"]    = _df_auto
+    else:
+        if "data_fim" not in estado:
+            estado["data_fim"] = {"ano": 2027, "mes": 12}
 
-    estado["data_inicio"] = {"ano": _di_ano, "mes": _di_mes}
-    estado["data_fim"]    = {"ano": _df_ano, "mes": _df_mes}
-
-    # Calcula número de meses entre início e fim (inclusive)
-    _inicio = datetime.date(_di_ano, _di_mes, 1)
-    _fim    = datetime.date(_df_ano, _df_mes, 1)
+    import datetime
+    _inicio = datetime.date(estado["data_inicio"]["ano"], estado["data_inicio"]["mes"], 1)
+    _fim    = datetime.date(estado["data_fim"]["ano"],    estado["data_fim"]["mes"],    1)
     N = (_fim.year - _inicio.year) * 12 + (_fim.month - _inicio.month) + 1
-
-    if N < 1:
-        st.error("⚠️ A data de fim deve ser posterior à data de início.")
-        st.stop()
-    if N > 120:
-        st.error("⚠️ Período máximo: 120 meses (10 anos).")
-        st.stop()
-
-    # ── Ajuste de tamanho das listas (Fase 2.4) ───────────────────────
-    estado["vgv"] = {
-        m+1: estado["vgv"].get(m+1, {"unidades": 0, "preco": 350000.0})
-        for m in range(N)
-    }
-    _op = estado["poc_acum"]
-    if len(_op) < N:
-        _op = _op + [100] * (N - len(_op))
-    estado["poc_acum"] = _op[:N]
-
-    if "bdi_mensal" not in estado:
-        estado["bdi_mensal"] = [estado.get("bdi_rate", 14.0)] * N
-    _bm = estado["bdi_mensal"]
-    if len(_bm) < N:
-        _bm = _bm + [_bm[-1] if _bm else 14.0] * (N - len(_bm))
-    estado["bdi_mensal"] = _bm[:N]
-
+    if N < 1: N = 1
+    if N > 120: N = 120
     LABELS = gen_labels(N, estado["data_inicio"])
 
     is_matriz = "matriz" in titulo.lower()
-    poc_vals = list(estado["poc_acum"])
-    if len(poc_vals) < N:
-        poc_vals = poc_vals + [100] * (N - len(poc_vals))
-    poc_vals = poc_vals[:N]
-    vgv_list = [estado["vgv"].get(m+1, {"unidades": 0, "preco": 350000.0})
-                for m in range(N)]
 
-    st.caption(f"🗓️ Horizonte: **{N} meses** ({MESES[_di_mes-1]}/{_di_ano} → {MESES[_df_mes-1]}/{_df_ano})")
-
-    # ═══════════════════════════ ABA CONFIGURAÇÕES ═════════════════════
-    if _sub_aba == "⚙️ Configurações":
-        # ── SEÇÃO 1: CONFIGURAÇÕES ────────────────────────────────────
-        with st.expander("⚙️ Configurações da Obra / SPE", expanded=False):
-            cf1,cf2,cf3,cf4,cf5 = st.columns(5)
-            bdi_rate   = cf1.number_input("BDI Matriz (%)",   value=estado["bdi_rate"],  step=0.5, format="%.1f",
-                                           help="% cobrado sobre CPV da obra — receita da Matriz")
-            pct_ent    = cf2.number_input("Entrada (%)",       value=estado["pct_entrada"],step=0.5, format="%.1f",
-                                           help="% do VGV pago na assinatura/venda")
-            parc_un    = cf3.number_input("Parcela/Un (R$)",   value=estado["parcela_un"], step=100.0,format="%.0f",
-                                           help="Valor da parcela mensal por unidade durante a obra")
-            _val_mes_entrega = float(estado["mes_entrega"])
-            if _val_mes_entrega > float(N):
-                _val_mes_entrega = float(N)
-            mes_ent    = int(cf4.number_input("Mês de Entrega",value=_val_mes_entrega,
-                                               min_value=1.,max_value=float(N),step=1.,format="%.0f",
-                                               help="Índice do mês de entrega no horizonte (1-N)"))
-            g_cust     = cf5.number_input("Δ Custos (%)",      value=estado["g_custos"],  step=1.0, format="%.1f",
-                                           help="Crescimento anual dos custos sobre a base 2025")
-            estado.update({"bdi_rate":bdi_rate,"pct_entrada":pct_ent,"parcela_un":parc_un,
-                           "mes_entrega":mes_ent,"g_custos":g_cust})
-            # Salva no GitHub quando configurações mudam
-            _cfg_key = f"_cfg_hash_{titulo}"
-            _cfg_atual = str(estado["bdi_rate"]) + str(estado["cub_mensal"])
-            if st.session_state.get(_cfg_key) != _cfg_atual:
-                st.session_state[_cfg_key] = _cfg_atual
-                mark_rolling_dirty(titulo)
-
-            # ── BDI mensal (Fase 4) ───────────────────────────────────
-            st.divider()
-            st.markdown("**📊 BDI por Mês (% sobre CPV projetado)**")
-            st.caption("O BDI do passado já foi calculado. Aqui você define apenas os meses futuros.")
-            _meses_futuros = [m+1 for m in range(N) if (m+1) not in estado["meses_reais"]]
-            if _meses_futuros:
-                _bdi_df = pd.DataFrame({
-                    "Mês": [LABELS[m-1] for m in _meses_futuros],
-                    "BDI (%)": [estado["bdi_mensal"][m-1] for m in _meses_futuros],
-                })
-                try:
-                    _bdi_ed = st.data_editor(
-                        _bdi_df,
-                        column_config={
-                            "Mês": st.column_config.TextColumn("Mês", disabled=True),
-                            "BDI (%)": st.column_config.NumberColumn(
-                                "BDI (%)", min_value=0.0, max_value=100.0,
-                                step=0.5, format="%.1f%%"
-                            ),
-                        },
-                        hide_index=True,
-                        use_container_width=True,
-                        key=f"bdi_ed_{_tkey}"
-                    )
-                    for _i, _m in enumerate(_meses_futuros):
-                        estado["bdi_mensal"][_m-1] = float(_bdi_ed.iloc[_i]["BDI (%)"])
-                except Exception:
-                    st.dataframe(_bdi_df, use_container_width=True)
-            else:
-                st.info("Todos os meses já têm dados reais. Nenhum BDI futuro a configurar.")
-
-            # ── CUB mensal (Fase 4) ───────────────────────────────────
-            st.divider()
-            st.markdown("**📈 Atualização pelo CUB**")
-            st.caption("O CUB atualiza os custos projetados e as parcelas a receber. Insira o % de variação mensal esperado.")
-            _cub_col1, _cub_col2 = st.columns(2)
-            cub_mensal = _cub_col1.number_input(
-                "CUB mensal esperado (%)",
-                value=estado.get("cub_mensal", 0.5),
-                min_value=0.0, max_value=5.0,
-                step=0.1, format="%.2f",
-                help="Inflação mensal da construção civil. Atualiza custos futuros e parcelas."
-            )
-            estado["cub_mensal"] = cub_mensal
-            st.caption(f"Impacto: custo e parcelas crescem {cub_mensal:.2f}% ao mês na projeção.")
-
-            # ── Upload Cronograma (Fase 3) ────────────────────────────
-            st.divider()
-            st.markdown("**📂 Cronograma Físico-Financeiro**")
-            st.caption("Suba aqui o Excel do SIENGE com os custos planejados mês a mês para toda a obra.")
-            arq_cron = st.file_uploader(
-                "Cronograma (.xlsx)",
-                type=["xlsx", "xls"],
-                key=f"up_cronograma_{_tkey}",
-                label_visibility="collapsed"
-            )
-            if arq_cron:
-                _nome_arq_cron = arq_cron.name
-                _cron_raw = parse_cronograma_sienge(arq_cron.read())
-                if "erro" in _cron_raw:
-                    st.error(f"❌ {_cron_raw['erro']}")
-                else:
-                    estado["cronograma"] = _cron_raw
-                    estado["cronograma"]["arquivo_nome"] = arq_cron.name
-                    estado["data_fim"] = _cron_raw["data_fim"]
-                    # Guarda nome do arquivo para exibir após rerun
-                    st.session_state[f"_cron_arquivo_{_tkey}"] = _nome_arq_cron
-                    save_rolling(titulo, force=True)
-                    safe_toast(
-                        f"✅ Cronograma '{_nome_arq_cron}' processado — "
-                        f"{MESES[_cron_raw['data_inicio']['mes']-1]}/{_cron_raw['data_inicio']['ano']} "
-                        f"→ {MESES[_cron_raw['data_fim']['mes']-1]}/{_cron_raw['data_fim']['ano']}", "✅"
-                    )
-                    st.rerun()
-
-            if "cronograma" in estado:
-                _cr = estado["cronograma"]
-                _arq_exibido = _cr.get("arquivo_nome", "")
-                _arq_txt = f" · 📄 **{_arq_exibido}**" if _arq_exibido else ""
-                st.success(
-                    f"✅ Cronograma **{titulo}**{_arq_txt}\n\n"
-                    f"{MESES[_cr['data_inicio']['mes']-1]}/{_cr['data_inicio']['ano']} → "
-                    f"{MESES[_cr['data_fim']['mes']-1]}/{_cr['data_fim']['ano']} · "
-                    f"{_cr['n_meses']} meses · "
-                    f"Total: R$ {sum(_cr['custos_por_mes']):,.0f}"
-                )
-                # Botão para limpar e subir novo cronograma
-                if st.button("🔄 Substituir cronograma", key=f"clear_cron_{_tkey}",
-                             help="Remove o cronograma atual para subir uma versão atualizada"):
-                    del estado["cronograma"]
-                    st.session_state.pop(f"_cron_arquivo_{_tkey}", None)
-                    safe_toast("Cronograma removido. Suba a nova versão.", "🔄")
-                    st.rerun()
-
-        st.divider()
-        # ── SEÇÃO: UPLOAD CUSTO POR NÍVEL (CPL) ──────────────────────
-        st.markdown("### 📊 Custo por Nível — Upload Mensal")
-        st.caption(
-            "Suba o relatório 'Custo por Nível' exportado do SIENGE. "
-            "Pode ser atualizado diariamente ou após boletim de medição mensal."
-        )
-
-        # Mostra histórico já carregado
-        _hist_cpl = estado.get("historico_cpl", [])
-        if _hist_cpl:
-            with st.expander(f"📋 {len(_hist_cpl)} snapshot(s) carregado(s)", expanded=False):
-                for _snap in reversed(_hist_cpl):  # mais recente primeiro
-                    _dt_str = ""
-                    try:
-                        from datetime import datetime as _dtt
-                        _dt_str = _dtt.fromisoformat(_snap["data_upload"]).strftime("%d/%m/%Y %H:%M")
-                    except Exception:
-                        pass
-                    st.caption(
-                        f"📄 **{_snap.get('arquivo_nome', '?')}** · "
-                        f"{_snap.get('periodo_final', '?')} · "
-                        f"Medido: {_snap.get('pct_medido', 0):.1f}% · "
-                        f"CPI: {_snap.get('cpi', 0):.3f} · "
-                        f"Upload: {_dt_str}"
-                    )
-                    _col_del, _ = st.columns([1, 5])
-                    if _col_del.button("🗑️ Remover", key=f"del_cpl_{_snap.get('periodo_final','')}_{_tkey}",
-                                       help="Remove este snapshot do histórico"):
-                        estado["historico_cpl"] = [
-                            s for s in _hist_cpl
-                            if s.get("periodo_final") != _snap.get("periodo_final")
-                        ]
-                        save_rolling(titulo, force=True)
-                        safe_toast("Snapshot removido.", "🗑️")
-                        st.rerun()
-
-        # Uploader
-        _arq_cpl = st.file_uploader(
-            "Selecione o arquivo CPL (.xlsx)",
-            type=["xlsx", "xls"],
-            key=f"up_cpl_{_tkey}",
-            label_visibility="collapsed"
-        )
-        if _arq_cpl:
-            _cpl_raw = parse_custo_nivel(_arq_cpl.read(), _arq_cpl.name)
-            if "erro" in _cpl_raw:
-                st.error(f"❌ {_cpl_raw['erro']}")
-            else:
-                # Evita duplicatas pelo período final
-                _periodo = _cpl_raw.get("periodo_final", "")
-                _hist = estado.get("historico_cpl", [])
-                _hist = [s for s in _hist if s.get("periodo_final") != _periodo]
-                _hist.append(_cpl_raw)
-                # Mantém ordenado por data
-                _hist.sort(key=lambda s: s.get("periodo_final", ""))
-                estado["historico_cpl"] = _hist
-                save_rolling(titulo, force=True)
-                safe_toast(
-                    f"✅ CPL carregado: {_cpl_raw.get('periodo_final','?')} · "
-                    f"Medido {_cpl_raw.get('pct_medido',0):.1f}% · "
-                    f"CPI {_cpl_raw.get('cpi',0):.3f}",
-                    "✅"
-                )
-                st.rerun()
-
-        # ── SEÇÃO 2: UPLOAD MENSAL SIENGE ────────────────────────────
-        st.markdown("### 📎 Dados Reais — Upload Mensal SIENGE")
-        badges = ""
-        for m in range(N):
-            tem = (m+1) in estado["meses_reais"]
-            cor = "#16a34a" if tem else "#94a3b8"
-            badges += f'<span style="background:{cor};color:#fff;padding:2px 8px;border-radius:12px;margin:2px;font-size:12px">{LABELS[m]}</span>'
-        st.markdown(badges, unsafe_allow_html=True)
-
-        up_col1, up_col2 = st.columns([1,2])
-        with up_col1:
-            _mes_opcoes = list(range(1, N+1))
-            mes_up = st.selectbox("Mês do arquivo:", options=_mes_opcoes,
-                                  format_func=lambda x: LABELS[x-1] if x <= len(LABELS) else str(x),
-                                  key="mes_up_sel")
-        with up_col2:
-            arq_up = st.file_uploader("Selecione o arquivo SIENGE deste mês",
-                                       type=["xlsx","xls"], key=f"up_mensal_{mes_up}",
-                                       label_visibility="collapsed")
-            if arq_up:
-                _nome_arq_up = arq_up.name
-                _raw = parse_cronograma_sienge(arq_up.read())
-                if "erro" in _raw:
-                    st.error(f"❌ {_raw['erro']}")
-                else:
-                    _cpv_total = sum(_raw.get("custos_por_mes", [0.0]))
-                    res_up = {
-                        "ok":      True,
-                        "cpv":    -abs(_cpv_total),
-                        "desp_op": 0.0,
-                        "res_fin": 0.0,
-                        "ir":      0.0,
-                        "imp_rec": 0.0,
-                    }
-                    estado["meses_reais"][mes_up] = res_up
-                    if estado["meses_reais"]:
-                        _ultimo_real = max(estado["meses_reais"].keys())
-                        _base_dt = datetime.date(
-                            estado["data_inicio"]["ano"],
-                            estado["data_inicio"]["mes"], 1
-                        )
-                        _prox_mes_idx = _ultimo_real
-                        _prox_dt = datetime.date(
-                            _base_dt.year + (_base_dt.month + _prox_mes_idx - 1) // 12,
-                            (_base_dt.month + _prox_mes_idx - 1) % 12 + 1, 1
-                        )
-                        estado["inicio_projecao"] = {"ano": _prox_dt.year, "mes": _prox_dt.month}
-                    save_rolling(titulo, force=True)
-                    safe_toast(
-                        f"✅ {LABELS[mes_up-1]} ({_nome_arq_up}) carregado — CPV {fmt(abs(res_up['cpv']))}",
-                        "✅"
-                    )
-                    st.rerun()
-
-        if estado["meses_reais"]:
-            with st.expander(f"📋 Ver custos reais carregados ({len(estado['meses_reais'])} meses)"):
-                rows_r = []
-                for mes_k in sorted(estado["meses_reais"]):
-                    rd = estado["meses_reais"][mes_k]
-                    lbl_k = LABELS[mes_k-1] if mes_k <= len(LABELS) else f"M{mes_k}"
-                    rows_r.append({"Mês":lbl_k,
-                                   "CPV":rd.get("cpv",0),"Desp.Op.":rd.get("desp_op",0),
-                                   "Res.Fin.":rd.get("res_fin",0),"IR":rd.get("ir",0)})
-                df_r = pd.DataFrame(rows_r).set_index("Mês")
-                st.dataframe(df_r.style.format("R$ {:,.0f}"), use_container_width=True)
-
-        st.divider()
-        # ── SEÇÃO 3: VGV + POC ───────────────────────────────────────
-        if not is_matriz:
-            sv1, sv2 = st.columns([3,2])
-            with sv1:
-                st.markdown("### 🏠 Projeção de Vendas — VGV")
-                st.info("📌 **Como preencher:** insira o plano de vendas do empreendimento — "
-                        "quantas unidades prevê vender em cada mês e a que preço. "
-                        "Preencha uma vez e atualize apenas se o plano de vendas mudar.", icon="ℹ️")
-                st.caption(f"⚙️ Configurado para: **{titulo}**")
-                _titulo_safe = re.sub(r"\W+","_",titulo)
-                vgv_df_in = pd.DataFrame({
-                    "Mês":     LABELS[:N],
-                    "Unidades":[int(estado["vgv"].get(m+1, {"unidades":0})["unidades"]) for m in range(N)],
-                    "Preço/Un":[float(estado["vgv"].get(m+1, {"preco":350000.0})["preco"]) for m in range(N)],
-                })
-
-                try:
-                    vgv_ed = st.data_editor(
-                        vgv_df_in,
-                        column_config={
-                            "Mês":      st.column_config.TextColumn("Mês", disabled=True),
-                            "Unidades": st.column_config.NumberColumn("Unidades", min_value=0, step=1),
-                            "Preço/Un": st.column_config.NumberColumn("Preço/Un (R$)", min_value=0, format="R$ %.0f"),
-                        },
-                        hide_index=True,
-                        use_container_width=True,
-                        height=460,
-                        key=f"vgv_ed_{_titulo_safe}"
-                    )
-                    # Lê diretamente do retorno — forma correta no Streamlit
-                    for m in range(N):
-                        if m < len(vgv_ed):
-                            estado["vgv"][m+1]["unidades"] = float(vgv_ed.iloc[m]["Unidades"])
-                            estado["vgv"][m+1]["preco"]    = float(vgv_ed.iloc[m]["Preço/Un"])
-                    # Salva VGV quando alterado
-                    _vgv_key = f"_vgv_hash_{titulo}"
-                    _vgv_hash = str(sum(
-                        estado["vgv"].get(m+1, {}).get("unidades", 0) for m in range(N)
-                    ))
-                    if st.session_state.get(_vgv_key) != _vgv_hash:
-                        st.session_state[_vgv_key] = _vgv_hash
-                        mark_rolling_dirty(titulo)
-                except Exception as e:
-                    st.warning(f"Tabela VGV não pôde ser renderizada: {e}")
-                    st.dataframe(vgv_df_in, use_container_width=True)
-
-                vgv_total = sum(
-                    estado["vgv"].get(m+1, {"unidades":0,"preco":0})["unidades"] *
-                    estado["vgv"].get(m+1, {"unidades":0,"preco":0})["preco"]
-                    for m in range(N)
-                )
-                st.metric("VGV Total Projetado", fmt(vgv_total))
-
-            with sv2:
-                st.markdown("### 📈 Avanço Físico — POC (% acumulado)")
-                st.caption("📌 Preencha o % de obra concluída ao fim de cada mês conforme "
-                           "o planejado. Atualize os meses passados com o valor real "
-                           "quando disponível. Os meses futuros ficam como planejado.")
-                st.caption("% de obra concluída ao fim de cada mês (0–100).")
-                poc_vals=[]
-                for _gs in range(0,N,3):
-                    _grp=list(range(_gs,min(_gs+3,N)))
-                    _pc=st.columns(len(_grp))
-                    for _ci,i in enumerate(_grp):
-                        with _pc[_ci]:
-                            poc_vals.append(st.number_input(
-                                LABELS[i],0,100,estado["poc_acum"][i],
-                                step=1,key=f"poc_{i}_{_titulo_safe}"))
-                estado["poc_acum"]=poc_vals
-                # Salva POC quando alterado
-                _poc_key = f"_poc_hash_{titulo}"
-                _poc_hash = str(sum(poc_vals))
-                if st.session_state.get(_poc_key) != _poc_hash:
-                    st.session_state[_poc_key] = _poc_hash
-                    mark_rolling_dirty(titulo)
-
-                # Mini Curva S
-                poc_arr = np.array(poc_vals)
-                fg_poc = go.Figure()
-                fg_poc.add_scatter(x=LABELS, y=poc_arr, mode="lines+markers",
-                                   line=dict(color=CHART_BLUE,width=2),
-                                   fill="tozeroy", fillcolor="rgba(37,99,235,0.12)",
-                                   marker=dict(size=5))
-                fg_poc.update_layout(
-            title="Curva S", height=200, plot_bgcolor=WHITE, paper_bgcolor=WHITE,
-            font=dict(family="Inter,sans-serif",color=TEXT,size=11),
-            template="plotly_white", showlegend=False, margin=dict(l=0,r=0,t=35,b=20))
-                fg_poc.update_yaxes(ticksuffix="%", gridcolor=BORDER, range=[0,110])
-                fg_poc.update_xaxes(showgrid=False, tickfont=dict(size=9))
-                st.plotly_chart(fg_poc, use_container_width=True)
-
-        else:
-            st.markdown("### 🏦 Receita BDI — Matriz")
-            st.info("A **Matriz** não executa obra. Receita = BDI sobre CPV das SPEs.", icon="ℹ️")
-            if "rolling" in st.session_state:
-                _spes={k:v for k,v in st.session_state.rolling.items() if k!=titulo}
-                if _spes:
-                    _rows=[{"SPE":k,"BDI (%)":f'{estado["bdi_rate"]:.1f}%'} for k,v in _spes.items()]
-                    st.dataframe(pd.DataFrame(_rows),use_container_width=True,hide_index=True)
-                else: st.caption("Nenhuma SPE carregada ainda.")
-
-        # Botão de salvar configurações
-        st.divider()
-        _col_save, _ = st.columns([1, 3])
-        with _col_save:
-            if st.button("💾 Salvar configurações", key=f"btn_save_rolling_{_tkey}",
-                         use_container_width=True, type="primary"):
-                save_rolling(titulo, force=True)
-                safe_toast("Configurações salvas!", "💾")
-
-        # Atualiza vgv_list e poc_vals após edição
-        vgv_list = [estado["vgv"].get(m+1,{"unidades":0,"preco":350000.0}) for m in range(N)]
-        poc_vals = list(estado["poc_acum"])
-        if len(poc_vals) < N:
-            poc_vals = poc_vals + [100] * (N - len(poc_vals))
-        poc_vals = poc_vals[:N]
-
-    # ═══════════════════════════ ABA RESULTADOS ════════════════════════
-    # Prepara dados comuns para ambas as abas (cron_orc, receitas)
-    # ── Monta cron_orc a partir do cronograma carregado (Fase 3.2) ────
-    cron_orc_proj = {}
-    if "cronograma" in estado:
-        _cr = estado["cronograma"]
-        _cr_inicio_mes = _cr["data_inicio"]["mes"]
-        _cr_inicio_ano = _cr["data_inicio"]["ano"]
-        for _m_idx in range(N):
-            _base = datetime.date(estado["data_inicio"]["ano"],
-                                  estado["data_inicio"]["mes"], 1)
-            _atual = datetime.date(
-                _base.year + (_base.month + _m_idx - 1) // 12,
-                (_base.month + _m_idx - 1) % 12 + 1, 1
-            )
-            _offset_cron = (
-                (_atual.year - _cr_inicio_ano) * 12 +
-                (_atual.month - _cr_inicio_mes)
-            )
-            if 0 <= _offset_cron < _cr["n_meses"]:
-                _custo_cron = _cr["custos_por_mes"][_offset_cron]
-                _mes_num = _m_idx + 1
-                if _mes_num not in estado["meses_reais"]:
-                    cron_orc_proj[_mes_num] = {
-                        "cpv": -abs(_custo_cron),
-                        "desp_op": 0.0
-                    }
-
-    # Aplica CUB acumulado (Fase 4.3)
-    _n_real = len(estado["meses_reais"])
-    for _m_idx in range(N):
-        _mes_num = _m_idx + 1
-        if _mes_num in cron_orc_proj:
-            _meses_apos_real = _mes_num - _n_real
-            if _meses_apos_real > 0:
-                _fator_cub = (1 + estado.get("cub_mensal", 0.5) / 100) ** _meses_apos_real
-                cron_orc_proj[_mes_num]["cpv"] *= _fator_cub
-
-    estado["cron_orc"] = cron_orc_proj
-
-    # Variáveis de configuração (podem não estar definidas se veio direto para Resultados)
-    bdi_rate = estado["bdi_rate"]
-    pct_ent  = estado["pct_entrada"]
-    parc_un  = estado["parcela_un"]
-    mes_ent  = estado["mes_entrega"]
-    g_cust   = estado["g_custos"]
-
-    # ── Modo Consolidado: resumo de todas as SPEs ─────────────────────
-    if _sub_aba == "📊 Resultados" and empresa_sel == "Consolidado":
-        st.markdown("### 📊 Resumo Consolidado das Obras")
-        _rows_cons = []
-        _tot_orc = _tot_med = _tot_real = _tot_comp = _tot_verba = 0.0
-        for _spe_k in _spes_ativas:
-            _emp_d = st.session_state.clientes[cliente_sel]["empresas"][_spe_k]
-            _tit_k = _emp_d.get("nome", _spe_k)
-            _est_k = get_rolling_state(_tit_k)
-            _hist_k = _est_k.get("historico_cpl", [])
-            _snap_k = _hist_k[-1] if _hist_k else {}
-            _orc_k  = _snap_k.get("orcado_total", 0.0)
-            _med_k  = _snap_k.get("medido_acum", 0.0)
-            _real_k = _snap_k.get("realizado_acum", 0.0)
-            _comp_k = _snap_k.get("comprometido", 0.0)
-            _verb_k = _snap_k.get("verba_disponivel", 0.0)
-            _cpi_k  = _snap_k.get("cpi", 0.0)
-            _tot_orc   += _orc_k
-            _tot_med   += _med_k
-            _tot_real  += _real_k
-            _tot_comp  += _comp_k
-            _tot_verba += _verb_k
-            _rows_cons.append({
-                "Obra":        _spe_k,
-                "Orçado":      _orc_k,
-                "Medido":      _med_k,
-                "% Medido":    f"{_snap_k.get('pct_medido',0):.1f}%",
-                "Realizado":   _real_k,
-                "Comprometido":_comp_k,
-                "Verba Disp.": _verb_k,
-                "CPI":         f"{_cpi_k:.3f}" if _cpi_k else "—",
-                "CPL":         f"✅ {_snap_k.get('periodo_final','?')}" if _snap_k else "⬜ Sem dados",
-            })
-        if _rows_cons:
-            _df_c = pd.DataFrame(_rows_cons)
-            _fmt_c = {
-                "Orçado":"R$ {:,.0f}","Medido":"R$ {:,.0f}",
-                "Realizado":"R$ {:,.0f}","Comprometido":"R$ {:,.0f}",
-                "Verba Disp.":"R$ {:,.0f}"
-            }
-            try:
-                st.dataframe(_df_c.style.format(_fmt_c), use_container_width=True, hide_index=True)
-            except Exception:
-                st.dataframe(_df_c, use_container_width=True, hide_index=True)
-            st.divider()
-            _cc1,_cc2,_cc3,_cc4 = st.columns(4)
-            _cc1.metric("Total Orçado",     fmt(_tot_orc))
-            _cc2.metric("Total Medido",      fmt(_tot_med))
-            _cc3.metric("Total Realizado",   fmt(_tot_real))
-            _cc4.metric("Total Verba Disp.", fmt(_tot_verba))
-        else:
-            st.info("Nenhuma SPE tem dados carregados ainda.")
-        st.divider()
-        st.info("💡 Selecione uma SPE específica na sidebar para ver o detalhe da obra.")
-        return
+    st.caption(
+        f"🗓️ Período da obra: **{MESES[estado['data_inicio']['mes']-1]}/{estado['data_inicio']['ano']}** → "
+        f"**{MESES[estado['data_fim']['mes']-1]}/{estado['data_fim']['ano']}** · {N} meses"
+        + (" *(automático do CFF)*" if _cr_tmp else " *(configure o CFF para atualizar)*")
+    )
 
     # ── Prepara dados para Resultados ────────────────────────────────
     _hist_cpl  = estado.get("historico_cpl", [])
@@ -2389,8 +1875,21 @@ def render_fcff_dcf():
 
 
 # ── Roteamento ────────────────────────────────────────────────────────────────
-if   _tab == TABS[0]: render_dre()
-elif _tab == TABS[1]: render_rolling()
-elif _tab == TABS[2]: render_sensibilidade()
-elif _tab == TABS[3]: render_indicadores()
-elif _tab == TABS[4]: render_fcff_dcf()
+# ── Placeholder: Configurações (implementada na Fase 2) ──────────────────────
+def render_configuracoes():
+    st.markdown("## ⚙️ Configurações")
+    st.info("Em construção — será implementada em breve.")
+
+# ── Placeholder: Rolling Forecast novo (implementado depois) ─────────────────
+def render_rolling_forecast():
+    st.markdown("## 📅 Rolling Forecast")
+    st.info("Em construção — projeção de DRE por método (Caixa, Competência, POC).")
+
+# ── Roteamento ────────────────────────────────────────────────────────────────
+if   _tab == TABS[0]: render_configuracoes()
+elif _tab == TABS[1]: render_dre()
+elif _tab == TABS[2]: render_resumo_obras()
+elif _tab == TABS[3]: render_rolling_forecast()
+elif _tab == TABS[4]: render_indicadores()
+elif _tab == TABS[5]: render_sensibilidade()
+elif _tab == TABS[6]: render_fcff_dcf()
