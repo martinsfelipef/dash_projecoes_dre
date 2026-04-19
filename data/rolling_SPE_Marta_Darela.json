@@ -382,6 +382,156 @@
       "tem_medicao": true,
       "arquivo_nome": "emissao_custo_por_nivel-31-03-2026 - Marta Darela.xlsx",
       "data_upload": "2026-04-19T22:21:38.680557"
+    },
+    {
+      "obra_nome": "",
+      "periodo_final": "2026-04-30",
+      "orcado_total": 11304428.290000001,
+      "medido_acum": 6983543.46,
+      "realizado_acum": 5450356.09,
+      "comprometido": 5741247.870000001,
+      "verba_disponivel": 5563180.42,
+      "saldo_ctp": 1270492.0399999998,
+      "pct_medido": 61.7770601117237,
+      "pct_realizado": 48.214345300606084,
+      "cpi": 1.2813004039888338,
+      "eac": 10019208.313706173,
+      "custo_minimo": 6720848.13,
+      "etapas_nivel2": [
+        {
+          "codigo": "00.000",
+          "descricao": "",
+          "orcado": 0.0,
+          "medido": 0.0,
+          "realizado": 0.0,
+          "comprometido": 0.0,
+          "verba_disp": 0.0,
+          "pct_desvio": 0.0
+        },
+        {
+          "codigo": "01.001",
+          "descricao": "SERVIÇOS PRELIMINARES",
+          "orcado": 2079510.4000000001,
+          "medido": 1804998.14,
+          "realizado": 1594904.0599999998,
+          "comprometido": 1599838.8699999999,
+          "verba_disp": 479671.53,
+          "pct_desvio": 23.066560763533573
+        },
+        {
+          "codigo": "01.002",
+          "descricao": "INFRAESTRUTURA",
+          "orcado": 640541.4299999999,
+          "medido": 640541.4299999999,
+          "realizado": 128930.89,
+          "comprometido": 128930.89,
+          "verba_disp": 511610.5399999999,
+          "pct_desvio": 79.87157676904677
+        },
+        {
+          "codigo": "01.003",
+          "descricao": "SUPRAESTRUTURA",
+          "orcado": 1764622.98,
+          "medido": 1758457.72,
+          "realizado": 1408586.4600000002,
+          "comprometido": 1408586.4600000002,
+          "verba_disp": 356036.51999999996,
+          "pct_desvio": 20.17635064460056
+        },
+        {
+          "codigo": "01.004",
+          "descricao": "PAREDES E PAINÉIS",
+          "orcado": 1632004.24,
+          "medido": 587869.95,
+          "realizado": 472329.09,
+          "comprometido": 517211.65,
+          "verba_disp": 1114792.59,
+          "pct_desvio": 68.3081920179325
+        },
+        {
+          "codigo": "01.005",
+          "descricao": "COBERTURAS E PROTEÇÕES",
+          "orcado": 89066.58999999998,
+          "medido": 27980.6,
+          "realizado": 8745.76,
+          "comprometido": 17409.52,
+          "verba_disp": 71657.06999999999,
+          "pct_desvio": 80.4533664082121
+        },
+        {
+          "codigo": "01.006",
+          "descricao": "REVESTIMENTOS, ELEMENTOS DECORATIVOS E PINTURA",
+          "orcado": 1063713.57,
+          "medido": 440634.14999999997,
+          "realizado": 493424.73,
+          "comprometido": 672388.4899999999,
+          "verba_disp": 391325.07999999996,
+          "pct_desvio": 36.788576458604375
+        },
+        {
+          "codigo": "01.007",
+          "descricao": "PAVIMENTAÇÃO",
+          "orcado": 633541.5499999999,
+          "medido": 37280.29,
+          "realizado": 133249.32,
+          "comprometido": 133249.32,
+          "verba_disp": 500292.23,
+          "pct_desvio": 78.96754837942358
+        },
+        {
+          "codigo": "01.008",
+          "descricao": "INSTALAÇÕES E APARELHOS",
+          "orcado": 1386261.0,
+          "medido": 469382.19,
+          "realizado": 517416.85,
+          "comprometido": 568102.31,
+          "verba_disp": 818158.69,
+          "pct_desvio": 59.01909452837524
+        },
+        {
+          "codigo": "02.001",
+          "descricao": "ENERGIA/ILUMINAÇÃO",
+          "orcado": 39022.93,
+          "medido": 0.0,
+          "realizado": 0.0,
+          "comprometido": 0.0,
+          "verba_disp": 39022.93,
+          "pct_desvio": 100.0
+        },
+        {
+          "codigo": "02.002",
+          "descricao": "PAVIMENTAÇÃO EXTERNA",
+          "orcado": 4968.6,
+          "medido": 0.0,
+          "realizado": 0.0,
+          "comprometido": 0.0,
+          "verba_disp": 4968.6,
+          "pct_desvio": 100.0
+        },
+        {
+          "codigo": "02.003",
+          "descricao": "PAISAGISMO",
+          "orcado": 2175.0,
+          "medido": 0.0,
+          "realizado": 0.0,
+          "comprometido": 0.0,
+          "verba_disp": 2175.0,
+          "pct_desvio": 100.0
+        },
+        {
+          "codigo": "01.001",
+          "descricao": "CUSTOS INDIRETOS",
+          "orcado": 1969000.0,
+          "medido": 1216398.9900000002,
+          "realizado": 692768.9299999999,
+          "comprometido": 695530.36,
+          "verba_disp": 1273469.64,
+          "pct_desvio": 64.6759593702387
+        }
+      ],
+      "tem_medicao": true,
+      "arquivo_nome": "emissao_custo_por_nivel-30-04-2026 - Marta Darela.xlsx",
+      "data_upload": "2026-04-19T22:21:40.788841"
     }
   ],
   "cronograma": {
