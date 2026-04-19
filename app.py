@@ -1174,7 +1174,10 @@ def render_rolling():
                                            help="% do VGV pago na assinatura/venda")
             parc_un    = cf3.number_input("Parcela/Un (R$)",   value=estado["parcela_un"], step=100.0,format="%.0f",
                                            help="Valor da parcela mensal por unidade durante a obra")
-            mes_ent    = int(cf4.number_input("Mês de Entrega",value=float(estado["mes_entrega"]),
+            _val_mes_entrega = float(estado["mes_entrega"])
+            if _val_mes_entrega > float(N):
+                _val_mes_entrega = float(N)
+            mes_ent    = int(cf4.number_input("Mês de Entrega",value=_val_mes_entrega,
                                                min_value=1.,max_value=float(N),step=1.,format="%.0f",
                                                help="Índice do mês de entrega no horizonte (1-N)"))
             g_cust     = cf5.number_input("Δ Custos (%)",      value=estado["g_custos"],  step=1.0, format="%.1f",

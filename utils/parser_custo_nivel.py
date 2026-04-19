@@ -100,11 +100,13 @@ def parse_custo_nivel(data: bytes, arquivo_nome: str = "") -> dict:
         except (ValueError, TypeError):
             return 0.0
 
-    # Encontra a linha "Total da obra" (última linha com valor numérico grande)
+    # Encontra a linha "Total da obra" (última linha com valor numérico grande de orçamento)
     total_row = None
     for row in reversed(rows):
-        cod = row[COL_CODIGO]
-        if cod and isinstance(cod, (int, float)) and float(cod) > 1_000_000:
+        if not row or len(row) <= COL_ORCADO: continue
+        val_orc = _f(row[COL_ORCADO])
+        # Considera a linha do Total como a última linha do arquivo que tem um orçamento considerável
+        if val_orc > 1_000:
             total_row = row
             break
 
