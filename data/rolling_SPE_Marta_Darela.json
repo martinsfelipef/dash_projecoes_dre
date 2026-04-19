@@ -1,6 +1,31 @@
 {
   "meses_reais": {},
-  "cron_orc": {},
+  "cron_orc": {
+    "1": {
+      "cpv": -108865.7205,
+      "desp_op": 0.0
+    },
+    "2": {
+      "cpv": -96646.71668624997,
+      "desp_op": 0.0
+    },
+    "3": {
+      "cpv": -119822.16785483246,
+      "desp_op": 0.0
+    },
+    "4": {
+      "cpv": -106676.72979015597,
+      "desp_op": 0.0
+    },
+    "5": {
+      "cpv": -109884.993958518,
+      "desp_op": 0.0
+    },
+    "6": {
+      "cpv": -94848.83598724465,
+      "desp_op": 0.0
+    }
+  },
   "vgv": {
     "1": {
       "unidades": 0.0,
@@ -25,99 +50,9 @@
     "6": {
       "unidades": 0.0,
       "preco": 350000.0
-    },
-    "7": {
-      "unidades": 0.0,
-      "preco": 350000.0
-    },
-    "8": {
-      "unidades": 0.0,
-      "preco": 350000.0
-    },
-    "9": {
-      "unidades": 0.0,
-      "preco": 350000.0
-    },
-    "10": {
-      "unidades": 0.0,
-      "preco": 350000.0
-    },
-    "11": {
-      "unidades": 0.0,
-      "preco": 350000.0
-    },
-    "12": {
-      "unidades": 0.0,
-      "preco": 350000.0
-    },
-    "13": {
-      "unidades": 0.0,
-      "preco": 350000.0
-    },
-    "14": {
-      "unidades": 0.0,
-      "preco": 350000.0
-    },
-    "15": {
-      "unidades": 0.0,
-      "preco": 350000.0
-    },
-    "16": {
-      "unidades": 0.0,
-      "preco": 350000.0
-    },
-    "17": {
-      "unidades": 0.0,
-      "preco": 350000.0
-    },
-    "18": {
-      "unidades": 0.0,
-      "preco": 350000.0
-    },
-    "19": {
-      "unidades": 0.0,
-      "preco": 350000.0
-    },
-    "20": {
-      "unidades": 0.0,
-      "preco": 350000.0
-    },
-    "21": {
-      "unidades": 0.0,
-      "preco": 350000.0
-    },
-    "22": {
-      "unidades": 0.0,
-      "preco": 350000.0
-    },
-    "23": {
-      "unidades": 0.0,
-      "preco": 350000.0
-    },
-    "24": {
-      "unidades": 0.0,
-      "preco": 350000.0
     }
   },
   "poc_acum": [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
     0,
     0,
     0,
@@ -132,40 +67,173 @@
     14.0,
     14.0,
     14.0,
-    14.0,
-    14.0,
-    14.0,
-    14.0,
-    14.0,
-    14.0,
-    14.0,
-    14.0,
-    14.0,
-    14.0,
-    14.0,
-    14.0,
-    14.0,
-    14.0,
-    14.0,
-    14.0,
-    14.0,
-    14.0,
     14.0
   ],
   "cub_mensal": 0.5,
   "pct_entrada": 7.0,
   "parcela_un": 1500.0,
-  "mes_entrega": 12,
+  "mes_entrega": 6,
   "g_custos": 10.0,
   "data_inicio": {
     "ano": 2026,
     "mes": 1
   },
   "data_fim": {
-    "mes": 6,
-    "ano": 2026
+    "ano": 2026,
+    "mes": 6
   },
-  "historico_cpl": [],
+  "historico_cpl": [
+    {
+      "obra_nome": "",
+      "periodo_final": "2026-02-28",
+      "orcado_total": 11304428.290000001,
+      "medido_acum": 5806214.9,
+      "realizado_acum": 4378490.45,
+      "comprometido": 4425785.94,
+      "verba_disponivel": 6878642.3500000015,
+      "saldo_ctp": 817564.2999999999,
+      "pct_medido": 51.36230467432157,
+      "pct_realizado": 38.73252443799615,
+      "cpi": 1.3260768674281338,
+      "eac": 9601368.557686582,
+      "custo_minimo": 5196054.75,
+      "etapas_nivel2": [
+        {
+          "codigo": "00.000",
+          "descricao": "",
+          "orcado": 0.0,
+          "medido": 0.0,
+          "realizado": 0.0,
+          "comprometido": 0.0,
+          "verba_disp": 0.0,
+          "pct_desvio": 0.0
+        },
+        {
+          "codigo": "01.001",
+          "descricao": "SERVIÇOS PRELIMINARES",
+          "orcado": 2079510.4000000001,
+          "medido": 1438618.8899999997,
+          "realizado": 1381325.03,
+          "comprometido": 1382509.6300000001,
+          "verba_disp": 697000.7699999999,
+          "pct_desvio": 33.51754191755906
+        },
+        {
+          "codigo": "01.002",
+          "descricao": "INFRAESTRUTURA",
+          "orcado": 640541.4299999999,
+          "medido": 640541.4299999999,
+          "realizado": 128930.89,
+          "comprometido": 128930.89,
+          "verba_disp": 511610.5399999999,
+          "pct_desvio": 79.87157676904677
+        },
+        {
+          "codigo": "01.003",
+          "descricao": "SUPRAESTRUTURA",
+          "orcado": 1764622.98,
+          "medido": 1723504.08,
+          "realizado": 1330665.4400000002,
+          "comprometido": 1330665.4400000002,
+          "verba_disp": 433957.54000000004,
+          "pct_desvio": 24.592082553520854
+        },
+        {
+          "codigo": "01.004",
+          "descricao": "PAREDES E PAINÉIS",
+          "orcado": 1632004.24,
+          "medido": 516149.80000000005,
+          "realizado": 329032.12,
+          "comprometido": 334193.93000000005,
+          "verba_disp": 1297810.31,
+          "pct_desvio": 79.52248396119363
+        },
+        {
+          "codigo": "01.005",
+          "descricao": "COBERTURAS E PROTEÇÕES",
+          "orcado": 89066.58999999998,
+          "medido": 27980.6,
+          "realizado": 82.0,
+          "comprometido": 82.0,
+          "verba_disp": 88984.58999999998,
+          "pct_desvio": 99.90793405248814
+        },
+        {
+          "codigo": "01.006",
+          "descricao": "REVESTIMENTOS, ELEMENTOS DECORATIVOS E PINTURA",
+          "orcado": 1063713.57,
+          "medido": 196153.84,
+          "realizado": 216643.79,
+          "comprometido": 225170.43999999997,
+          "verba_disp": 838543.1299999999,
+          "pct_desvio": 78.8316661223002
+        },
+        {
+          "codigo": "01.007",
+          "descricao": "PAVIMENTAÇÃO",
+          "orcado": 633541.5499999999,
+          "medido": 0.0,
+          "realizado": 6522.03,
+          "comprometido": 6522.03,
+          "verba_disp": 627019.5199999999,
+          "pct_desvio": 98.97054423660137
+        },
+        {
+          "codigo": "01.008",
+          "descricao": "INSTALAÇÕES E APARELHOS",
+          "orcado": 1386261.0,
+          "medido": 251938.62000000002,
+          "realizado": 330055.71,
+          "comprometido": 359716.71,
+          "verba_disp": 1026544.29,
+          "pct_desvio": 74.05129986344562
+        },
+        {
+          "codigo": "02.001",
+          "descricao": "ENERGIA/ILUMINAÇÃO",
+          "orcado": 39022.93,
+          "medido": 0.0,
+          "realizado": 0.0,
+          "comprometido": 0.0,
+          "verba_disp": 39022.93,
+          "pct_desvio": 100.0
+        },
+        {
+          "codigo": "02.002",
+          "descricao": "PAVIMENTAÇÃO EXTERNA",
+          "orcado": 4968.6,
+          "medido": 0.0,
+          "realizado": 0.0,
+          "comprometido": 0.0,
+          "verba_disp": 4968.6,
+          "pct_desvio": 100.0
+        },
+        {
+          "codigo": "02.003",
+          "descricao": "PAISAGISMO",
+          "orcado": 2175.0,
+          "medido": 0.0,
+          "realizado": 0.0,
+          "comprometido": 0.0,
+          "verba_disp": 2175.0,
+          "pct_desvio": 100.0
+        },
+        {
+          "codigo": "01.001",
+          "descricao": "CUSTOS INDIRETOS",
+          "orcado": 1969000.0,
+          "medido": 1011327.64,
+          "realizado": 655233.44,
+          "comprometido": 657994.87,
+          "verba_disp": 1311005.1300000001,
+          "pct_desvio": 66.58228186896902
+        }
+      ],
+      "tem_medicao": true,
+      "arquivo_nome": "emissao_custo_por_nivel-28-02-2026 - Marta Darela.xlsx",
+      "data_upload": "2026-04-19T22:21:25.047143"
+    }
+  ],
   "cronograma": {
     "obra_nome": "81 - RESIDENCIAL MARTA DARELA",
     "data_inicio": {
