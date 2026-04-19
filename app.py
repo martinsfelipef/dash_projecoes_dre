@@ -1202,13 +1202,12 @@ def render_resumo_obras():
     if _sub_aba == "📊 Resultados":
         import datetime as _dt
 
-        # Gate: precisa de pelo menos CFF ou CPL
         if not _tem_cff and not _tem_cpl:
             st.info(
-                "ℹ️ Para ver os resultados, carregue ao menos:\n\n"
-                "- **Cronograma Físico/Financeiro** (CFF) — base da Curva S\n"
-                "- **Custo por Nível** (CPL) — KPIs de custo e prazo\n\n"
-                "Ambos estão disponíveis na aba ⚙️ Configurações."
+                "ℹ️ Nenhum dado carregado para esta obra.\n\n"
+                "Acesse a aba **⚙️ Configurações** para:\n"
+                "- Subir o Cronograma Físico/Financeiro (CFF)\n"
+                "- Subir o Custo por Nível (CPL)"
             )
             return
 
@@ -1875,10 +1874,333 @@ def render_fcff_dcf():
 
 
 # ── Roteamento ────────────────────────────────────────────────────────────────
-# ── Placeholder: Configurações (implementada na Fase 2) ──────────────────────
+@st.fragment
 def render_configuracoes():
     st.markdown("## ⚙️ Configurações")
-    st.info("Em construção — será implementada em breve.")
+    st.caption("Central de configuração do sistema. Organize os dados antes de ver os resultados.")
+    st.divider()
+
+    # ── Seletor de SPE (mesmo padrão do Resumo de Obras) ──────────────
+    _todas = list(st.session_state.clientes[cliente_sel]["empresas"].keys())
+    _spes  = [k for k in _todas
+              if st.session_state.get("empresas_ativas", {}).get(k, True)
+              and "matriz" not in k.lower()]
+    if not _spes:
+        st.warning("Nenhuma SPE ativa. Ative ao menos uma empresa na sidebar.")
+        return
+
+    _cfg_emp_key = "_cfg_empresa_sel"
+    if empresa_sel in _spes:
+        st.session_state[_cfg_emp_key] = empresa_sel
+    elif st.session_state.get(_cfg_emp_key) not in _spes:
+        st.session_state[_cfg_emp_key] = _spes[0]
+
+    st.markdown("**🏢 Configurando dados para:**")
+    _cols_spe = st.columns(min(len(_spes), 3))
+    for _i, _sk in enumerate(_spes):
+        with _cols_spe[_i % 3]:
+            _emp_d = st.session_state.clientes[cliente_sel]["empresas"][_sk]
+            _tit_k = _emp_d.get("nome", _sk)
+            _est_k = get_rolling_state(_tit_k)
+            _tem_c = "cronograma" in _est_k
+            _tem_p = bool(_est_k.get("historico_cpl", []))
+            _icone = "✅" if (_tem_c and _tem_p) else "⚠️" if (_tem_c or _tem_p) else "⬜"
+            if st.button(
+                f"{_icone} {_sk}",
+                key=f"_cfg_btn_{_sk}",
+                type="primary" if _sk == st.session_state.get(_cfg_emp_key) else "secondary",
+                use_container_width=True
+            ):
+                st.session_state[_cfg_emp_key] = _sk
+                st.rerun()
+
+    _spe_sel   = st.session_state.get(_cfg_emp_key, _spes[0])
+    _emp_cfg   = st.session_state.clientes[cliente_sel]["empresas"][_spe_sel]
+    _titulo_cfg = _emp_cfg.get("nome", _spe_sel)
+    _estado_cfg = get_rolling_state(_titulo_cfg)
+    _tkey_cfg  = re.sub(r"\W+", "_", _titulo_cfg)
+
+    st.caption(f"Editando: **{_spe_sel}**")
+    st.divider()
+
+    # ══════════════════════════════════════════════════════════════════
+    # BLOCO 1 — DADOS DA OBRA (CFF + CPL)
+    # ══════════════════════════════════════════════════════════════════
+    st.markdown("### 📁 Bloco 1 — Dados da Obra")
+
+    # CFF
+    with st.expander("📐 Cronograma Físico/Financeiro (CFF)", expanded=True):
+        st.caption("Suba o relatório CFF exportado do SIENGE. Re-exportar apenas em reprogramações.")
+        if "cronograma" in _estado_cfg:
+            _cr = _estado_cfg["cronograma"]
+            _arq_cff = _cr.get("arquivo_nome", "arquivo não identificado")
+            _data_upload_cff = _cr.get("data_upload", "")
+            _dt_fmt = ""
+            if _data_upload_cff:
+                try:
+                    import datetime as _dtu
+                    _dt_fmt = _dtu.datetime.fromisoformat(_data_upload_cff).strftime("%d/%m/%Y %H:%M")
+                except Exception:
+                    pass
+            st.success(
+                f"✅ **{_arq_cff}** · {_dt_fmt}\n\n"
+                f"📅 {MESES[_cr['data_inicio']['mes']-1]}/{_cr['data_inicio']['ano']} → "
+                f"{MESES[_cr['data_fim']['mes']-1]}/{_cr['data_fim']['ano']} · "
+                f"{_cr['n_meses']} meses · Total: R$ {sum(_cr['custos_por_mes']):,.0f}"
+            )
+            if st.button("🔄 Substituir CFF", key=f"sub_cff_{_tkey_cfg}"):
+                del _estado_cfg["cronograma"]
+                save_rolling(_titulo_cfg, force=True)
+                safe_toast("CFF removido. Suba a nova versão.", "🔄")
+                st.rerun()
+        else:
+            _arq_cff_up = st.file_uploader(
+                "Selecione o CFF (.xlsx)",
+                type=["xlsx","xls"],
+                key=f"up_cff_cfg_{_tkey_cfg}",
+                label_visibility="collapsed"
+            )
+            if _arq_cff_up:
+                _cron_raw = parse_cronograma_sienge(_arq_cff_up.read())
+                if "erro" in _cron_raw:
+                    st.error(f"❌ {_cron_raw['erro']}")
+                else:
+                    _estado_cfg["cronograma"] = _cron_raw
+                    _estado_cfg["cronograma"]["arquivo_nome"] = _arq_cff_up.name
+                    _estado_cfg["data_inicio"] = _cron_raw["data_inicio"]
+                    _estado_cfg["data_fim"]    = _cron_raw["data_fim"]
+                    save_rolling(_titulo_cfg, force=True)
+                    safe_toast(f"✅ CFF carregado: {_arq_cff_up.name}", "✅")
+                    st.rerun()
+
+    # CPL
+    with st.expander("📊 Custo por Nível (CPL) — Histórico mensal", expanded=True):
+        st.caption(
+            "Suba o CPL após cada boletim de medição (~dia 10 do mês seguinte). "
+            "Pode também subir versão diária a qualquer momento."
+        )
+        _hist = _estado_cfg.get("historico_cpl", [])
+        if _hist:
+            _cols_h = st.columns([3,1,1,1,1,1])
+            _cols_h[0].caption("Arquivo")
+            _cols_h[1].caption("Período")
+            _cols_h[2].caption("Medido")
+            _cols_h[3].caption("CPI")
+            _cols_h[4].caption("Realizado")
+            _cols_h[5].caption("Ação")
+            for _snap in reversed(_hist):
+                _c0,_c1,_c2,_c3,_c4,_c5 = st.columns([3,1,1,1,1,1])
+                _c0.caption(_snap.get("arquivo_nome","?")[:30])
+                _c1.caption(_snap.get("periodo_final","?"))
+                _c2.caption(f"{_snap.get('pct_medido',0):.1f}%")
+                _c3.caption(f"{_snap.get('cpi',0):.3f}")
+                _c4.caption(f"R$ {_snap.get('realizado_acum',0):,.0f}")
+                if _c5.button("🗑️", key=f"del_cpl_cfg_{_snap.get('periodo_final','')}_{_tkey_cfg}"):
+                    _estado_cfg["historico_cpl"] = [
+                        s for s in _hist if s.get("periodo_final") != _snap.get("periodo_final")
+                    ]
+                    save_rolling(_titulo_cfg, force=True)
+                    safe_toast("Snapshot removido.", "🗑️")
+                    st.rerun()
+
+        _arq_cpl_up = st.file_uploader(
+            "Adicionar novo CPL (.xlsx)",
+            type=["xlsx","xls"],
+            key=f"up_cpl_cfg_{_tkey_cfg}",
+            label_visibility="collapsed"
+        )
+        if _arq_cpl_up:
+            _cpl_raw = parse_custo_nivel(_arq_cpl_up.read(), _arq_cpl_up.name)
+            if "erro" in _cpl_raw:
+                st.error(f"❌ {_cpl_raw['erro']}")
+            else:
+                _periodo = _cpl_raw.get("periodo_final","")
+                _hist_upd = [s for s in _hist if s.get("periodo_final") != _periodo]
+                _hist_upd.append(_cpl_raw)
+                _hist_upd.sort(key=lambda s: s.get("periodo_final",""))
+                _estado_cfg["historico_cpl"] = _hist_upd
+                save_rolling(_titulo_cfg, force=True)
+                safe_toast(
+                    f"✅ CPL carregado: {_cpl_raw.get('periodo_final','?')} · "
+                    f"Medido {_cpl_raw.get('pct_medido',0):.1f}% · "
+                    f"CPI {_cpl_raw.get('cpi',0):.3f}", "✅"
+                )
+                st.rerun()
+
+    # DRE mensal
+    with st.expander("📋 DRE Mensal (histórico real)", expanded=False):
+        st.caption(
+            "Suba a DRE exportada do SIENGE mês a mês a partir de 2026. "
+            "A DRE anual de 2025 já está carregada na aba DRE Analítica."
+        )
+        # Mostra o que já está carregado
+        _emp_data_dre = st.session_state.clientes[cliente_sel]["empresas"].get(_spe_sel, {})
+        _fonte_dre = _emp_data_dre.get("fonte", "Fixo")
+        _nome_dre  = _emp_data_dre.get("nome", _spe_sel)
+        st.caption(
+            f"DRE atual: **{_nome_dre}** · "
+            f"Fonte: {'Upload' if _fonte_dre == 'Upload' else 'Dados padrão'}"
+        )
+        # Uploader para nova DRE mensal
+        _tipo_up = st.selectbox(
+            "Tipo de arquivo:", ["SIENGE", "Template Align"],
+            key=f"tipo_dre_cfg_{_tkey_cfg}",
+            label_visibility="visible"
+        )
+        _arq_dre_up = st.file_uploader(
+            "Selecione o arquivo DRE (.xlsx)",
+            type=["xlsx","xls"],
+            key=f"up_dre_cfg_{_tkey_cfg}",
+            label_visibility="collapsed"
+        )
+        if _arq_dre_up:
+            _bdata = _arq_dre_up.read()
+            _res_dre = parse_sienge(_bdata) if _tipo_up == "SIENGE" else parse_template_align(_bdata)
+            if "erro" in _res_dre:
+                st.error(f"❌ {_res_dre['erro']}")
+            else:
+                st.success(f"✅ Arquivo lido: {_arq_dre_up.name}")
+                if st.button("✅ Aplicar DRE", type="primary", key=f"apply_dre_cfg_{_tkey_cfg}"):
+                    _d = _res_dre["dados"]
+                    _nova = {
+                        "nome": _spe_sel, "fonte": "Upload",
+                        "rec_bruta": _d["rec_bruta"], "imp_rec": _d["imp_rec"],
+                        "cpv": _d["cpv"], "desp_op": _d["desp_op"],
+                        "res_fin": _d["res_fin"], "ir": _d["ir"],
+                        "rec_bdi":  _d.get("rec_bdi",  [0.0]*12),
+                        "desp_bdi": _d.get("desp_bdi", [0.0]*12),
+                        "raw_lines": _parse_sienge_full(_bdata)
+                    }
+                    st.session_state.clientes[cliente_sel]["empresas"][_spe_sel] = _nova
+                    save_state()
+                    safe_toast(f"✅ DRE atualizada!", "✅")
+                    st.rerun()
+
+    st.divider()
+
+    # ══════════════════════════════════════════════════════════════════
+    # BLOCO 2 — PARÂMETROS DE RECEITA (para Rolling Forecast)
+    # ══════════════════════════════════════════════════════════════════
+    st.markdown("### 💰 Bloco 2 — Parâmetros de Receita")
+    st.caption("Usados na aba Rolling Forecast para projetar receita futura.")
+
+    with st.expander("📈 VGV — Receita por Competência", expanded=False):
+        st.caption("Valor de venda por mês. Representa o VGV reconhecido no mês da venda.")
+        _cr_cfg = _estado_cfg.get("cronograma", {})
+        _N_cfg  = _cr_cfg.get("n_meses", 24)
+        _LABELS_cfg = gen_labels(_N_cfg, _estado_cfg.get("data_inicio", {"ano":2024,"mes":1}))
+        _vgv_cfg = _estado_cfg.get("vgv", {m+1: {"unidades":0,"preco":350000.0} for m in range(_N_cfg)})
+        _vgv_df = pd.DataFrame({
+            "Mês":     _LABELS_cfg[:_N_cfg],
+            "Unidades":[int(_vgv_cfg.get(m+1,{"unidades":0})["unidades"]) for m in range(_N_cfg)],
+            "Preço/Un":[float(_vgv_cfg.get(m+1,{"preco":350000.0})["preco"]) for m in range(_N_cfg)],
+        })
+        try:
+            _vgv_ed = st.data_editor(
+                _vgv_df,
+                column_config={
+                    "Mês": st.column_config.TextColumn("Mês", disabled=True),
+                    "Unidades": st.column_config.NumberColumn("Unidades", min_value=0, step=1),
+                    "Preço/Un": st.column_config.NumberColumn("Preço/Un (R$)", min_value=0, format="R$ %.0f"),
+                },
+                hide_index=True, use_container_width=True, height=400,
+                key=f"vgv_cfg_{_tkey_cfg}"
+            )
+            for _m in range(_N_cfg):
+                if _m < len(_vgv_ed):
+                    _estado_cfg["vgv"][_m+1]["unidades"] = float(_vgv_ed.iloc[_m]["Unidades"])
+                    _estado_cfg["vgv"][_m+1]["preco"]    = float(_vgv_ed.iloc[_m]["Preço/Un"])
+            _vgv_total = sum(_estado_cfg["vgv"].get(_m+1,{"unidades":0,"preco":0})["unidades"] *
+                             _estado_cfg["vgv"].get(_m+1,{"unidades":0,"preco":0})["preco"]
+                             for _m in range(_N_cfg))
+            st.metric("VGV Total", fmt(_vgv_total))
+        except Exception as _e:
+            st.dataframe(_vgv_df, use_container_width=True)
+
+    with st.expander("📊 Avanço Físico — POC", expanded=False):
+        st.caption("% de obra concluída ao fim de cada mês (0–100). Atualizar mensalmente com o real.")
+        _poc_cfg = _estado_cfg.get("poc_acum", [0]*_N_cfg)
+        if len(_poc_cfg) < _N_cfg:
+            _poc_cfg = _poc_cfg + [100]*((_N_cfg) - len(_poc_cfg))
+        _poc_cfg = _poc_cfg[:_N_cfg]
+        _poc_vals_cfg = []
+        _tkey_safe = re.sub(r"\W+","_",_titulo_cfg)
+        for _gs in range(0, _N_cfg, 3):
+            _grp = list(range(_gs, min(_gs+3, _N_cfg)))
+            _pc  = st.columns(len(_grp))
+            for _ci, _i in enumerate(_grp):
+                with _pc[_ci]:
+                    _poc_vals_cfg.append(st.number_input(
+                        _LABELS_cfg[_i], 0, 100, _poc_cfg[_i],
+                        step=1, key=f"poc_cfg_{_i}_{_tkey_safe}"
+                    ))
+        _estado_cfg["poc_acum"] = _poc_vals_cfg
+
+    with st.expander("💵 Parâmetros Caixa", expanded=False):
+        st.caption("Entrada, parcelas e saldo na entrega — para projeção de recebimentos por Caixa.")
+        _cf1, _cf2, _cf3 = st.columns(3)
+        _pct_ent = _cf1.number_input("Entrada (%)", value=_estado_cfg.get("pct_entrada",7.0),
+                                      step=0.5, format="%.1f", key=f"ent_cfg_{_tkey_cfg}")
+        _parc_un = _cf2.number_input("Parcela/Un (R$)", value=_estado_cfg.get("parcela_un",1500.0),
+                                      step=100.0, format="%.0f", key=f"parc_cfg_{_tkey_cfg}")
+        _mes_ent = int(_cf3.number_input("Mês de entrega (índice)", value=float(_estado_cfg.get("mes_entrega",12)),
+                                          min_value=1., max_value=float(max(_N_cfg,1)), step=1.,
+                                          format="%.0f", key=f"mesent_cfg_{_tkey_cfg}"))
+        _estado_cfg.update({"pct_entrada":_pct_ent,"parcela_un":_parc_un,"mes_entrega":_mes_ent})
+
+    st.divider()
+
+    # ══════════════════════════════════════════════════════════════════
+    # BLOCO 3 — PARÂMETROS GERAIS
+    # ══════════════════════════════════════════════════════════════════
+    st.markdown("### ⚙️ Bloco 3 — Parâmetros Gerais")
+
+    with st.expander("📐 BDI e CUB", expanded=False):
+        _b1, _b2, _b3 = st.columns(3)
+        _bdi_base = _b1.number_input("BDI base (%)", value=_estado_cfg.get("bdi_rate",14.0),
+                                      step=0.5, format="%.1f", key=f"bdi_cfg_{_tkey_cfg}")
+        _cub_m    = _b2.number_input("CUB mensal (%)", value=_estado_cfg.get("cub_mensal",0.5),
+                                      min_value=0.0, max_value=5.0, step=0.1, format="%.2f",
+                                      key=f"cub_cfg_{_tkey_cfg}")
+        _estado_cfg.update({"bdi_rate":_bdi_base, "cub_mensal":_cub_m})
+        st.caption(f"BDI base: {_bdi_base:.1f}% · CUB: {_cub_m:.2f}%/mês (~{_cub_m*12:.1f}%/ano)")
+
+        # BDI mensal por tabela
+        st.markdown("**BDI por mês (futuros):**")
+        _meses_fut = [m+1 for m in range(_N_cfg) if (m+1) not in _estado_cfg.get("meses_reais",{})]
+        if _meses_fut:
+            _bdi_m_cfg = _estado_cfg.get("bdi_mensal",[_bdi_base]*_N_cfg)
+            _bdi_df = pd.DataFrame({
+                "Mês": [_LABELS_cfg[m-1] for m in _meses_fut],
+                "BDI (%)": [_bdi_m_cfg[m-1] if m-1 < len(_bdi_m_cfg) else _bdi_base for m in _meses_fut],
+            })
+            try:
+                _bdi_ed = st.data_editor(
+                    _bdi_df,
+                    column_config={
+                        "Mês": st.column_config.TextColumn("Mês", disabled=True),
+                        "BDI (%)": st.column_config.NumberColumn("BDI (%)", min_value=0.0,
+                                                                   max_value=100.0, step=0.5, format="%.1f%%"),
+                    },
+                    hide_index=True, use_container_width=True,
+                    key=f"bdi_ed_cfg_{_tkey_cfg}"
+                )
+                for _ii, _m in enumerate(_meses_fut):
+                    if _m-1 < len(_estado_cfg["bdi_mensal"]):
+                        _estado_cfg["bdi_mensal"][_m-1] = float(_bdi_ed.iloc[_ii]["BDI (%)"])
+            except Exception:
+                st.dataframe(_bdi_df, use_container_width=True)
+
+    st.divider()
+
+    # Botão salvar
+    _col_sv, _ = st.columns([1,3])
+    with _col_sv:
+        if st.button("💾 Salvar todas as configurações", type="primary",
+                     use_container_width=True, key=f"save_all_cfg_{_tkey_cfg}"):
+            save_rolling(_titulo_cfg, force=True)
+            safe_toast("Configurações salvas!", "💾")
+
 
 # ── Placeholder: Rolling Forecast novo (implementado depois) ─────────────────
 def render_rolling_forecast():
