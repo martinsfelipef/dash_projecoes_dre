@@ -330,7 +330,158 @@
     "ano": 2028,
     "mes": 8
   },
-  "historico_cpl": [],
+  "historico_cpl": [
+    {
+      "obra_nome": "",
+      "periodo_final": "2026-04-16",
+      "orcado_total": 20485389.0,
+      "medido_acum": 2995431.3099999996,
+      "realizado_acum": 2930130.99,
+      "comprometido": 3029029.75,
+      "verba_disponivel": 17456359.27,
+      "saldo_ctp": 54483.11999999997,
+      "pct_medido": 14.622281812661694,
+      "pct_realizado": 14.303516472154861,
+      "cpi": 1.022285802314933,
+      "eac": 20102684.85922785,
+      "custo_minimo": 2984614.1100000003,
+      "etapas_nivel2": [
+        {
+          "codigo": "00.000",
+          "descricao": "",
+          "orcado": 0.0,
+          "medido": 0.0,
+          "realizado": 210381.38,
+          "comprometido": 233657.09,
+          "verba_disp": -233657.09,
+          "pct_desvio": 0.0
+        },
+        {
+          "codigo": "01.001",
+          "descricao": "SERVIÇOS PRELIMINARES",
+          "orcado": 3372629.1100000003,
+          "medido": 997649.99,
+          "realizado": 620193.2,
+          "comprometido": 625045.0700000001,
+          "verba_disp": 2747584.04,
+          "pct_desvio": 81.46712699161871
+        },
+        {
+          "codigo": "01.002",
+          "descricao": "INFRAESTRUTURA",
+          "orcado": 921317.24,
+          "medido": 921317.24,
+          "realizado": 898888.6300000001,
+          "comprometido": 902543.6300000001,
+          "verba_disp": 18773.610000000004,
+          "pct_desvio": 2.037692250282845
+        },
+        {
+          "codigo": "01.003",
+          "descricao": "SUPRAESTRUTURA",
+          "orcado": 3008396.400000001,
+          "medido": 388798.01999999996,
+          "realizado": 217514.7199999998,
+          "comprometido": 217514.7199999998,
+          "verba_disp": 2790881.699999997,
+          "pct_desvio": 92.76974536999181
+        },
+        {
+          "codigo": "01.004",
+          "descricao": "PAREDES E PAINÉIS",
+          "orcado": 2150672.01,
+          "medido": 0.0,
+          "realizado": 0.0,
+          "comprometido": 0.0,
+          "verba_disp": 2150672.01,
+          "pct_desvio": 100.0
+        },
+        {
+          "codigo": "01.005",
+          "descricao": "COBERTURAS E PROTEÇÕES",
+          "orcado": 161988.55,
+          "medido": 1078.18,
+          "realizado": 1275.0,
+          "comprometido": 1275.0,
+          "verba_disp": 160713.55,
+          "pct_desvio": 99.21290733203057
+        },
+        {
+          "codigo": "01.006",
+          "descricao": "REVESTIMENTOS, ELEMENTOS DECORATIVOS E PINTURA",
+          "orcado": 1981889.53,
+          "medido": 0.0,
+          "realizado": 0.0,
+          "comprometido": 0.0,
+          "verba_disp": 1981889.53,
+          "pct_desvio": 100.0
+        },
+        {
+          "codigo": "01.007",
+          "descricao": "PAVIMENTAÇÃO",
+          "orcado": 1327907.0400000003,
+          "medido": 0.0,
+          "realizado": 0.0,
+          "comprometido": 0.0,
+          "verba_disp": 1327907.0400000003,
+          "pct_desvio": 100.0
+        },
+        {
+          "codigo": "01.008",
+          "descricao": "INSTALAÇÕES E APARELHOS",
+          "orcado": 2664968.7199999997,
+          "medido": 0.0,
+          "realizado": 365.91999999999996,
+          "comprometido": 365.91999999999996,
+          "verba_disp": 2664602.8,
+          "pct_desvio": 99.98626925722415
+        },
+        {
+          "codigo": "02.001",
+          "descricao": "ENERGIA/ILUMINAÇÃO",
+          "orcado": 60618.55,
+          "medido": 0.0,
+          "realizado": 0.0,
+          "comprometido": 0.0,
+          "verba_disp": 60618.55,
+          "pct_desvio": 100.0
+        },
+        {
+          "codigo": "02.002",
+          "descricao": "PAVIMENTAÇÃO EXTERNA",
+          "orcado": 3851.4,
+          "medido": 0.0,
+          "realizado": 0.0,
+          "comprometido": 0.0,
+          "verba_disp": 3851.4,
+          "pct_desvio": 100.0
+        },
+        {
+          "codigo": "02.003",
+          "descricao": "PAISAGISMO",
+          "orcado": 2825.0,
+          "medido": 0.0,
+          "realizado": 0.0,
+          "comprometido": 0.0,
+          "verba_disp": 2825.0,
+          "pct_desvio": 100.0
+        },
+        {
+          "codigo": "01.001",
+          "descricao": "CUSTOS INDIRETOS",
+          "orcado": 4828325.45,
+          "medido": 686587.88,
+          "realizado": 981512.14,
+          "comprometido": 1048628.3199999998,
+          "verba_disp": 3779697.13,
+          "pct_desvio": 78.28173906545592
+        }
+      ],
+      "tem_medicao": true,
+      "arquivo_nome": "emissao_custo_por_nivel-16-04-2026 - Tereza Cristina.xlsx",
+      "data_upload": "2026-04-19T22:19:51.748617"
+    }
+  ],
   "cronograma": {
     "obra_nome": "85 - Residencial Tereza Cristina",
     "data_inicio": {
