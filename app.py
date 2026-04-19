@@ -106,6 +106,11 @@ from parser_template import parse_template_align
 from rolling_forecast import (calc_competencia,calc_caixa,calc_poc,
                                build_dre_rolling,bdi_matriz_mensal)
 from parser_cronograma_sienge import parse_cronograma_sienge
+try:
+    from parser_custo_nivel import parse_custo_nivel
+except ImportError:
+    def parse_custo_nivel(data, arquivo_nome=""):
+        return {"erro": "Parser não encontrado. Verifique utils/parser_custo_nivel.py"}
 
 st.set_page_config(page_title="Dashboard Financeiro | Align",
                    page_icon="🏗️", layout="wide",
@@ -503,6 +508,7 @@ def get_rolling_state(nome: str) -> dict:
                 "g_custos":     10.0,
                 "data_inicio":  {"ano": 2026, "mes": 1},
                 "data_fim":     {"ano": 2027, "mes": 12},
+                "historico_cpl": [],
             }
             for _k, _v in _defaults.items():
                 if _k not in _loaded:
@@ -530,6 +536,7 @@ def get_rolling_state(nome: str) -> dict:
                 "g_custos":     10.0,
                 "data_inicio":  {"ano": 2026, "mes": 1},
                 "data_fim":     {"ano": 2027, "mes": 12},
+                "historico_cpl": [],
             }
 
     return st.session_state.rolling[nome]
@@ -1275,6 +1282,72 @@ def render_rolling():
                     safe_toast("Cronograma removido. Suba a nova versão.", "🔄")
                     st.rerun()
 
+        st.divider()
+        # ── SEÇÃO: UPLOAD CUSTO POR NÍVEL (CPL) ──────────────────────
+        st.markdown("### 📊 Custo por Nível — Upload Mensal")
+        st.caption(
+            "Suba o relatório 'Custo por Nível' exportado do SIENGE. "
+            "Pode ser atualizado diariamente ou após boletim de medição mensal."
+        )
+
+        # Mostra histórico já carregado
+        _hist_cpl = estado.get("historico_cpl", [])
+        if _hist_cpl:
+            with st.expander(f"📋 {len(_hist_cpl)} snapshot(s) carregado(s)", expanded=False):
+                for _snap in reversed(_hist_cpl):  # mais recente primeiro
+                    _dt_str = ""
+                    try:
+                        from datetime import datetime as _dtt
+                        _dt_str = _dtt.fromisoformat(_snap["data_upload"]).strftime("%d/%m/%Y %H:%M")
+                    except Exception:
+                        pass
+                    st.caption(
+                        f"📄 **{_snap.get('arquivo_nome', '?')}** · "
+                        f"{_snap.get('periodo_final', '?')} · "
+                        f"Medido: {_snap.get('pct_medido', 0):.1f}% · "
+                        f"CPI: {_snap.get('cpi', 0):.3f} · "
+                        f"Upload: {_dt_str}"
+                    )
+                    _col_del, _ = st.columns([1, 5])
+                    if _col_del.button("🗑️ Remover", key=f"del_cpl_{_snap.get('periodo_final','')}_{_tkey}",
+                                       help="Remove este snapshot do histórico"):
+                        estado["historico_cpl"] = [
+                            s for s in _hist_cpl
+                            if s.get("periodo_final") != _snap.get("periodo_final")
+                        ]
+                        save_rolling(titulo, force=True)
+                        safe_toast("Snapshot removido.", "🗑️")
+                        st.rerun()
+
+        # Uploader
+        _arq_cpl = st.file_uploader(
+            "Selecione o arquivo CPL (.xlsx)",
+            type=["xlsx", "xls"],
+            key=f"up_cpl_{_tkey}",
+            label_visibility="collapsed"
+        )
+        if _arq_cpl:
+            _cpl_raw = parse_custo_nivel(_arq_cpl.read(), _arq_cpl.name)
+            if "erro" in _cpl_raw:
+                st.error(f"❌ {_cpl_raw['erro']}")
+            else:
+                # Evita duplicatas pelo período final
+                _periodo = _cpl_raw.get("periodo_final", "")
+                _hist = estado.get("historico_cpl", [])
+                _hist = [s for s in _hist if s.get("periodo_final") != _periodo]
+                _hist.append(_cpl_raw)
+                # Mantém ordenado por data
+                _hist.sort(key=lambda s: s.get("periodo_final", ""))
+                estado["historico_cpl"] = _hist
+                save_rolling(titulo, force=True)
+                safe_toast(
+                    f"✅ CPL carregado: {_cpl_raw.get('periodo_final','?')} · "
+                    f"Medido {_cpl_raw.get('pct_medido',0):.1f}% · "
+                    f"CPI {_cpl_raw.get('cpi',0):.3f}",
+                    "✅"
+                )
+                st.rerun()
+
         # ── SEÇÃO 2: UPLOAD MENSAL SIENGE ────────────────────────────
         st.markdown("### 📎 Dados Reais — Upload Mensal SIENGE")
         badges = ""
@@ -1509,614 +1582,397 @@ def render_rolling():
     # ── Modo Consolidado: resumo de todas as SPEs ─────────────────────
     if _sub_aba == "📊 Resultados" and empresa_sel == "Consolidado":
         st.markdown("### 📊 Resumo Consolidado das Obras")
-        _rows_cons  = []
-        _total_orc  = 0.0
-        _total_real = 0.0
+        _rows_cons = []
+        _tot_orc = _tot_med = _tot_real = _tot_comp = _tot_verba = 0.0
         for _spe_k in _spes_ativas:
-            _emp_d  = st.session_state.clientes[cliente_sel]["empresas"][_spe_k]
-            _tit_k  = _emp_d.get("nome", _spe_k)
-            _est_k  = get_rolling_state(_tit_k)
-            _cr_k   = _est_k.get("cronograma", {})
-            _orc_k  = _cr_k.get("total_obra", 0.0)
-            _real_k = sum(abs(_rd.get("cpv", 0)) for _rd in _est_k["meses_reais"].values())
-            _total_orc  += _orc_k
-            _total_real += _real_k
+            _emp_d = st.session_state.clientes[cliente_sel]["empresas"][_spe_k]
+            _tit_k = _emp_d.get("nome", _spe_k)
+            _est_k = get_rolling_state(_tit_k)
+            _hist_k = _est_k.get("historico_cpl", [])
+            _snap_k = _hist_k[-1] if _hist_k else {}
+            _orc_k  = _snap_k.get("orcado_total", 0.0)
+            _med_k  = _snap_k.get("medido_acum", 0.0)
+            _real_k = _snap_k.get("realizado_acum", 0.0)
+            _comp_k = _snap_k.get("comprometido", 0.0)
+            _verb_k = _snap_k.get("verba_disponivel", 0.0)
+            _cpi_k  = _snap_k.get("cpi", 0.0)
+            _tot_orc   += _orc_k
+            _tot_med   += _med_k
+            _tot_real  += _real_k
+            _tot_comp  += _comp_k
+            _tot_verba += _verb_k
             _rows_cons.append({
-                "Obra":          _spe_k,
-                "Orçamento":     _orc_k,
-                "Já Executado":  _real_k,
-                "Saldo":         max(_orc_k - _real_k, 0),
-                "% Exec.":       f"{(_real_k / _orc_k * 100) if _orc_k > 0 else 0:.1f}%",
-                "Cronograma":    "✅" if _cr_k else "⬜ Não carregado",
+                "Obra":        _spe_k,
+                "Orçado":      _orc_k,
+                "Medido":      _med_k,
+                "% Medido":    f"{_snap_k.get('pct_medido',0):.1f}%",
+                "Realizado":   _real_k,
+                "Comprometido":_comp_k,
+                "Verba Disp.": _verb_k,
+                "CPI":         f"{_cpi_k:.3f}" if _cpi_k else "—",
+                "CPL":         f"✅ {_snap_k.get('periodo_final','?')}" if _snap_k else "⬜ Sem dados",
             })
         if _rows_cons:
-            _df_cons  = pd.DataFrame(_rows_cons)
-            _fmt_cons = {
-                "Orçamento":    "R$ {:,.0f}",
-                "Já Executado": "R$ {:,.0f}",
-                "Saldo":        "R$ {:,.0f}",
+            _df_c = pd.DataFrame(_rows_cons)
+            _fmt_c = {
+                "Orçado":"R$ {:,.0f}","Medido":"R$ {:,.0f}",
+                "Realizado":"R$ {:,.0f}","Comprometido":"R$ {:,.0f}",
+                "Verba Disp.":"R$ {:,.0f}"
             }
             try:
-                st.dataframe(
-                    _df_cons.style.format(_fmt_cons),
-                    use_container_width=True,
-                    hide_index=True
-                )
+                st.dataframe(_df_c.style.format(_fmt_c), use_container_width=True, hide_index=True)
             except Exception:
-                st.dataframe(_df_cons, use_container_width=True, hide_index=True)
-
+                st.dataframe(_df_c, use_container_width=True, hide_index=True)
             st.divider()
-            _cc1, _cc2, _cc3 = st.columns(3)
-            _cc1.metric("Total Orçado",      fmt(_total_orc))
-            _cc2.metric("Total Executado",   fmt(_total_real))
-            _cc3.metric("Total a Executar",  fmt(max(_total_orc - _total_real, 0)))
+            _cc1,_cc2,_cc3,_cc4 = st.columns(4)
+            _cc1.metric("Total Orçado",     fmt(_tot_orc))
+            _cc2.metric("Total Medido",      fmt(_tot_med))
+            _cc3.metric("Total Realizado",   fmt(_tot_real))
+            _cc4.metric("Total Verba Disp.", fmt(_tot_verba))
         else:
-            st.info("Nenhuma SPE tem cronograma carregado ainda.")
-
+            st.info("Nenhuma SPE tem dados carregados ainda.")
         st.divider()
-        st.info(
-            "💡 Para ver o detalhe e configurar cada obra, "
-            "selecione a SPE específica na sidebar ou clique nos botões acima."
-        )
+        st.info("💡 Selecione uma SPE específica na sidebar para ver o detalhe da obra.")
         return
+
+    # ── Prepara dados para Resultados ────────────────────────────────
+    _hist_cpl  = estado.get("historico_cpl", [])
+    _cpl_atual = _hist_cpl[-1] if _hist_cpl else {}   # snapshot mais recente
+    _cpl_ant   = _hist_cpl[-2] if len(_hist_cpl) >= 2 else {}  # mês anterior
+
+    _tem_cff   = "cronograma" in estado
+    _tem_cpl   = bool(_cpl_atual)
+    _cr        = estado.get("cronograma", {})
+
+    # KPIs do CPL atual
+    _orcado        = _cpl_atual.get("orcado_total", 0.0)
+    _medido        = _cpl_atual.get("medido_acum", 0.0)
+    _realizado     = _cpl_atual.get("realizado_acum", 0.0)
+    _comprometido  = _cpl_atual.get("comprometido", 0.0)
+    _verba_disp    = _cpl_atual.get("verba_disponivel", 0.0)
+    _saldo_ctp     = _cpl_atual.get("saldo_ctp", 0.0)
+    _cpi           = _cpl_atual.get("cpi", 1.0)
+    _eac           = _cpl_atual.get("eac", 0.0)
+    _custo_min     = _cpl_atual.get("custo_minimo", 0.0)
+    _pct_medido    = _cpl_atual.get("pct_medido", 0.0)
+    _pct_realizado = _cpl_atual.get("pct_realizado", 0.0)
+    _tem_medicao   = _cpl_atual.get("tem_medicao", False)
+
+    # % planejado no período do CPL (do CFF, linha Total da obra acumulado)
+    _pct_planejado = 0.0
+    if _tem_cff and _cpl_atual.get("periodo_final"):
+        # Encontra o mês do CFF que corresponde ao período final do CPL
+        try:
+            _pf = _cpl_atual["periodo_final"]  # "AAAA-MM-DD"
+            _mes_pf = int(_pf[5:7])
+            _ano_pf = int(_pf[:4])
+            _custos = _cr.get("custos_por_mes", [])
+            _meses  = _cr.get("meses", [])
+            _acum_plan = 0.0
+            _total_cff = _cr.get("total_obra", _orcado)
+            for _mi, _mv in zip(_meses, _custos):
+                _acum_plan += _mv
+                if _mi["mes"] == _mes_pf and _mi["ano"] == _ano_pf:
+                    break
+            _pct_planejado = (_acum_plan / _total_cff * 100) if _total_cff > 0 else 0.0
+        except Exception:
+            _pct_planejado = 0.0
+
+    # SPI
+    _spi = (_pct_medido / _pct_planejado) if _pct_planejado > 0 else 1.0
+
+    # Variações vs mês anterior
+    def _delta(campo):
+        atual = _cpl_atual.get(campo, 0.0)
+        ant   = _cpl_ant.get(campo, 0.0)
+        return atual - ant if ant else None
+
+    # Semáforo
+    def _semaforo_spi(v):
+        if v >= 0.95: return "🟢"
+        if v >= 0.85: return "🟡"
+        return "🔴"
+
+    def _semaforo_cpi(v):
+        if v >= 0.95: return "🟢"
+        if v >= 0.85: return "🟡"
+        return "🔴"
+
+    def _semaforo_verba(v_pct):
+        if v_pct >= 20: return "🟢"
+        if v_pct >= 10: return "🟡"
+        return "🔴"
+
+    def _semaforo_eac(eac, orc):
+        if orc == 0: return "🟢"
+        pct = (eac - orc) / orc * 100
+        if pct <= 3:  return "🟢"
+        if pct <= 8:  return "🟡"
+        return "🔴"
 
     if _sub_aba == "📊 Resultados":
         import datetime as _dt
 
-        _tem_cron    = "cronograma" in estado
-        _tem_reais   = len(estado["meses_reais"]) > 0
-        _tem_vgv     = any(estado["vgv"].get(m+1,{}).get("unidades",0) > 0 for m in range(N))
-
-        # ── Aviso se não há dados suficientes ────────────────────────
-        if not _tem_cron and not _tem_reais and not is_matriz:
+        # Gate: precisa de pelo menos CFF ou CPL
+        if not _tem_cff and not _tem_cpl:
             st.info(
-                "ℹ️ Para ver os resultados, configure ao menos:\n\n"
-                "- **Cronograma Físico-Financeiro** (custos planejados) — "
-                "suba o Excel na aba ⚙️ Configurações\n"
-                "- **Upload mensal SIENGE** (dados reais realizados)"
+                "ℹ️ Para ver os resultados, carregue ao menos:\n\n"
+                "- **Cronograma Físico/Financeiro** (CFF) — base da Curva S\n"
+                "- **Custo por Nível** (CPL) — KPIs de custo e prazo\n\n"
+                "Ambos estão disponíveis na aba ⚙️ Configurações."
             )
             return
 
-        _cr = estado.get("cronograma", {})
-        _total_obra       = _cr.get("total_obra", 0.0)
-        _custos_por_mes   = _cr.get("custos_por_mes", [])
-        _meses_cron       = _cr.get("meses", [])
-        _contas           = _cr.get("contas", [])
-        _obra_nome        = _cr.get("obra_nome", titulo)
-        _data_upload_cron = _cr.get("data_upload", "")
-
-        # ── Calcula valores reais acumulados ─────────────────────────
-        _cpv_real_total = sum(
-            abs(_rd.get("cpv", 0)) for _rd in estado["meses_reais"].values()
-        )
-        _saldo_executar = max(_total_obra - _cpv_real_total, 0)
-        _pct_financeiro = (_cpv_real_total / _total_obra * 100) if _total_obra > 0 else 0
-
-        # % físico: pega o último mês com POC > 0, ou 0
-        _poc_atual = 0
-        for _pi in range(N-1, -1, -1):
-            if estado["poc_acum"][_pi] > 0:
-                _poc_atual = estado["poc_acum"][_pi]
-                break
-
-        # IDC: custo planejado acumulado ÷ custo real
-        _n_reais = len(estado["meses_reais"])
-        _planejado_acum = sum(_custos_por_mes[:_n_reais]) if _custos_por_mes else 0
-        _idc = (_planejado_acum / _cpv_real_total) if _cpv_real_total > 0 else 1.0
-
-        # Meses restantes
-        _hoje = _dt.date.today()
-        _fim_dt = _dt.date(estado["data_fim"]["ano"], estado["data_fim"]["mes"], 1)
-        _meses_restantes = max(
-            (_fim_dt.year - _hoje.year) * 12 + (_fim_dt.month - _hoje.month), 0
-        )
-
-        # ══════════════════════════════════════════════════════════════
-        # BLOCO 1 — CABEÇALHO EXECUTIVO
-        # ══════════════════════════════════════════════════════════════
-        st.markdown(f"### 🏗️ {_obra_nome}")
-
+        # ── CABEÇALHO DA OBRA ─────────────────────────────────────────
+        _obra_nome = _cr.get("obra_nome") or _cpl_atual.get("obra_nome") or _empresa_roll
         _inicio_str = f"{MESES[estado['data_inicio']['mes']-1]}/{estado['data_inicio']['ano']}"
         _fim_str    = f"{MESES[estado['data_fim']['mes']-1]}/{estado['data_fim']['ano']}"
-        _upload_str = ""
-        if _data_upload_cron:
-            try:
-                _dt_up = _dt.datetime.fromisoformat(_data_upload_cron)
-                _upload_str = f" · Cronograma atualizado: {_dt_up.strftime('%d/%m/%Y %H:%M')}"
-            except Exception:
-                pass
+        _hoje = _dt.date.today()
+        _fim_dt = _dt.date(estado["data_fim"]["ano"], estado["data_fim"]["mes"], 1)
+        _meses_rest = max((_fim_dt.year - _hoje.year)*12 + (_fim_dt.month - _hoje.month), 0)
 
+        st.markdown(f"### 🏗️ {_obra_nome}")
+        _periodo_cpl_str = ""
+        if _cpl_atual.get("periodo_final"):
+            _periodo_cpl_str = f" · 📊 CPL: **{_cpl_atual['periodo_final']}**"
         st.caption(
-            f"📍 Início: {_inicio_str} · Entrega prevista: {_fim_str} · "
-            f"**{_meses_restantes} meses restantes**{_upload_str}"
+            f"📍 {_inicio_str} → {_fim_str} · **{_meses_rest} meses restantes**"
+            f"{_periodo_cpl_str}"
         )
-        st.divider()
 
-        # 6 KPI cards
-        _k1, _k2, _k3, _k4, _k5, _k6 = st.columns(6)
-        _k1.metric("💰 Orçamento Total",    fmt(_total_obra))
-        _k2.metric("✅ Já Executado",        fmt(_cpv_real_total),
-                   f"{_pct_financeiro:.1f}% do total")
-        _k3.metric("🔜 Saldo a Executar",   fmt(_saldo_executar))
-        _k4.metric("📊 % Financeiro",       f"{_pct_financeiro:.1f}%")
-        _k5.metric("🏗️ % Físico (POC)",     f"{_poc_atual:.1f}%",
-                   help="Avanço físico informado na aba Configurações")
-        _idc_delta = "✅ Dentro do orçamento" if _idc >= 1.0 else "⚠️ Acima do orçamento"
-        _k6.metric("📐 IDC",                f"{_idc:.2f}",
-                   _idc_delta,
-                   delta_color="normal" if _idc >= 1.0 else "inverse")
-
-        # Barra dupla de progresso
-        st.markdown("**Progresso da Obra**")
-        _bc1, _bc2 = st.columns(2)
-        with _bc1:
-            st.caption(f"Físico (POC): {_poc_atual:.1f}%")
-            st.progress(min(_poc_atual / 100, 1.0))
-        with _bc2:
-            st.caption(f"Financeiro: {_pct_financeiro:.1f}%")
-            st.progress(min(_pct_financeiro / 100, 1.0))
-
-        # Alerta de sincronismo físico vs financeiro
-        _diff_pp = _poc_atual - _pct_financeiro
-        if abs(_diff_pp) > 5:
-            if _diff_pp > 0:
-                st.success(
-                    f"✅ Físico ({_poc_atual:.1f}%) está **{_diff_pp:.1f} pp à frente** "
-                    f"do financeiro ({_pct_financeiro:.1f}%) — você está gastando "
-                    f"menos do que o previsto para o avanço atual."
-                )
-            else:
-                st.warning(
-                    f"⚠️ Financeiro ({_pct_financeiro:.1f}%) está **{abs(_diff_pp):.1f} pp à frente** "
-                    f"do físico ({_poc_atual:.1f}%) — você está gastando "
-                    f"mais do que o avanço físico justifica."
-                )
-
-        st.divider()
-
-        # ══════════════════════════════════════════════════════════════
-        # BLOCO 2 — CRONOGRAMA: PLANEJADO vs REAL
-        # ══════════════════════════════════════════════════════════════
-        st.markdown("### 📈 Cronograma: Planejado vs Real")
-
-        if _tem_cron and _custos_por_mes:
-            _n_meses_cron = len(_custos_por_mes)
-
-            _labels_cron = []
-            for _mi in _meses_cron:
-                _labels_cron.append(f"{MESES[_mi['mes']-1]}/{str(_mi['ano'])[-2:]}")
-
-            _plan_mensal  = list(_custos_por_mes)
-            _real_mensal  = [0.0] * _n_meses_cron
-
-            for _mes_k, _rd in estado["meses_reais"].items():
-                if 1 <= _mes_k <= _n_meses_cron:
-                    _real_mensal[_mes_k - 1] = abs(_rd.get("cpv", 0))
-
-            # Curva S acumulada
-            _plan_acum = []
-            _real_acum = []
-            _acum_p = 0.0
-            _acum_r = 0.0
-            for _pi, _ri in zip(_plan_mensal, _real_mensal):
-                _acum_p += _pi
-                _acum_r += _ri
-                _plan_acum.append(_acum_p)
-                _real_acum.append(_acum_r if _acum_r > 0 else None)
-
-            # Gráfico 1: Curva S
-            _fg_s = go.Figure()
-            _fg_s.add_scatter(
-                x=_labels_cron, y=_plan_acum,
-                name="Planejado acumulado",
-                mode="lines+markers",
-                line=dict(color=CHART_BLUE, width=2.5),
-                marker=dict(size=5)
+        # Aviso de confiabilidade (< 30% de avanço)
+        if _tem_cpl and _pct_medido < 30:
+            st.warning(
+                f"⚠️ Avanço físico atual: **{_pct_medido:.1f}%** — "
+                f"Com menos de 30% de execução, EAC e projeções têm baixa confiabilidade.",
+                icon="⚠️"
             )
-            _real_acum_clean = [v if v else 0 for v in _real_acum]
-            if any(v > 0 for v in _real_acum_clean):
+
+        st.divider()
+
+        # ══════════════════════════════════════════════════════════════
+        # CURVA S — GRÁFICO PRINCIPAL
+        # ══════════════════════════════════════════════════════════════
+        st.markdown("### 📈 Curva S — Progresso da Obra")
+        st.caption(
+            "Planejado (azul tracejado) · Medido (verde) · Realizado (laranja) · "
+            "% acumulado do orçamento total"
+        )
+
+        _fg_s = go.Figure()
+
+        # Linha Planejado (do CFF)
+        if _tem_cff and _cr.get("custos_por_mes"):
+            _custos = _cr["custos_por_mes"]
+            _meses_cff = _cr.get("meses", [])
+            _total_cff = _cr.get("total_obra", 1)
+            _labels_cff = [
+                f"{MESES[_m['mes']-1]}/{str(_m['ano'])[-2:]}"
+                for _m in _meses_cff
+            ]
+            _acum_plan = []
+            _soma = 0.0
+            for _v in _custos:
+                _soma += _v
+                _acum_plan.append(_soma / _total_cff * 100)
+            _fg_s.add_scatter(
+                x=_labels_cff, y=_acum_plan,
+                name="Planejado",
+                mode="lines",
+                line=dict(color=CHART_BLUE, width=2, dash="dash"),
+            )
+
+        # Linhas Medido e Realizado (do histórico CPL)
+        if _hist_cpl:
+            _labels_cpl = [s.get("periodo_final","") for s in _hist_cpl]
+            _y_medido   = [s.get("pct_medido", 0) for s in _hist_cpl]
+            _y_realizado= [s.get("pct_realizado", 0) for s in _hist_cpl]
+
+            if any(v > 0 for v in _y_medido):
                 _fg_s.add_scatter(
-                    x=_labels_cron, y=_real_acum_clean,
-                    name="Real acumulado",
+                    x=_labels_cpl, y=_y_medido,
+                    name="Medido (% Avanço Físico)",
                     mode="lines+markers",
                     line=dict(color=CHART_TEAL, width=2.5),
-                    marker=dict(size=6, symbol="circle")
+                    marker=dict(size=7),
                 )
-            if _n_reais > 0 and _n_reais <= _n_meses_cron:
-                _fg_s.add_vline(
-                    x=_n_reais - 0.5,
-                    line_dash="dash", line_color=GOLD, line_width=1.5,
-                    annotation_text="Hoje",
-                    annotation_font_size=10
+
+            _fg_s.add_scatter(
+                x=_labels_cpl, y=_y_realizado,
+                name="Realizado (% Desembolso)",
+                mode="lines+markers",
+                line=dict(color=CHART_AMBER, width=2.5),
+                marker=dict(size=7),
+            )
+
+            # Sombreamento: período sem medição
+            if not _hist_cpl[0].get("tem_medicao", True) and _tem_cff:
+                _fg_s.add_vrect(
+                    x0=_labels_cff[0] if _labels_cff else 0,
+                    x1=_labels_cpl[0],
+                    fillcolor="rgba(200,200,200,0.2)",
+                    layer="below", line_width=0,
+                    annotation_text="Sem medição",
+                    annotation_font_size=9
                 )
-            _fg_s.update_layout(title="Curva S — Custo Acumulado", **PL(320))
-            _fg_s.update_xaxes(showgrid=False, tickfont=dict(size=9))
-            _fg_s.update_yaxes(gridcolor=BORDER, tickprefix="R$ ", tickformat=",.0f")
-            st.plotly_chart(_fg_s, use_container_width=True)
 
-            # Gráfico 2: Barras mensais Planejado vs Real
-            _fg_pv = go.Figure()
-            _cores_real = []
-            for _pi, _ri in zip(_plan_mensal, _real_mensal):
-                if _ri == 0:
-                    _cores_real.append("rgba(0,0,0,0)")
-                elif _ri <= _pi * 1.05:
-                    _cores_real.append(CHART_TEAL)
-                else:
-                    _cores_real.append(SOFT_RED)
+        _fg_s.add_hline(y=100, line_dash="dot", line_color=GRAY, line_width=1)
+        _fg_s.update_layout(
+            title="Curva S — Planejado × Medido × Realizado",
+            **PL(380)
+        )
+        _fg_s.update_xaxes(showgrid=False, tickfont=dict(size=9))
+        _fg_s.update_yaxes(
+            ticksuffix="%", gridcolor=BORDER,
+            range=[0, 110], title="% acumulado do orçamento"
+        )
+        st.plotly_chart(_fg_s, use_container_width=True)
 
-            _fg_pv.add_bar(
-                x=_labels_cron, y=_plan_mensal,
-                name="Planejado", marker_color=CHART_BLUE, opacity=0.6
+        st.divider()
+
+        # ══════════════════════════════════════════════════════════════
+        # 6 KPI CARDS
+        # ══════════════════════════════════════════════════════════════
+        if _tem_cpl:
+            st.markdown("### 📊 KPIs da Obra")
+            st.caption(
+                "SPI = Schedule Performance Index · CPI = Cost Performance Index · "
+                "EAC = Estimate at Completion · CTP = Contratos de Terceiros/Prestadores"
             )
-            _fg_pv.add_bar(
-                x=_labels_cron, y=_real_mensal,
-                name="Realizado", marker_color=_cores_real, opacity=0.9
-            )
-            _fg_pv.update_layout(
-                title="Custo Mensal — Planejado vs Realizado",
-                barmode="group", **PL(300)
-            )
-            _fg_pv.update_xaxes(showgrid=False, tickfont=dict(size=9))
-            _fg_pv.update_yaxes(gridcolor=BORDER, tickprefix="R$ ", tickformat=",.0f")
-            st.plotly_chart(_fg_pv, use_container_width=True)
+
+            _verba_pct = (_verba_disp / _orcado * 100) if _orcado > 0 else 0
+            _eac_desvio_pct = ((_eac - _orcado) / _orcado * 100) if _orcado > 0 else 0
+
+            _k1, _k2, _k3, _k4, _k5, _k6 = st.columns(6)
+
+            # SPI
+            with _k1:
+                st.markdown(
+                    f"**{_semaforo_spi(_spi)} SPI**\n\n"
+                    f"### {_spi:.3f}\n\n"
+                    f"{'✅ No prazo' if _spi >= 0.95 else '⚠️ Atenção' if _spi >= 0.85 else '🔴 Atrasado'}"
+                )
+                st.caption(f"Previsto: {_pct_planejado:.1f}%")
+
+            # CPI
+            with _k2:
+                st.markdown(
+                    f"**{_semaforo_cpi(_cpi)} CPI**\n\n"
+                    f"### {_cpi:.3f}\n\n"
+                    f"{'✅ Abaixo do custo' if _cpi >= 0.95 else '⚠️ Atenção' if _cpi >= 0.85 else '🔴 Acima do custo'}"
+                )
+                st.caption(f"Medido/Realizado")
+
+            # % Avanço Físico
+            with _k3:
+                _diff_pp = _pct_medido - _pct_planejado
+                st.markdown(
+                    f"**{'🟢' if _diff_pp >= -2 else '🟡' if _diff_pp >= -8 else '🔴'} "
+                    f"% Físico**\n\n"
+                    f"### {_pct_medido:.1f}%\n\n"
+                    f"Previsto: {_pct_planejado:.1f}%"
+                )
+                st.caption(f"Δ {_diff_pp:+.1f} pp")
+
+            # Verba Disponível
+            with _k4:
+                st.markdown(
+                    f"**{_semaforo_verba(_verba_pct)} Verba Disp.**\n\n"
+                    f"### {fmt(_verba_disp)}\n\n"
+                    f"{_verba_pct:.1f}% do orçado"
+                )
+                st.caption("Orçado − Comprometido")
+
+            # EAC
+            with _k5:
+                st.markdown(
+                    f"**{_semaforo_eac(_eac, _orcado)} EAC**\n\n"
+                    f"### {fmt(_eac)}\n\n"
+                    f"Desvio: {_eac_desvio_pct:+.1f}%"
+                )
+                st.caption("Custo Final Projetado")
+
+            # CTP
+            with _k6:
+                st.markdown(
+                    f"**💼 CTP**\n\n"
+                    f"### {fmt(_saldo_ctp)}\n\n"
+                    f"Custo mínimo: {fmt(_custo_min)}"
+                )
+                st.caption("Contratos abertos")
 
             st.divider()
 
-            # Tabela de desvios por etapa
-            st.markdown("#### 📋 Desvios por Etapa")
+            # ── TABELA DE DESVIOS POR ETAPA ───────────────────────────
+            st.markdown("### 🔍 Desvios por Etapa (nível 2 da EAP)")
             st.caption(
-                "Orçado = valor total do item. "
-                "Realizado = soma dos meses reais carregados. "
-                "Saldo = orçado − realizado."
+                "Ordenado do maior estouro ao maior saldo. "
+                "% Desvio Total = (Orçado − Comprometido) ÷ Orçado × 100. "
+                "NEGATIVO = estouro."
             )
-
-            _rows_dev = []
-            for _conta in _contas:
-                _nome_c = _conta["nome"]
-                _total_c = _conta["total"]
-                if _total_c == 0:
-                    continue
-                _real_c = 0.0
-                for _mes_k, _rd in estado["meses_reais"].items():
-                    if 1 <= _mes_k <= _n_meses_cron:
-                        _chave_mes = f"{_meses_cron[_mes_k-1]['mes']:02d}/{_meses_cron[_mes_k-1]['ano']}"
-                        _real_c += _conta["valores"].get(_chave_mes, 0.0)
-
-                _saldo_c = _total_c - _real_c
-                _desvio_c = _real_c - _total_c
-                _pct_dev = (_desvio_c / _total_c * 100) if _total_c > 0 else 0
-
-                if abs(_pct_dev) > 15:
-                    _status = "🔴 Crítico"
-                elif abs(_pct_dev) > 5:
-                    _status = "🟡 Atenção"
-                else:
-                    _status = "🟢 OK"
-
-                _rows_dev.append({
-                    "Etapa":        _nome_c,
-                    "Orçado":       _total_c,
-                    "Realizado":    _real_c,
-                    "Saldo":        _saldo_c,
-                    "Desvio R$":    _desvio_c,
-                    "Desvio %":     f"{_pct_dev:+.1f}%",
-                    "Status":       _status,
-                })
-
-            if _rows_dev:
-                _df_dev = pd.DataFrame(_rows_dev)
-                _fmt_dev = {
-                    "Orçado":    "R$ {:,.0f}",
+            _etapas = _cpl_atual.get("etapas_nivel2", [])
+            if _etapas:
+                # Ordena: estouros primeiro (pct_desvio mais negativo)
+                _etapas_ord = sorted(_etapas, key=lambda x: x.get("pct_desvio", 0))
+                _rows_et = []
+                for _et in _etapas_ord:
+                    _pd = _et.get("pct_desvio", 0)
+                    if _pd < -8:     _sem = "🔴"
+                    elif _pd < 0:    _sem = "🟡"
+                    else:            _sem = "🟢"
+                    _rows_et.append({
+                        "Status":    _sem,
+                        "Etapa":     _et["descricao"][:35],
+                        "Orçado":    _et["orcado"],
+                        "Medido":    _et["medido"],
+                        "Realizado": _et["realizado"],
+                        "Comprometido": _et["comprometido"],
+                        "Verba Disp.": _et["verba_disp"],
+                        "% Desvio":  f"{_pd:+.1f}%",
+                    })
+                _df_et = pd.DataFrame(_rows_et)
+                _fmt_et = {
+                    "Orçado": "R$ {:,.0f}",
+                    "Medido": "R$ {:,.0f}",
                     "Realizado": "R$ {:,.0f}",
-                    "Saldo":     "R$ {:,.0f}",
-                    "Desvio R$": "R$ {:,.0f}",
+                    "Comprometido": "R$ {:,.0f}",
+                    "Verba Disp.": "R$ {:,.0f}",
                 }
-
-                def _hl_dev(row):
-                    if "🔴" in str(row.get("Status", "")):
-                        return ["background-color:#fff0f0"] * len(row)
-                    elif "🟡" in str(row.get("Status", "")):
-                        return ["background-color:#fffbe6"] * len(row)
-                    return [""] * len(row)
-
+                def _hl_et(row):
+                    if "🔴" in str(row.get("Status","")):
+                        return ["background-color:#fff0f0"]*len(row)
+                    elif "🟡" in str(row.get("Status","")):
+                        return ["background-color:#fffbe6"]*len(row)
+                    return [""]*len(row)
                 try:
-                    _styled_dev = (
-                        _df_dev.style
-                        .format(_fmt_dev)
-                        .apply(_hl_dev, axis=1)
+                    st.dataframe(
+                        _df_et.style.format(_fmt_et).apply(_hl_et, axis=1),
+                        use_container_width=True,
+                        hide_index=True,
+                        height=400
                     )
                 except Exception:
-                    _styled_dev = _df_dev
+                    st.dataframe(_df_et, use_container_width=True, hide_index=True)
 
-                st.dataframe(_styled_dev, use_container_width=True, hide_index=True)
-
-                _buf_dev = io.BytesIO()
-                with pd.ExcelWriter(_buf_dev, engine="openpyxl") as _w:
-                    _df_dev.to_excel(_w, index=False, sheet_name="Desvios")
+                # Download
+                _buf_et = io.BytesIO()
+                with pd.ExcelWriter(_buf_et, engine="openpyxl") as _w:
+                    _df_et.to_excel(_w, index=False, sheet_name="Desvios")
                 st.download_button(
-                    "📥 Exportar desvios em Excel",
-                    data=_buf_dev.getvalue(),
-                    file_name=f"Desvios_{titulo.replace(' ','_')}.xlsx",
+                    "📥 Exportar desvios",
+                    data=_buf_et.getvalue(),
+                    file_name=f"Desvios_{_empresa_roll.replace(' ','_')}_{_cpl_atual.get('periodo_final','')}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    key="dl_desvios"
+                    key="dl_desvios_etapa"
                 )
 
-        st.divider()
-
-        # ══════════════════════════════════════════════════════════════
-        # BLOCO 3 — FLUXO DE CAIXA (só se tiver VGV configurado)
-        # ══════════════════════════════════════════════════════════════
-        if _tem_vgv:
-            st.markdown("### 💸 Fluxo de Caixa Projetado")
-
-            vgv_list = [estado["vgv"].get(m+1,{"unidades":0,"preco":350000.0}) for m in range(N)]
-            rec_caixa_fc = calc_caixa(vgv_list, pct_ent, parc_un, mes_ent)
-            _res_fc = build_dre_rolling(
-                emp_base, estado["meses_reais"],
-                rec_caixa_fc, estado["cron_orc"], g_cust
+        else:
+            # Sem CPL: mostra só o que tem do CFF
+            st.info(
+                "📊 Curva S planejada disponível. "
+                "Para ver os KPIs (SPI, CPI, Verba, EAC), "
+                "carregue o **Custo por Nível** na aba ⚙️ Configurações."
             )
-            _dr_fc = _res_fc["dre"]
-
-            _entradas_fc = list(_dr_fc["rec_bruta"])
-            _saidas_fc   = [abs(c) + abs(d) for c, d in
-                            zip(_dr_fc["cpv"], _dr_fc["desp_op"])]
-            _saldo_fc    = [e - s for e, s in zip(_entradas_fc, _saidas_fc)]
-            _saldo_acum_fc = []
-            _acum = 0.0
-            for _sv in _saldo_fc:
-                _acum += _sv
-                _saldo_acum_fc.append(_acum)
-
-            _labels_fc = LABELS[:N]
-
-            _fg_fc = go.Figure()
-            _fg_fc.add_bar(
-                x=_labels_fc, y=_entradas_fc,
-                name="Entradas", marker_color=CHART_TEAL, opacity=0.8
-            )
-            _fg_fc.add_bar(
-                x=_labels_fc, y=[-s for s in _saidas_fc],
-                name="Saídas", marker_color=SOFT_RED, opacity=0.8
-            )
-            _fg_fc.add_scatter(
-                x=_labels_fc, y=_saldo_acum_fc,
-                name="Saldo acumulado",
-                mode="lines+markers",
-                line=dict(color=GOLD, width=2.5),
-                marker=dict(size=6)
-            )
-            _fg_fc.add_hline(y=0, line_dash="dash", line_color=GRAY, line_width=1)
-            _fg_fc.update_layout(
-                title="Fluxo de Caixa — Entradas vs Saídas",
-                barmode="relative", **PL(380)
-            )
-            _fg_fc.update_xaxes(showgrid=False, tickfont=dict(size=9))
-            _fg_fc.update_yaxes(gridcolor=BORDER, tickprefix="R$ ", tickformat=",.0f")
-            st.plotly_chart(_fg_fc, use_container_width=True)
-
-            _min_saldo = min(_saldo_acum_fc)
-            if _min_saldo < 0:
-                _mes_pico = _saldo_acum_fc.index(_min_saldo)
-                st.error(
-                    f"⚠️ **Necessidade de capital:** o caixa fica negativo em "
-                    f"**{_labels_fc[_mes_pico]}** com pico de **{fmt(abs(_min_saldo))}**. "
-                    f"Verifique o plano de recebimentos."
-                )
-
-            st.divider()
-
-        # ══════════════════════════════════════════════════════════════
-        # BLOCO 4 — PROJEÇÃO ATÉ O FIM
-        # ══════════════════════════════════════════════════════════════
-        st.markdown("### 🔮 Projeção até o Fim da Obra")
-
-        _custo_proj_total = _cpv_real_total + _saldo_executar
-        _desvio_proj = _custo_proj_total - _total_obra
-
-        _col_p1, _col_p2 = st.columns(2)
-        with _col_p1:
-            st.markdown("**Custo**")
-            _pk1, _pk2, _pk3 = st.columns(3)
-            _pk1.metric("Orçamento", fmt(_total_obra))
-            _pk2.metric("Projeção final", fmt(_custo_proj_total))
-            _pk3.metric(
-                "Desvio",
-                fmt(_desvio_proj),
-                delta_color="inverse" if _desvio_proj > 0 else "normal"
-            )
-
-        with _col_p2:
-            st.markdown("**Prazo**")
-            _pp1, _pp2 = st.columns(2)
-            _pp1.metric("Entrega prevista", _fim_str)
-            _pp2.metric("Meses restantes", str(_meses_restantes))
-
-        _resumo_rows = [
-            {"": "Planejado", "Custo Total": _total_obra,
-             "Data Entrega": _fim_str},
-            {"": "Projetado (ritmo atual)", "Custo Total": _custo_proj_total,
-             "Data Entrega": _fim_str},
-            {"": "Desvio", "Custo Total": _desvio_proj,
-             "Data Entrega": "—"},
-        ]
-        _df_resumo = pd.DataFrame(_resumo_rows).set_index("")
-        try:
-            st.dataframe(
-                _df_resumo.style.format({"Custo Total": "R$ {:,.0f}"}),
-                use_container_width=True
-            )
-        except Exception:
-            st.dataframe(_df_resumo, use_container_width=True)
-
-        st.divider()
-
-        # ══════════════════════════════════════════════════════════════
-        # BLOCO 5 — DRE ROLLING — 3 MÉTODOS (mantido)
-        # ══════════════════════════════════════════════════════════════
-        st.markdown("### 💰 DRE Rolling Forecast — 3 Métodos de Receita")
-        vgv_list = [estado["vgv"].get(m+1,{"unidades":0,"preco":350000.0}) for m in range(N)]
-
-        rec_comp  = calc_competencia(vgv_list)
-        rec_caixa = calc_caixa(vgv_list, pct_ent, parc_un, mes_ent)
-        rec_poc   = calc_poc(vgv_list, poc_vals)
-
-        bdi_rec = np.zeros(N)
-        if "rolling" in st.session_state:
-            spes = {k:v for k,v in st.session_state.rolling.items() if k != titulo}
-            if spes:
-                bdi_rec = bdi_matriz_mensal(spes, N)
-
-        METODOS = [
-            ("💰 Competência", rec_comp,  "Reconhece VGV no mês da venda"),
-            ("🏦 Caixa",        rec_caixa, f"Entrada {pct_ent:.0f}% + R${parc_un:,.0f}/mês + saldo entrega"),
-            ("📊 POC",          rec_poc,   "VGV acumulado × avanço físico incremental"),
-            ("⚖️ Comparativo",  None,      ""),
-        ]
-        tabs_m = st.tabs([m[0] for m in METODOS])
-
-        def _render_metodo(tab, rec_arr, nome_met, descr):
-            with tab:
-                if rec_arr is None: return
-                res = build_dre_rolling(emp_base, estado["meses_reais"],
-                                        rec_arr, estado["cron_orc"], g_cust)
-                dr = res["dre"]; ir = res["is_real"]
-
-                rb_t  = float(dr["rec_bruta"].sum()); ebt_t = float(dr["ebitda"].sum())
-                ll_t  = float(dr["lucro_liq"].sum())
-                mg_e  = ebt_t/rb_t*100 if rb_t!=0 else 0
-                mg_l  = ll_t/rb_t*100  if rb_t!=0 else 0
-                n_real= int(ir.sum())
-
-                st.caption(f"**{nome_met}** — {descr} | 🟦 {n_real} mês(es) real(is) | ░ projetado")
-                km1,km2,km3,km4 = st.columns(4)
-                km1.metric("Receita Bruta", fmt(rb_t))
-                km2.metric("EBITDA",        fmt(ebt_t), f"{mg_e:+.1f}%", delta_color="normal")
-                km3.metric("Lucro Líquido", fmt(ll_t),  f"{mg_l:+.1f}%", delta_color="normal")
-                km4.metric("BDI Matriz",    fmt(float(bdi_rec.sum())),
-                           "sobre CPV das SPEs", delta_color="off")
-
-                def bar_colors(base_hex, is_real_mask, alpha_proj=0.35):
-                    r,g,b = tuple(int(base_hex.lstrip("#")[i:i+2],16) for i in (0,2,4))
-                    return [base_hex if r_flag else
-                            f"rgba({r},{g},{b},{alpha_proj})"
-                            for r_flag in is_real_mask]
-
-                fg = go.Figure()
-                fg.add_bar(x=LABELS, y=dr["rec_bruta"], name="Receita Bruta",
-                           marker_color=bar_colors(CHART_BLUE,    ir))
-                fg.add_bar(x=LABELS, y=dr["cpv"],       name="CPV",
-                           marker_color=bar_colors(SOFT_RED,      ir))
-                fg.add_bar(x=LABELS, y=dr["desp_op"],   name="Desp.Op.",
-                           marker_color=bar_colors(CHART_NAVY,    ir))
-                fg.add_scatter(x=LABELS, y=dr["ebitda"], name="EBITDA",
-                               mode="lines+markers",
-                               line=dict(color=GOLD,width=2.5,
-                                         dash="solid" if ir.all() else "dot"),
-                               marker=dict(size=7,
-                                           color=[GOLD if r else "rgba(234,179,8,0.4)" for r in ir]))
-                if n_real > 0 and n_real < N:
-                    fg.add_vline(x=n_real-0.5, line_dash="dash", line_color=GRAY,
-                                 line_width=1.5, annotation_text="Real | Proj",
-                                 annotation_font_size=10)
-                fg.update_layout(title=f"DRE Mensal — {nome_met}",
-                                 barmode="relative", **PL(360))
-                fg.update_xaxes(showgrid=False)
-                fg.update_yaxes(gridcolor=BORDER,tickprefix="R$ ",tickformat=",.0f")
-                st.plotly_chart(fg, use_container_width=True)
-
-                LINHAS = [("Receita Bruta","rec_bruta"),("Impostos","imp_rec"),
-                          ("Receita Líquida","rec_liq"),("CPV","cpv"),
-                          ("Lucro Bruto","lucro_bruto"),("Desp. Op.","desp_op"),
-                          ("EBITDA","ebitda"),("Res. Financeiro","res_fin"),
-                          ("IR / CSLL","ir"),("Lucro Líquido","lucro_liq")]
-                TOTS = {"Receita Líquida","Lucro Bruto","EBITDA","Lucro Líquido"}
-                col_lbl = [f"✅{LABELS[m_i]}" if ir[m_i] else LABELS[m_i] for m_i in range(N)]
-                rows_t = []
-                for lbl,key in LINHAS:
-                    row={"Linha DRE":lbl}
-                    for m_i,cl in enumerate(col_lbl): row[cl]=float(dr[key][m_i])
-                    row["TOTAL"]=float(dr[key].sum())
-                    rows_t.append(row)
-                df_t = pd.DataFrame(rows_t).set_index("Linha DRE")
-
-                def hl_t(r):
-                    return ([f"background-color:{BLIGHT};font-weight:700;color:{NAVY}"]*len(r)
-                            if r.name in TOTS else [""]*len(r))
-                def cn_t(v):
-                    try: return f"color:{SOFT_RED}" if float(v)<0 else ""
-                    except: return ""
-                fmt_t = {c:"R$ {:,.0f}" for c in df_t.columns}
-                try:    st_df = df_t.style.format(fmt_t).apply(hl_t,axis=1).map(cn_t)
-                except: st_df = df_t.style.format(fmt_t).apply(hl_t,axis=1).applymap(cn_t)
-                st.dataframe(st_df, use_container_width=True, height=380)
-
-                st.download_button(f"📥 Exportar {nome_met} em Excel",
-                                   data=excel_dre(df_t, f"RF_{nome_met}"),
-                                   file_name=f"RF_{nome_met}_{titulo.replace(' ','_')}.xlsx",
-                                   mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                                   key=f"dl_rf_{nome_met}")
-
-        for (nome_m,rec_m,desc_m),tab_m in zip(METODOS[:3], tabs_m[:3]):
-            _render_metodo(tab_m, rec_m, nome_m, desc_m)
-
-        # ── Tab Comparativo ──────────────────────────────────────────
-        with tabs_m[3]:
-            st.markdown("#### ⚖️ Comparativo dos 3 Métodos — Receita e EBITDA Anuais")
-            metodos_res = {}
-            for nome_m, rec_m, _ in METODOS[:3]:
-                if rec_m is None: continue
-                r2 = build_dre_rolling(emp_base, estado["meses_reais"],
-                                       rec_m, estado["cron_orc"], g_cust)["dre"]
-                metodos_res[nome_m] = r2
-
-            ck = st.columns(3)
-            for i,(nm,r2) in enumerate(metodos_res.items()):
-                rb2 = float(r2["rec_bruta"].sum())
-                eb2 = float(r2["ebitda"].sum())
-                ck[i].metric(nm, fmt(rb2), f"EBITDA {fmt(eb2)}", delta_color="off")
-
-            fg_c = go.Figure()
-            cores_c = [CHART_BLUE, CHART_TEAL, GOLD]
-            dashes_c = ["solid","dash","dot"]
-            for (nm,r2),cor,dash in zip(metodos_res.items(),cores_c,dashes_c):
-                fg_c.add_scatter(x=LABELS,y=r2["rec_bruta"],name=nm,
-                                 mode="lines+markers",
-                                 line=dict(color=cor,width=2.5,dash=dash),
-                                 marker=dict(size=7))
-            fg_c.update_layout(title="Receita Bruta — 3 Métodos",**PL(320))
-            fg_c.update_xaxes(showgrid=False)
-            fg_c.update_yaxes(gridcolor=BORDER,tickprefix="R$ ",tickformat=",.0f")
-            st.plotly_chart(fg_c, use_container_width=True)
-
-            fg_e = go.Figure()
-            for (nm,r2),cor,dash in zip(metodos_res.items(),cores_c,dashes_c):
-                fg_e.add_scatter(x=LABELS,y=r2["ebitda"],name=nm,
-                                 mode="lines+markers",
-                                 line=dict(color=cor,width=2.5,dash=dash),
-                                 marker=dict(size=7))
-            fg_e.add_hline(y=0,line_dash="dash",line_color=GRAY,line_width=1)
-            fg_e.update_layout(title="EBITDA — 3 Métodos",**PL(320))
-            fg_e.update_xaxes(showgrid=False)
-            fg_e.update_yaxes(gridcolor=BORDER,tickprefix="R$ ",tickformat=",.0f")
-            st.plotly_chart(fg_e, use_container_width=True)
-
-            linhas_c = ["Receita Bruta","EBITDA","Lucro Líquido"]
-            keys_c   = ["rec_bruta","ebitda","lucro_liq"]
-            rows_c   = []
-            for lbl,key in zip(linhas_c,keys_c):
-                row={"Linha":lbl}
-                for nm,r2 in metodos_res.items(): row[nm] = float(r2[key].sum())
-                rows_c.append(row)
-            df_c = pd.DataFrame(rows_c).set_index("Linha")
-            def cn_c(v):
-                try: return f"color:{SOFT_RED}" if float(v)<0 else ""
-                except: return ""
-            fmt_c = {c:"R$ {:,.0f}" for c in df_c.columns}
-            try:    sc = df_c.style.format(fmt_c).map(cn_c)
-            except: sc = df_c.style.format(fmt_c).applymap(cn_c)
-            st.dataframe(sc, use_container_width=True)
-            st.caption("💡 Mesmo CPV e Despesas para os 3 métodos — diferença está apenas no timing de reconhecimento da receita.")
 
 
 
