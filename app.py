@@ -1575,87 +1575,244 @@ def render_sensibilidade():
 # ══════════════════════════════════════════════════════════════════════ TAB 4
 @st.fragment
 def render_indicadores():
-    st.markdown(f"## 📐 Indicadores Financeiros — {titulo}")
-    st.caption("Métricas de desempenho operacional e financeiro para 2025.")
+    import datetime
+    st.markdown("## 📐 Indicadores")
+    st.caption("Painel executivo consolidado. Todos os indicadores respondem à seleção da sidebar.")
     st.divider()
-    base4=dre(emp_base)
-    rb4=float(base4["rec_bruta"].sum()); rl4=float(base4["rec_liq"].sum())
-    lb4=float(base4["lucro_bruto"].sum()); ebt4=float(base4["ebitda"].sum())
-    ll4=float(base4["lucro_liq"].sum());  cpv4=float(base4["cpv"].sum()); dop4=float(base4["desp_op"].sum())
-    mg_b4=(lb4/rl4*100) if rl4!=0 else 0; mg_e4=(ebt4/rl4*100) if rl4!=0 else 0
-    mg_l4=(ll4/rl4*100) if rl4!=0 else 0; cpv_p=(abs(cpv4)/rl4*100) if rl4!=0 else 0
-    dop_p=(abs(dop4)/rl4*100) if rl4!=0 else 0; mc_p=(lb4/rl4*100) if rl4!=0 else 0
-    pe4=(-dop4/(mc_p/100)) if mc_p!=0 else 0; gao4=(lb4/ebt4) if ebt4!=0 else 0
 
-    st.markdown("### 💹 Margens")
-    i1,i2,i3,i4,i5=st.columns(5)
-    kpi_popover(i1,"Margem Bruta",f"{mg_b4:.1f}%",help_text="Lucro Bruto / Receita Líquida")
-    kpi_popover(i2,"Margem EBITDA",f"{mg_e4:.1f}%",help_text="EBITDA / Receita Bruta")
-    kpi_popover(i3,"Margem Líquida",f"{mg_l4:.1f}%",help_text="Lucro Líquido / Receita Bruta")
-    kpi_popover(i4,"CPV / Rec. Líq.",f"{cpv_p:.1f}%",help_text="Peso do custo direto sobre a receita líquida")
-    kpi_popover(i5,"Desp. Op. / Rec.",f"{dop_p:.1f}%",help_text="Peso das despesas operacionais sobre a receita líquida")
+    # ── Dados da DRE Analítica (real) ────────────────────────────────
+    _rb  = float(final["rec_bruta"].sum())
+    _rl  = float(final["rec_liq"].sum())
+    _lb  = float(final["lucro_bruto"].sum())
+    _ebt = float(final["ebitda"].sum())
+    _ll  = float(final["lucro_liq"].sum())
+    _cpv_real = float(final["cpv"].sum())
 
-    st.divider(); st.markdown("### ⚖️ Alavancagem e Equilíbrio")
-    j1,j2,j3=st.columns(3)
-    kpi_popover(j1,"Ponto de Equilíbrio",fmt(pe4),
-                help_text="Receita mínima para cobrir todas as despesas fixas operacionais (PE Contábil = Desp. Fixas / Margem de Contribuição %)")
-    kpi_popover(j2,"GAO",f"{gao4:.2f}x",
-                help_text="GAO = Lucro Bruto / EBITDA. Quanto maior o GAO, mais o EBITDA é amplificado por variações na receita.")
-    kpi_popover(j3,"Total Desp. Fixas",fmt(dop4),
-                help_text="Despesas operacionais totais — estrutura de custos fixos do período.")
+    _mg_bruta_real = (_lb  / _rl  * 100) if _rl  != 0 else 0
+    _mg_ebt_real   = (_ebt / _rl  * 100) if _rl  != 0 else 0
+    _mg_liq_real   = (_ll  / _rl  * 100) if _rl  != 0 else 0
 
-    st.divider(); st.markdown("### 📊 Composição de Custos")
-    fc1,fc2=st.columns(2)
-    with fc1:
-        fp_pie=go.Figure(go.Pie(labels=["CPV / CSP","Despesas Op.","EBITDA"],
-                                values=[abs(cpv4),abs(dop4),max(ebt4,0)],hole=0.45,
-                                marker=dict(colors=[CHART_BLUE,CHART_NAVY,CHART_TEAL]),
-                                textinfo="label+percent",textfont=dict(size=11)))
-        fp_pie.update_layout(title="Estrutura sobre Receita Líquida",**PL(320))
-        st.plotly_chart(fp_pie,use_container_width=True)
-    with fc2:
-        fp_stk=go.Figure()
-        fp_stk.add_bar(x=MESES,y=np.abs(base4["cpv"]),  name="CPV",      marker_color=CHART_BLUE)
-        fp_stk.add_bar(x=MESES,y=np.abs(base4["desp_op"]),name="Desp.Op.",marker_color=CHART_NAVY)
-        fp_stk.add_scatter(x=MESES,y=base4["rec_liq"],name="Rec. Líquida",
-                           mode="lines+markers",line=dict(color=GOLD,width=2.5),marker=dict(size=6))
-        fp_stk.update_layout(title="Custos vs Receita Líquida (mensal)",barmode="stack",**PL(320))
-        fp_stk.update_xaxes(showgrid=False)
-        fp_stk.update_yaxes(gridcolor=BORDER,tickprefix="R$ ",tickformat=",.0f")
-        st.plotly_chart(fp_stk,use_container_width=True)
+    # ── Dados das Obras (CPL mais recente de cada SPE ativa) ──────────
+    _todas = list(st.session_state.clientes[cliente_sel]["empresas"].keys())
+    _spes  = [k for k in _todas
+              if st.session_state.get("empresas_ativas", {}).get(k, True)
+              and "matriz" not in k.lower()]
 
-    st.divider(); st.markdown("### 📋 Resumo dos Indicadores")
-    ind_rows=[
-        ("Receita Bruta",fmt(rb4),"Total bruto faturado no ano"),
-        ("Receita Líquida",fmt(rl4),"Após deduções e impostos"),
-        ("Lucro Bruto",fmt(lb4),"Receita Líquida − CPV"),
-        ("Margem Bruta",f"{mg_b4:.1f}%","Lucro Bruto / Rec. Líquida"),
-        ("EBITDA",fmt(ebt4),"Resultado antes juros, IR, deprec."),
-        ("Margem EBITDA",f"{mg_e4:.1f}%","EBITDA / Receita Bruta"),
-        ("Lucro Líquido",fmt(ll4),"Resultado final do exercício"),
-        ("Margem Líquida",f"{mg_l4:.1f}%","Lucro Líquido / Receita Bruta"),
-        ("CPV / Rec. Líquida",f"{cpv_p:.1f}%","Peso do custo direto"),
-        ("Desp. Op. / Rec. Líq.",f"{dop_p:.1f}%","Peso das despesas operacionais"),
-        ("Ponto de Equilíbrio",fmt(pe4),"Receita mínima para cobrir custos fixos"),
-        ("GAO",f"{gao4:.2f}x","Sensibilidade do EBITDA à receita"),
+    _spi_list   = []
+    _cpi_list   = []
+    _verba_list = []
+    _eac_list   = []
+    _orc_total  = 0.0
+    _real_total = 0.0
+    _med_total  = 0.0
+
+    for _sk in _spes:
+        _emp_d = st.session_state.clientes[cliente_sel]["empresas"][_sk]
+        _tit_k = _emp_d.get("nome", _sk)
+        _est_k = get_rolling_state(_tit_k)
+        _hist_k = _est_k.get("historico_cpl", [])
+        if not _hist_k:
+            continue
+        _snap = _hist_k[-1]
+        _orc  = _snap.get("orcado_total", 0)
+        _med  = _snap.get("medido_acum", 0)
+        _real = _snap.get("realizado_acum", 0)
+        _cpi  = _snap.get("cpi", 1.0)
+        _verba = _snap.get("verba_disponivel", 0)
+        _eac   = _snap.get("eac", _orc)
+
+        # SPI: precisa do CFF para % planejado
+        _cr_k = _est_k.get("cronograma", {})
+        _spi  = 1.0
+        if _cr_k and _snap.get("periodo_final"):
+            try:
+                _pf = _snap["periodo_final"]
+                _mes_pf, _ano_pf = int(_pf[5:7]), int(_pf[:4])
+                _custos_k = _cr_k.get("custos_por_mes", [])
+                _meses_k  = _cr_k.get("meses", [])
+                _total_k  = _cr_k.get("total_obra", _orc)
+                _acum_p   = 0.0
+                for _mi, _mv in zip(_meses_k, _custos_k):
+                    _acum_p += _mv
+                    if _mi["mes"] == _mes_pf and _mi["ano"] == _ano_pf:
+                        break
+                _pct_plan = (_acum_p / _total_k * 100) if _total_k else 0
+                _pct_med  = (_med / _orc * 100) if _orc else 0
+                _spi = (_pct_med / _pct_plan) if _pct_plan > 0 else 1.0
+            except Exception:
+                _spi = 1.0
+
+        _spi_list.append(_spi)
+        _cpi_list.append(_cpi)
+        _verba_list.append(_verba)
+        _eac_list.append(_eac)
+        _orc_total  += _orc
+        _real_total += _real
+        _med_total  += _med
+
+    _spi_med  = sum(_spi_list) / len(_spi_list)  if _spi_list  else None
+    _cpi_med  = sum(_cpi_list) / len(_cpi_list)  if _cpi_list  else None
+    _verba_tot = sum(_verba_list)
+    _eac_tot   = sum(_eac_list)
+    _verba_pct = (_verba_tot / _orc_total * 100) if _orc_total else 0
+    _eac_desvio = ((_eac_tot - _orc_total) / _orc_total * 100) if _orc_total else 0
+
+    # ══════════════════════════════════════════════════════════════════
+    # BLOCO 1 — RESULTADOS FINANCEIROS (DRE real)
+    # ══════════════════════════════════════════════════════════════════
+    st.markdown("### 💰 Resultado Financeiro (DRE Real)")
+    _f1, _f2, _f3, _f4 = st.columns(4)
+    _f1.metric("Receita Líquida",  fmt(_rl),  help="Receita Bruta − Impostos")
+    _f2.metric("Margem Bruta",     f"{_mg_bruta_real:.1f}%")
+    _f3.metric("EBITDA",           fmt(_ebt),  f"{_mg_ebt_real:.1f}%")
+    _f4.metric("Lucro Líquido",    fmt(_ll),   f"{_mg_liq_real:.1f}%")
+
+    st.divider()
+
+    # ══════════════════════════════════════════════════════════════════
+    # BLOCO 2 — INDICADORES DE OBRA (EVM)
+    # ══════════════════════════════════════════════════════════════════
+    if _spi_list:
+        st.markdown("### 🏗️ Indicadores de Obra (EVM)")
+        st.caption(
+            "SPI = Schedule Performance Index · CPI = Cost Performance Index · "
+            "EAC = Estimate at Completion · Baseado no CPL mais recente de cada SPE."
+        )
+
+        def _sem(v, limites=(0.95, 0.85)):
+            if v is None: return "—"
+            if v >= limites[0]: return "🟢"
+            if v >= limites[1]: return "🟡"
+            return "🔴"
+
+        _e1, _e2, _e3, _e4, _e5, _e6 = st.columns(6)
+        _e1.metric(
+            f"{_sem(_spi_med)} SPI",
+            f"{_spi_med:.3f}" if _spi_med else "—",
+            help="Média das SPEs ativas"
+        )
+        _e2.metric(
+            f"{_sem(_cpi_med)} CPI",
+            f"{_cpi_med:.3f}" if _cpi_med else "—",
+            help="Média das SPEs ativas"
+        )
+        _e3.metric(
+            "% Medido",
+            f"{(_med_total/_orc_total*100):.1f}%" if _orc_total else "—"
+        )
+        _e4.metric(
+            "% Realizado",
+            f"{(_real_total/_orc_total*100):.1f}%" if _orc_total else "—"
+        )
+        _e5.metric(
+            f"{_sem(_verba_pct, (20, 10))} Verba Disp.",
+            fmt(_verba_tot),
+            f"{_verba_pct:.1f}% do orçado"
+        )
+        _e6.metric(
+            f"{_sem(100-_eac_desvio, (97, 92))} EAC",
+            fmt(_eac_tot),
+            f"Desvio {_eac_desvio:+.1f}%"
+        )
+
+        # Tabela por SPE
+        with st.expander("📋 Detalhe por SPE", expanded=False):
+            _rows_spe = []
+            for _sk, _spi_k, _cpi_k, _vk, _ek in zip(
+                _spes, _spi_list, _cpi_list, _verba_list, _eac_list
+            ):
+                _emp_d2 = st.session_state.clientes[cliente_sel]["empresas"][_sk]
+                _snap_k = get_rolling_state(_emp_d2.get("nome", _sk)).get("historico_cpl", [{}])[-1]
+                _rows_spe.append({
+                    "SPE":       _sk,
+                    "SPI":       f"{_spi_k:.3f}",
+                    "CPI":       f"{_cpi_k:.3f}",
+                    "% Medido":  f"{_snap_k.get('pct_medido',0):.1f}%",
+                    "% Realizado": f"{_snap_k.get('pct_realizado',0):.1f}%",
+                    "Verba Disp.": fmt(_vk),
+                    "EAC":       fmt(_ek),
+                    "CPL":       _snap_k.get("periodo_final","—"),
+                })
+            if _rows_spe:
+                st.dataframe(pd.DataFrame(_rows_spe),
+                             use_container_width=True, hide_index=True)
+    else:
+        st.info(
+            "ℹ️ Sem dados de obra para indicadores EVM. "
+            "Carregue os arquivos CPL na aba **⚙️ Configurações**."
+        )
+
+    st.divider()
+
+    # ══════════════════════════════════════════════════════════════════
+    # BLOCO 3 — PROJEÇÃO (do Rolling Forecast)
+    # ══════════════════════════════════════════════════════════════════
+    st.markdown("### 📅 Projeção até o Fim da Obra")
+    st.caption(f"Baseada na visão **{visao}** selecionada na sidebar.")
+
+    # Calcula projeção rápida para a empresa/consolidado atual
+    _ativas_ind = [k for k in _todas
+                   if st.session_state.get("empresas_ativas", {}).get(k, True)]
+    _dres_p2 = {}
+    for _k2 in _ativas_ind:
+        _emp2 = st.session_state.clientes[cliente_sel]["empresas"][_k2]
+        _tit2 = _emp2.get("nome", _k2)
+        _est2 = get_rolling_state(_tit2)
+        _cr2  = _est2.get("cronograma", {})
+        _di2  = _cr2.get("data_inicio", _est2.get("data_inicio", {"ano":2024,"mes":1}))
+        _df2  = _cr2.get("data_fim",    _est2.get("data_fim",    {"ano":2026,"mes":12}))
+        _N2   = max(1, min((_df2["ano"]-_di2["ano"])*12+(_df2["mes"]-_di2["mes"])+1, 120))
+        _L2   = gen_labels(_N2, _di2)
+        _dp   = build_dre_projetada(_emp2, _est2, visao, _N2, _L2, _di2)
+        _dres_p2[_k2] = _dp
+
+    # Consolida
+    if len(_dres_p2) == 1:
+        _dp_final = list(_dres_p2.values())[0]
+    else:
+        _N2_max = max(len(v["rec_bruta"]) for v in _dres_p2.values())
+        def _soma2(c):
+            r = [0.0]*_N2_max
+            for _vv2 in _dres_p2.values():
+                for _ii2, _v2 in enumerate(_vv2.get(c,[])):
+                    if _ii2 < _N2_max: r[_ii2] += float(_v2)
+            return r
+        _dp_final = {c: _soma2(c) for c in
+                     ["rec_bruta","lucro_bruto","ebitda","lucro_liq","cpv","desp_op"]}
+
+    _rb_p  = sum(_dp_final.get("rec_bruta", []))
+    _lb_p  = sum(_dp_final.get("lucro_bruto", []))
+    _ebt_p = sum(_dp_final.get("ebitda", []))
+    _ll_p  = sum(_dp_final.get("lucro_liq", []))
+    _mg_b_p = (_lb_p/_rb_p*100) if _rb_p else 0
+    _mg_e_p = (_ebt_p/_rb_p*100) if _rb_p else 0
+    _mg_l_p = (_ll_p/_rb_p*100) if _rb_p else 0
+
+    _p1, _p2, _p3, _p4 = st.columns(4)
+    _p1.metric("VGV Projetado",       fmt(_rb_p))
+    _p2.metric("Margem Bruta Proj.",  f"{_mg_b_p:.1f}%")
+    _p3.metric("EBITDA Projetado",    fmt(_ebt_p), f"{_mg_e_p:.1f}%")
+    _p4.metric("Lucro Líq. Projetado",fmt(_ll_p),  f"{_mg_l_p:.1f}%")
+
+    st.divider()
+
+    # Comparativo real vs projetado
+    st.markdown("#### 📊 Real vs Projetado")
+    _rows_comp = [
+        {"Métrica": "Receita / VGV",   "Real": fmt(_rl),  "Projetado": fmt(_rb_p)},
+        {"Métrica": "Margem Bruta",    "Real": f"{_mg_bruta_real:.1f}%", "Projetado": f"{_mg_b_p:.1f}%"},
+        {"Métrica": "EBITDA",          "Real": fmt(_ebt), "Projetado": fmt(_ebt_p)},
+        {"Métrica": "Margem EBITDA",   "Real": f"{_mg_ebt_real:.1f}%",  "Projetado": f"{_mg_e_p:.1f}%"},
+        {"Métrica": "Lucro Líquido",   "Real": fmt(_ll),  "Projetado": fmt(_ll_p)},
+        {"Métrica": "Margem Líquida",  "Real": f"{_mg_liq_real:.1f}%",  "Projetado": f"{_mg_l_p:.1f}%"},
     ]
-    df_ind=pd.DataFrame(ind_rows,columns=["Indicador","Valor","Descrição"]).set_index("Indicador")
-    tot_ind={"Lucro Bruto","EBITDA","Lucro Líquido","Ponto de Equilíbrio"}
-    def hl_i(r): return ([f"background-color:{BLIGHT};font-weight:700;color:{NAVY}"]*len(r) if r.name in tot_ind else [""]*len(r))
-    st.dataframe(df_ind.style.apply(hl_i,axis=1),use_container_width=True,height=470)
-    st.download_button("📥 Exportar Indicadores em Excel",
-                       data=excel_dre(df_ind,"Indicadores"),
-                       file_name=f"Indicadores_{titulo.replace(' ','_')}.xlsx",
-                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                       key="dl_ind")
-    st.caption("🔄 Próximos: FCFF · Valuation DCF · Cronograma Físico-Financeiro · Deploy")
+    st.dataframe(
+        pd.DataFrame(_rows_comp),
+        use_container_width=True,
+        hide_index=True
+    )
 
 
-
-
-
-# ══════════════════════════════════════════════════════════════════════ TAB 5
-@st.fragment
 def render_fcff_dcf():
     st.markdown(f"## 💰 FCFF & Valuation DCF — {titulo}")
     st.caption("Fluxo de Caixa Livre para a Firma + Valuation por Desconto de Fluxo de Caixa.")
