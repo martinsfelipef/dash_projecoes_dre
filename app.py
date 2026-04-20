@@ -2202,10 +2202,463 @@ def render_configuracoes():
             safe_toast("Configurações salvas!", "💾")
 
 
-# ── Placeholder: Rolling Forecast novo (implementado depois) ─────────────────
+def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
+    """
+    Monta DRE projetada com N meses.
+    Combina dados reais (DRE histórica) com projeção futura.
+
+    Parâmetros:
+      emp_base    : dict com rec_bruta, imp_rec, cpv, desp_op, res_fin, ir (12 valores reais)
+      estado      : dict do rolling state da SPE
+      visao       : "💰 Caixa" | "📋 Competência" | "🏗️ POC"
+      N           : número de meses da obra
+      LABELS      : lista de strings ["Jul/24", "Ago/24", ...]
+      data_inicio : {"ano": int, "mes": int}
+
+    Retorna dict com listas de N floats para cada linha da DRE.
+    """
+    import datetime
+
+    # ── Dados históricos (12 meses anuais) ───────────────────────────
+    rb_hist   = list(emp_base.get("rec_bruta", [0.0]*12))
+    imp_hist  = list(emp_base.get("imp_rec",   [0.0]*12))
+    cpv_hist  = list(emp_base.get("cpv",       [0.0]*12))
+    dop_hist  = list(emp_base.get("desp_op",   [0.0]*12))
+    rf_hist   = list(emp_base.get("res_fin",   [0.0]*12))
+    ir_hist   = list(emp_base.get("ir",        [0.0]*12))
+
+    n_hist = len(rb_hist)  # normalmente 12
+
+    # ── Médias históricas (para projeção de custos não-obra) ──────────
+    def _media(lst):
+        vals = [v for v in lst if v != 0]
+        return sum(vals)/len(vals) if vals else 0.0
+
+    dop_media  = _media(dop_hist)   # negativo
+    rf_media   = _media(rf_hist)
+    ir_media   = _media(ir_hist)    # negativo
+    imp_pct    = (sum(imp_hist) / sum(rb_hist)) if sum(rb_hist) != 0 else 0.0
+    ir_pct     = (sum(ir_hist)  / sum(rb_hist)) if sum(rb_hist) != 0 else 0.0
+    cub_m      = estado.get("cub_mensal", 0.5) / 100  # ex: 0.005
+
+    # ── CFF: custos planejados por mês ───────────────────────────────
+    _cr       = estado.get("cronograma", {})
+    _custos_m = _cr.get("custos_por_mes", [])
+    _meses_m  = _cr.get("meses", [])
+
+    def _cpv_cff(mes_idx):
+        """CPV do mês pelo CFF, com CUB acumulado."""
+        _base = datetime.date(data_inicio["ano"], data_inicio["mes"], 1)
+        _atual = datetime.date(
+            _base.year + (_base.month + mes_idx - 1) // 12,
+            (_base.month + mes_idx - 1) % 12 + 1, 1
+        )
+        _cr_ini = _cr.get("data_inicio", data_inicio)
+        _offset = (
+            (_atual.year - _cr_ini["ano"]) * 12 +
+            (_atual.month - _cr_ini["mes"])
+        )
+        if 0 <= _offset < len(_custos_m):
+            _custo = _custos_m[_offset]
+            _fator_cub = (1 + cub_m) ** mes_idx
+            return -abs(_custo * _fator_cub)
+        return 0.0
+
+    # ── Receita por visão ─────────────────────────────────────────────
+    vgv_cfg   = estado.get("vgv", {})
+    poc_cfg   = estado.get("poc_acum", [0]*N)
+    pct_ent   = estado.get("pct_entrada", 7.0) / 100
+    parc_un   = estado.get("parcela_un", 1500.0)
+    mes_ent   = estado.get("mes_entrega", N)
+    bdi_lista = estado.get("bdi_mensal", [estado.get("bdi_rate", 14.0)]*N)
+
+    def _receita_mes(i):
+        """Receita do mês i (0-based) conforme visão."""
+        m = i + 1  # 1-based
+
+        if "Competência" in visao or "Compet" in visao:
+            # VGV reconhecido no mês da venda
+            un  = vgv_cfg.get(m, {}).get("unidades", 0)
+            prc = vgv_cfg.get(m, {}).get("preco", 350000.0)
+            return float(un) * float(prc)
+
+        elif "POC" in visao:
+            # VGV × incremento de POC no mês
+            poc_atual  = poc_cfg[i] if i < len(poc_cfg) else 0
+            poc_ant    = poc_cfg[i-1] if i > 0 and i-1 < len(poc_cfg) else 0
+            delta_poc  = max(poc_atual - poc_ant, 0) / 100
+            vgv_total  = sum(
+                vgv_cfg.get(mm, {}).get("unidades", 0) *
+                vgv_cfg.get(mm, {}).get("preco", 350000.0)
+                for mm in range(1, N+1)
+            )
+            return vgv_total * delta_poc
+
+        else:  # Caixa
+            # Entrada no mês da venda + parcelas mensais
+            un     = vgv_cfg.get(m, {}).get("unidades", 0)
+            prc    = vgv_cfg.get(m, {}).get("preco", 350000.0)
+            entrada = float(un) * float(prc) * pct_ent
+            # Parcelas: de todos os meses já vendidos até agora
+            parcelas = 0.0
+            for mm in range(1, m+1):
+                _un_mm = vgv_cfg.get(mm, {}).get("unidades", 0)
+                if _un_mm > 0 and mm <= mes_ent:
+                    parcelas += float(_un_mm) * parc_un
+            # Saldo na entrega (BDI sobre CPV)
+            saldo_ent = 0.0
+            if m == mes_ent:
+                vgv_total = sum(
+                    vgv_cfg.get(mm, {}).get("unidades", 0) *
+                    vgv_cfg.get(mm, {}).get("preco", 350000.0)
+                    for mm in range(1, N+1)
+                )
+                total_entrada  = vgv_total * pct_ent
+                total_parcelas = sum(
+                    vgv_cfg.get(mm, {}).get("unidades", 0) * parc_un * min(mes_ent - mm, 0)
+                    for mm in range(1, mes_ent+1)
+                )
+                saldo_ent = max(vgv_total - total_entrada - total_parcelas, 0)
+            return entrada + parcelas + saldo_ent
+
+    # ── Receita BDI da Matriz (só para Matriz) ────────────────────────
+    def _rec_bdi_mes(i, cpv_spe):
+        bdi = bdi_lista[i] if i < len(bdi_lista) else estado.get("bdi_rate", 14.0)
+        return abs(cpv_spe) * bdi / 100
+
+    # ── Monta arrays de N meses ───────────────────────────────────────
+    rec_bruta  = []
+    imp_rec    = []
+    cpv        = []
+    desp_op    = []
+    res_fin    = []
+    ir         = []
+
+    is_matriz = "matriz" in emp_base.get("nome", "").lower()
+
+    for i in range(N):
+        _drift = (1 + 0.005) ** i  # 0,5%/mês ≈ 6%/ano
+
+        if i < n_hist:
+            # Mês histórico: usa dado real
+            rec_bruta.append(float(rb_hist[i]))
+            imp_rec.append(float(imp_hist[i]))
+            cpv.append(float(cpv_hist[i]))
+            desp_op.append(float(dop_hist[i]))
+            res_fin.append(float(rf_hist[i]))
+            ir.append(float(ir_hist[i]))
+        else:
+            # Mês futuro: projeção
+            _rec = _receita_mes(i)
+            _cpv_fut = _cpv_cff(i) if not is_matriz else 0.0
+            if is_matriz:
+                # Matriz recebe BDI sobre CPV das SPEs (simplificado)
+                _cpv_spe_est = abs(_cpv_cff(i))
+                _rec = _rec_bdi_mes(i, _cpv_spe_est)
+
+            _meses_fut = i - n_hist + 1
+            _dop = dop_media * _drift if dop_media != 0 else 0.0
+            _rf  = rf_media  * _drift if rf_media  != 0 else 0.0
+            _ir_v = ir_media  * _drift if ir_media  != 0 else 0.0
+            _imp  = _rec * imp_pct if _rec != 0 else 0.0
+
+            rec_bruta.append(_rec)
+            imp_rec.append(_imp)
+            cpv.append(_cpv_fut)
+            desp_op.append(_dop)
+            res_fin.append(_rf)
+            ir.append(_ir_v)
+
+    # Calcula linhas derivadas
+    rec_liq      = [rb + imp for rb, imp in zip(rec_bruta, imp_rec)]
+    lucro_bruto  = [rl + c   for rl, c   in zip(rec_liq,   cpv)]
+    ebitda       = [lb + dop for lb, dop in zip(lucro_bruto, desp_op)]
+    lai          = [eb + rf  for eb, rf  in zip(ebitda,     res_fin)]
+    lucro_liq    = [la + ir_v for la, ir_v in zip(lai, ir)]
+
+    return {
+        "labels":        LABELS,
+        "rec_bruta":     rec_bruta,
+        "imp_rec":       imp_rec,
+        "rec_liq":       rec_liq,
+        "cpv":           cpv,
+        "lucro_bruto":   lucro_bruto,
+        "desp_op":       desp_op,
+        "ebitda":        ebitda,
+        "res_fin":       res_fin,
+        "lai":           lai,
+        "ir":            ir,
+        "lucro_liq":     lucro_liq,
+        "n_hist":        n_hist,   # quantos meses são reais
+    }
+
+
 def render_rolling_forecast():
+    import datetime
     st.markdown("## 📅 Rolling Forecast")
-    st.info("Em construção — projeção de DRE por método (Caixa, Competência, POC).")
+    st.caption("DRE projetada até o fim da obra — passado real + futuro projetado.")
+
+    # ── Empresas ativas ───────────────────────────────────────────────
+    _todas = list(st.session_state.clientes[cliente_sel]["empresas"].keys())
+    _ativas = [k for k in _todas
+               if st.session_state.get("empresas_ativas", {}).get(k, True)]
+    if not _ativas:
+        st.warning("Nenhuma empresa ativa."); return
+
+    # ── Monta DRE projetada por empresa ──────────────────────────────
+    _dres_proj = {}
+    _N_max = 0
+
+    for _k in _ativas:
+        _emp = st.session_state.clientes[cliente_sel]["empresas"][_k]
+        _tit = _emp.get("nome", _k)
+        _est = get_rolling_state(_tit)
+        _cr  = _est.get("cronograma", {})
+
+        # Período
+        _di  = _est.get("data_inicio", {"ano": 2024, "mes": 1})
+        _df  = _est.get("data_fim",    {"ano": 2026, "mes": 12})
+        if _cr:
+            _di = _cr.get("data_inicio", _di)
+            _df = _cr.get("data_fim",    _df)
+        _N = (
+            (_df["ano"] - _di["ano"]) * 12 +
+            (_df["mes"] - _di["mes"]) + 1
+        )
+        _N = max(1, min(_N, 120))
+        _LABELS = gen_labels(_N, _di)
+        _N_max = max(_N_max, _N)
+
+        _dre_p = build_dre_projetada(_emp, _est, visao, _N, _LABELS, _di)
+        _dres_proj[_k] = {"dre": _dre_p, "N": _N, "labels": _LABELS, "titulo": _tit}
+
+    if not _dres_proj:
+        st.info("Nenhuma empresa com dados."); return
+
+    # ── Consolida se mais de uma empresa ativa ────────────────────────
+    if len(_ativas) == 1:
+        _k_unico = _ativas[0]
+        _dre_final = _dres_proj[_k_unico]["dre"]
+        _N_final   = _dres_proj[_k_unico]["N"]
+        _LABELS_final = _dres_proj[_k_unico]["labels"]
+        _titulo_final = _dres_proj[_k_unico]["titulo"]
+    else:
+        # Soma: alinha pelo índice (meses podem ter tamanhos diferentes)
+        _N_final   = _N_max
+        _LABELS_final = gen_labels(_N_final,
+            list(_dres_proj.values())[0]["dre"]["labels"] and
+            {"ano": 2024, "mes": 1} or {"ano": 2024, "mes": 1})
+
+        def _soma_campo(campo):
+            resultado = [0.0] * _N_final
+            for _kk, _vv in _dres_proj.items():
+                _vals = _vv["dre"].get(campo, [])
+                for _ii, _v in enumerate(_vals):
+                    if _ii < _N_final:
+                        resultado[_ii] += float(_v)
+            return resultado
+
+        _dre_final = {
+            campo: _soma_campo(campo)
+            for campo in ["rec_bruta","imp_rec","rec_liq","cpv",
+                          "lucro_bruto","desp_op","ebitda","res_fin","lai","ir","lucro_liq"]
+        }
+        _dre_final["labels"] = _LABELS_final
+        _dre_final["n_hist"] = min(
+            d["dre"]["n_hist"] for d in _dres_proj.values()
+        )
+        _titulo_final = "Consolidado"
+
+    st.caption(
+        f"**{_titulo_final}** · {_N_final} meses · "
+        f"Visão: {visao} · "
+        f"{'Consolidado (' + str(len(_ativas)) + ' empresas)' if len(_ativas) > 1 else ''}"
+    )
+    st.divider()
+
+    # ── GRÁFICO: DRE mensal projetada ─────────────────────────────────
+    _n_hist = _dre_final.get("n_hist", 12)
+    _labels_all = _dre_final.get("labels", _LABELS_final)
+
+    _fg = go.Figure()
+
+    # Área de histórico vs projeção
+    if _n_hist < _N_final:
+        _fg.add_vrect(
+            x0=0, x1=_n_hist - 0.5,
+            fillcolor="rgba(200,220,255,0.12)",
+            layer="below", line_width=0,
+            annotation_text="Histórico",
+            annotation_font_size=10,
+            annotation_position="top left"
+        )
+        _fg.add_vrect(
+            x0=_n_hist - 0.5, x1=_N_final - 1,
+            fillcolor="rgba(255,240,200,0.12)",
+            layer="below", line_width=0,
+            annotation_text="Projeção",
+            annotation_font_size=10,
+            annotation_position="top left"
+        )
+
+    # Receita Bruta
+    _fg.add_bar(
+        x=_labels_all,
+        y=_dre_final["rec_bruta"],
+        name="Receita Bruta",
+        marker_color=CHART_TEAL,
+        opacity=0.85
+    )
+    # CPV (negativo)
+    _fg.add_bar(
+        x=_labels_all,
+        y=_dre_final["cpv"],
+        name="CPV (Custo Obra)",
+        marker_color=SOFT_RED,
+        opacity=0.75
+    )
+    # Lucro Líquido (linha)
+    _fg.add_scatter(
+        x=_labels_all,
+        y=_dre_final["lucro_liq"],
+        name="Lucro Líquido",
+        mode="lines+markers",
+        line=dict(color=GOLD, width=2.5),
+        marker=dict(size=5)
+    )
+    _fg.add_hline(y=0, line_dash="dash", line_color=GRAY, line_width=1)
+    _fg.update_layout(
+        title=f"DRE Projetada — {_titulo_final}",
+        barmode="relative",
+        **PL(420)
+    )
+    _fg.update_xaxes(showgrid=False, tickfont=dict(size=9))
+    _fg.update_yaxes(gridcolor=BORDER, tickprefix="R$ ", tickformat=",.0f")
+    st.plotly_chart(_fg, use_container_width=True)
+
+    st.divider()
+
+    # ── KPIs RESUMO ───────────────────────────────────────────────────
+    _rb_total  = sum(_dre_final["rec_bruta"])
+    _cpv_total = sum(_dre_final["cpv"])
+    _ll_total  = sum(_dre_final["lucro_liq"])
+    _ebt_total = sum(_dre_final["ebitda"])
+    _mg_bruta  = (sum(_dre_final["lucro_bruto"]) / _rb_total * 100) if _rb_total else 0
+    _mg_liq    = (_ll_total / _rb_total * 100) if _rb_total else 0
+    _mg_ebt    = (_ebt_total / _rb_total * 100) if _rb_total else 0
+
+    _kp1, _kp2, _kp3, _kp4, _kp5 = st.columns(5)
+    _kp1.metric("Receita Total", fmt(_rb_total))
+    _kp2.metric("CPV Total",     fmt(abs(_cpv_total)))
+    _kp3.metric("Margem Bruta",  f"{_mg_bruta:.1f}%")
+    _kp4.metric("EBITDA Total",  fmt(_ebt_total), f"{_mg_ebt:.1f}%")
+    _kp5.metric("Lucro Líquido", fmt(_ll_total),  f"{_mg_liq:.1f}%")
+
+    st.divider()
+
+    # ── TABELA DRE COMPLETA ───────────────────────────────────────────
+    with st.expander("📋 DRE Completa Mês a Mês", expanded=False):
+        _linhas_dre = [
+            ("Receita Bruta",       "rec_bruta",    False),
+            ("(-) Impostos s/ Rec", "imp_rec",      False),
+            ("Receita Líquida",     "rec_liq",      True),
+            ("(-) CPV",             "cpv",          False),
+            ("Lucro Bruto",         "lucro_bruto",  True),
+            ("(-) Despesas Op.",    "desp_op",      False),
+            ("EBITDA",              "ebitda",       True),
+            ("Resultado Financeiro","res_fin",       False),
+            ("LAIR",                "lai",          False),
+            ("(-) IR/CSLL",         "ir",           False),
+            ("Lucro Líquido",       "lucro_liq",    True),
+        ]
+        _df_rows = {}
+        for _nome, _campo, _bold in _linhas_dre:
+            _df_rows[_nome] = _dre_final.get(_campo, [0]*_N_final)
+
+        _df_dre = pd.DataFrame(_df_rows, index=_labels_all).T
+
+        # Coluna Total
+        _df_dre["TOTAL"] = _df_dre.sum(axis=1)
+
+        # Formata
+        def _fmt_v(v):
+            try:
+                fv = float(v)
+                return f"R$ {fv:,.0f}" if fv >= 0 else f"(R$ {abs(fv):,.0f})"
+            except Exception:
+                return str(v)
+
+        _totais_bold = [n for n, _, b in _linhas_dre if b]
+
+        def _hl_dre(row):
+            if row.name in _totais_bold:
+                return [f"background-color:{BLIGHT};font-weight:700"]*len(row)
+            return [""]*len(row)
+
+        try:
+            st.dataframe(
+                _df_dre.style
+                    .format(_fmt_v)
+                    .apply(_hl_dre, axis=1),
+                use_container_width=True,
+                height=420
+            )
+        except Exception:
+            st.dataframe(_df_dre, use_container_width=True)
+
+        # Download
+        _buf_rf = io.BytesIO()
+        with pd.ExcelWriter(_buf_rf, engine="openpyxl") as _w:
+            _df_dre.to_excel(_w, sheet_name="Rolling Forecast")
+        st.download_button(
+            "📥 Exportar DRE Projetada",
+            data=_buf_rf.getvalue(),
+            file_name=f"RollingForecast_{_titulo_final.replace(' ','_')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            key="dl_rolling"
+        )
+
+    # ── FLUXO DE CAIXA PROJETADO ──────────────────────────────────────
+    st.divider()
+    st.markdown("### 💸 Necessidade de Caixa")
+    _entradas = [max(v, 0) for v in _dre_final["rec_bruta"]]
+    _saidas   = [abs(c) + abs(d) for c, d in zip(_dre_final["cpv"], _dre_final["desp_op"])]
+    _saldo    = [e - s for e, s in zip(_entradas, _saidas)]
+    _saldo_acum = []
+    _acum = 0.0
+    for _sv in _saldo:
+        _acum += _sv
+        _saldo_acum.append(_acum)
+
+    _fg_fc = go.Figure()
+    _fg_fc.add_bar(x=_labels_all, y=_entradas,
+                   name="Entradas", marker_color=CHART_TEAL, opacity=0.8)
+    _fg_fc.add_bar(x=_labels_all, y=[-s for s in _saidas],
+                   name="Saídas", marker_color=SOFT_RED, opacity=0.8)
+    _fg_fc.add_scatter(x=_labels_all, y=_saldo_acum,
+                       name="Saldo acumulado",
+                       mode="lines+markers",
+                       line=dict(color=GOLD, width=2.5),
+                       marker=dict(size=5))
+    _fg_fc.add_hline(y=0, line_dash="dash", line_color=GRAY, line_width=1)
+    _fg_fc.update_layout(
+        title="Fluxo de Caixa — Entradas vs Saídas",
+        barmode="relative", **PL(380)
+    )
+    _fg_fc.update_xaxes(showgrid=False, tickfont=dict(size=9))
+    _fg_fc.update_yaxes(gridcolor=BORDER, tickprefix="R$ ", tickformat=",.0f")
+    st.plotly_chart(_fg_fc, use_container_width=True)
+
+    _min_saldo = min(_saldo_acum) if _saldo_acum else 0
+    if _min_saldo < 0:
+        _mes_pico = _saldo_acum.index(_min_saldo)
+        st.error(
+            f"⚠️ **Necessidade de capital:** caixa fica negativo em "
+            f"**{_labels_all[_mes_pico]}** com pico de **{fmt(abs(_min_saldo))}**."
+        )
+    else:
+        st.success(f"✅ Caixa positivo ao longo de toda a projeção. Pico: {fmt(max(_saldo_acum))}")
+
 
 # ── Roteamento ────────────────────────────────────────────────────────────────
 if   _tab == TABS[0]: render_configuracoes()
