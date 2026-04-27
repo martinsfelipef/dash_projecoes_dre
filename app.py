@@ -2488,16 +2488,70 @@ def render_configuracoes():
         _estado_cfg["poc_acum"] = _poc_vals_cfg
 
     with st.expander("💵 Parâmetros Caixa", expanded=False):
-        st.caption("Entrada, parcelas e saldo na entrega — para projeção de recebimentos por Caixa.")
-        _cf1, _cf2, _cf3 = st.columns(3)
-        _pct_ent = _cf1.number_input("Entrada (%)", value=_estado_cfg.get("pct_entrada",7.0),
-                                      step=0.5, format="%.1f", key=f"ent_cfg_{_tkey_cfg}")
-        _parc_un = _cf2.number_input("Parcela/Un (R$)", value=_estado_cfg.get("parcela_un",1500.0),
-                                      step=100.0, format="%.0f", key=f"parc_cfg_{_tkey_cfg}")
-        _mes_ent = int(_cf3.number_input("Mês de entrega (índice)", value=float(_estado_cfg.get("mes_entrega",12)),
-                                          min_value=1., max_value=float(max(_N_cfg,1)), step=1.,
-                                          format="%.0f", key=f"mesent_cfg_{_tkey_cfg}"))
-        _estado_cfg.update({"pct_entrada":_pct_ent,"parcela_un":_parc_un,"mes_entrega":_mes_ent})
+        st.caption(
+            "Parâmetros de recebimento para projeção por Caixa. "
+            f"Configurando: **{_spe_sel}**"
+        )
+
+        _cf1, _cf2 = st.columns(2)
+
+        _pct_ent = _cf1.number_input(
+            "Entrada — % do valor do contrato",
+            min_value=0.0, max_value=100.0, step=0.5, format="%.1f",
+            value=float(_estado_cfg.get("pct_entrada", 7.0)),
+            key=f"ent_cfg_{_tkey_cfg}",
+            help="% pago pelo comprador no ato da assinatura do contrato"
+        )
+        _parc_un = _cf2.number_input(
+            "Parcela mensal por unidade (R$)",
+            min_value=0.0, step=100.0, format="%.0f",
+            value=float(_estado_cfg.get("parcela_un", 1500.0)),
+            key=f"parc_cfg_{_tkey_cfg}",
+            help="Valor médio da parcela mensal por unidade durante a obra"
+        )
+
+        # Mês de entrega como seleção de mês/ano
+        _N_cfg_c  = _estado_cfg.get("cronograma", {}).get("n_meses", 24)
+        _di_cfg_c = _estado_cfg.get("data_inicio", {"ano": 2024, "mes": 1})
+        _LABELS_c = gen_labels(_N_cfg_c, _di_cfg_c)
+        _mes_ent_atual = int(_estado_cfg.get("mes_entrega", _N_cfg_c))
+        _mes_ent_idx   = min(_mes_ent_atual - 1, len(_LABELS_c) - 1)
+        _mes_ent_idx   = max(0, _mes_ent_idx)
+
+        _mes_ent_sel = st.selectbox(
+            "Mês de entrega das chaves",
+            options=list(range(len(_LABELS_c))),
+            index=_mes_ent_idx,
+            format_func=lambda x: _LABELS_c[x] if x < len(_LABELS_c) else f"M{x+1}",
+            key=f"mesent_cfg_{_tkey_cfg}",
+            help="Mês em que as chaves são entregues — saldo final é pago neste mês"
+        )
+        _mes_ent = _mes_ent_sel + 1  # 1-based
+
+        # Salva no estado da SPE correta
+        _estado_cfg.update({
+            "pct_entrada":  _pct_ent,
+            "parcela_un":   _parc_un,
+            "mes_entrega":  _mes_ent,
+        })
+
+        # Preview do fluxo estimado
+        _vgv_v = _estado_cfg.get("vendas", {})
+        _vgv_total_prev = (
+            _vgv_v.get("vgv_vendido", 0) if _vgv_v
+            else sum(
+                _estado_cfg.get("vgv", {}).get(m, {}).get("unidades", 0) *
+                _estado_cfg.get("vgv", {}).get(m, {}).get("preco", 0)
+                for m in range(1, _N_cfg_c + 1)
+            )
+        )
+        if _vgv_total_prev > 0 and _pct_ent > 0:
+            _ent_total  = _vgv_total_prev * _pct_ent / 100
+            _saldo_prev = max(_vgv_total_prev - _ent_total, 0)
+            st.caption(
+                f"📊 Estimativa: Entrada total ~**{fmt(_ent_total)}** · "
+                f"Saldo na entrega ~**{fmt(_saldo_prev)}**"
+            )
 
     st.divider()
 
@@ -2597,6 +2651,15 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
     # n_hist = índice até onde temos dados históricos (fim da DRE)
     n_hist = _idx_fim_dre
 
+    # Offset: quantos meses o horizonte completo começa ANTES da obra
+    # Ex: horizonte começa abr/23, obra começa jul/24 → offset = 15
+    _cr_di = _cr.get("data_inicio", data_inicio) if _cr else data_inicio
+    _offset_obra = (
+        (_cr_di["ano"] - data_inicio["ano"]) * 12 +
+        (_cr_di["mes"] - data_inicio["mes"])
+    )
+    _offset_obra = max(0, _offset_obra)
+
     # ── Médias históricas (para projeção de custos não-obra) ──────────
     def _media(lst):
         vals = [v for v in lst if v != 0]
@@ -2677,43 +2740,46 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
     bdi_lista = estado.get("bdi_mensal", [estado.get("bdi_rate", 14.0)]*N)
 
     def _receita_mes(i):
-        """Receita do mês i (0-based) conforme visão."""
-        m = i + 1  # 1-based
+        """Receita do mês i (0-based, relativo ao início do horizonte completo)."""
+        # m_obra: índice 1-based relativo ao início da obra (para vgv_cfg)
+        m_obra = i - _offset_obra + 1
 
         if "Competência" in visao or "Compet" in visao:
             # Meses com venda real: usa o valor real do relatório de vendas
             if i in _rec_real_por_idx:
                 return _rec_real_por_idx[i]
-            # Meses futuros: usa vgv_cfg (projeção automática)
-            un  = vgv_cfg.get(m, {}).get("unidades", 0)
-            prc = vgv_cfg.get(m, {}).get("preco", 350000.0)
+            # Meses futuros: usa vgv_cfg com índice correto
+            if m_obra < 1:
+                return 0.0
+            un  = vgv_cfg.get(m_obra, {}).get("unidades", 0)
+            prc = vgv_cfg.get(m_obra, {}).get("preco", 350000.0)
             return float(un) * float(prc)
 
         elif "POC" in visao:
-            # VGV total × incremento de POC no mês
             poc_atual = poc_cfg[i] if i < len(poc_cfg) else 0
             poc_ant   = poc_cfg[i-1] if i > 0 and i-1 < len(poc_cfg) else 0
             delta_poc = max(poc_atual - poc_ant, 0) / 100
             return _vgv_total_completo * delta_poc
 
         else:  # Caixa
-            # Entrada no mês da venda + parcelas acumuladas mensais
-            un      = vgv_cfg.get(m, {}).get("unidades", 0)
-            prc     = vgv_cfg.get(m, {}).get("preco", 350000.0)
+            if m_obra < 1:
+                return 0.0
+            un      = vgv_cfg.get(m_obra, {}).get("unidades", 0)
+            prc     = vgv_cfg.get(m_obra, {}).get("preco", 350000.0)
             entrada = float(un) * float(prc) * pct_ent
 
-            # Parcelas: soma de todas as unidades vendidas até este mês
+            # Parcelas: soma de todas as unidades vendidas até este mês (índice obra)
             parcelas = 0.0
-            for mm in range(1, m + 1):
-                _un_mm = vgv_cfg.get(mm, {}).get("unidades", 0)
-                if _un_mm > 0 and mm <= mes_ent:
+            for mm_obra in range(1, m_obra + 1):
+                _un_mm = vgv_cfg.get(mm_obra, {}).get("unidades", 0)
+                if _un_mm > 0 and mm_obra <= mes_ent:
                     parcelas += float(_un_mm) * parc_un
 
             # Saldo na entrega
             saldo_ent = 0.0
-            if m == mes_ent:
-                _total_ent   = _vgv_total_completo * pct_ent
-                _total_parc  = sum(
+            if m_obra == mes_ent:
+                _total_ent  = _vgv_total_completo * pct_ent
+                _total_parc = sum(
                     vgv_cfg.get(mm, {}).get("unidades", 0) * parc_un *
                     max(mes_ent - mm, 0)
                     for mm in range(1, mes_ent + 1)
