@@ -112,6 +112,12 @@ except ImportError:
     def parse_custo_nivel(data, arquivo_nome=""):
         return {"erro": "Parser não encontrado. Verifique utils/parser_custo_nivel.py"}
 
+try:
+    from parser_vendas_sienge import parse_vendas_sienge
+except ImportError:
+    def parse_vendas_sienge(data, arquivo_nome=""):
+        return {"erro": "Parser não encontrado. Verifique utils/parser_vendas_sienge.py"}
+
 st.set_page_config(page_title="Dashboard Financeiro | Align",
                    page_icon="🏗️", layout="wide",
                    initial_sidebar_state="expanded")
@@ -509,6 +515,8 @@ def get_rolling_state(nome: str) -> dict:
                 "data_inicio":  {"ano": 2026, "mes": 1},
                 "data_fim":     {"ano": 2027, "mes": 12},
                 "historico_cpl": [],
+                "vendas":          None,
+                "total_unidades":  0,
             }
             for _k, _v in _defaults.items():
                 if _k not in _loaded:
@@ -537,6 +545,8 @@ def get_rolling_state(nome: str) -> dict:
                 "data_inicio":  {"ano": 2026, "mes": 1},
                 "data_fim":     {"ano": 2027, "mes": 12},
                 "historico_cpl": [],
+                "vendas":          None,
+                "total_unidades":  0,
             }
 
     return st.session_state.rolling[nome]
@@ -2030,6 +2040,79 @@ def render_fcff_dcf():
     st.caption("🔄 Próximos: Cronograma Físico-Financeiro · Deploy Streamlit Cloud")
 
 
+def _calcula_vgv_projetado(vendas: dict, total_unidades: int,
+                            cronograma: dict, data_inicio: dict) -> dict:
+    """
+    Calcula o dict VGV para o estado do rolling.
+
+    Retorna:
+      {1: {"unidades": 0, "preco": 447000}, 2: {...}, ...}
+
+    Lógica:
+      - Meses passados: preenche com as vendas reais do relatório
+      - Meses futuros: distribui o VGV restante uniformemente
+        (máximo 8 meses, até o fim da obra)
+    """
+    import datetime
+
+    vendas_por_mes = vendas.get("vendas_por_mes", {})
+    unidades_vendidas = vendas.get("unidades_vendidas", 0)
+    preco_medio = vendas.get("preco_medio", 0.0)
+
+    # VGV restante
+    restantes = max(total_unidades - unidades_vendidas, 0)
+    vgv_restante = restantes * preco_medio
+
+    # Período da obra
+    if cronograma:
+        _di = cronograma.get("data_inicio", data_inicio)
+        _df = cronograma.get("data_fim",    {"ano": 2027, "mes": 12})
+    else:
+        _di = data_inicio
+        _df = {"ano": 2027, "mes": 12}
+
+    N = (_df["ano"] - _di["ano"]) * 12 + (_df["mes"] - _di["mes"]) + 1
+    N = max(1, min(N, 120))
+
+    # Mês atual (índice 1-based no horizonte da obra)
+    hoje = datetime.date.today()
+    _inicio_dt = datetime.date(_di["ano"], _di["mes"], 1)
+    mes_atual_idx = (hoje.year - _inicio_dt.year) * 12 + (hoje.month - _inicio_dt.month)
+    mes_atual_idx = max(0, min(mes_atual_idx, N - 1))
+
+    # Meses disponíveis para projeção futura
+    meses_futuros = list(range(mes_atual_idx, N))
+    meses_proj = meses_futuros[:8]  # máximo 8
+    n_proj = len(meses_proj)
+
+    vgv_por_mes_proj = (vgv_restante / n_proj) if n_proj > 0 else 0.0
+
+    # Monta dict VGV por índice
+    vgv = {}
+    for i in range(N):
+        # Calcula mês/ano deste índice
+        _m = (_inicio_dt.month + i - 1) % 12 + 1
+        _a = _inicio_dt.year + (_inicio_dt.month + i - 1) // 12
+        _chave_mes = f"{_a}-{_m:02d}"
+
+        if _chave_mes in vendas_por_mes:
+            # Mês com venda real
+            _un  = vendas_por_mes[_chave_mes]["unidades"]
+            _vgv = vendas_por_mes[_chave_mes]["vgv"]
+            _preco = _vgv / _un if _un > 0 else preco_medio
+            vgv[i + 1] = {"unidades": _un, "preco": _preco}
+        elif i in meses_proj and vgv_por_mes_proj > 0:
+            # Mês futuro com projeção
+            vgv[i + 1] = {
+                "unidades": 1,
+                "preco": round(vgv_por_mes_proj, 2)
+            }
+        else:
+            vgv[i + 1] = {"unidades": 0, "preco": round(preco_medio, 2)}
+
+    return vgv
+
+
 # ── Roteamento ────────────────────────────────────────────────────────────────
 @st.fragment
 def render_configuracoes():
@@ -2184,6 +2267,107 @@ def render_configuracoes():
                 )
                 st.rerun()
 
+    # ── VENDAS ────────────────────────────────────────────────────────
+    with st.expander("🏠 Relatório de Vendas", expanded=True):
+        st.caption(
+            "Suba o relatório 'Vendas por Empreendimento — Simplificado' "
+            "exportado do SIENGE. Atualizar mensalmente."
+        )
+
+        # Total de unidades do empreendimento
+        _total_un = int(_estado_cfg.get("total_unidades", 0))
+        _total_un_input = st.number_input(
+            "Total de unidades do empreendimento",
+            min_value=0, step=1,
+            value=_total_un,
+            key=f"total_un_{_tkey_cfg}",
+            help="Número total de unidades (incluindo as não vendidas)"
+        )
+        if _total_un_input != _total_un:
+            _estado_cfg["total_unidades"] = _total_un_input
+            mark_rolling_dirty(_titulo_cfg)
+
+        # Mostra resumo se já tem vendas carregadas
+        _vendas = _estado_cfg.get("vendas")
+        if _vendas:
+            _v_un  = _vendas.get("unidades_vendidas", 0)
+            _v_vgv = _vendas.get("vgv_vendido", 0.0)
+            _v_pm  = _vendas.get("preco_medio", 0.0)
+            _v_arq = _vendas.get("arquivo_nome", "?")
+            _v_dt  = ""
+            try:
+                from datetime import datetime as _dtt
+                _v_dt = _dtt.fromisoformat(
+                    _vendas.get("data_upload","")
+                ).strftime("%d/%m/%Y %H:%M")
+            except Exception:
+                pass
+
+            st.success(
+                f"✅ **{_v_arq}** · {_v_dt}\n\n"
+                f"🏠 **{_v_un}** unidades vendidas · "
+                f"VGV: **R$ {_v_vgv:,.0f}** · "
+                f"Preço médio: **R$ {_v_pm:,.0f}**"
+            )
+
+            _tot = _estado_cfg.get("total_unidades", 0)
+            if _tot > 0:
+                _rest = max(_tot - _v_un, 0)
+                _vgv_rest = _rest * _v_pm
+                st.info(
+                    f"📊 Restam **{_rest} unidades** a vender · "
+                    f"VGV estimado: **R$ {_vgv_rest:,.0f}** "
+                    f"(@ R$ {_v_pm:,.0f}/un)"
+                )
+
+        # Uploader
+        _arq_vendas = st.file_uploader(
+            "Selecione o relatório de vendas (.xlsx)",
+            type=["xlsx", "xls"],
+            key=f"up_vendas_{_tkey_cfg}",
+            label_visibility="collapsed"
+        )
+        if _arq_vendas:
+            _v_raw = parse_vendas_sienge(_arq_vendas.read(), _arq_vendas.name)
+            if "erro" in _v_raw:
+                st.error(f"❌ {_v_raw['erro']}")
+            else:
+                _estado_cfg["vendas"] = _v_raw
+                # Atualiza VGV automaticamente
+                _vgv_auto = _calcula_vgv_projetado(
+                    _v_raw,
+                    _estado_cfg.get("total_unidades", 0),
+                    _estado_cfg.get("cronograma", {}),
+                    _estado_cfg.get("data_inicio", {"ano": 2024, "mes": 1}),
+                )
+                _estado_cfg["vgv"] = _vgv_auto
+                save_rolling(_titulo_cfg, force=True)
+                safe_toast(
+                    f"✅ Vendas carregadas: {_v_raw['unidades_vendidas']} un · "
+                    f"VGV R$ {_v_raw['vgv_vendido']:,.0f} · "
+                    f"Preço médio R$ {_v_raw['preco_medio']:,.0f}",
+                    "✅"
+                )
+                st.rerun()
+
+        # Botão para recalcular projeção
+        if _vendas and _estado_cfg.get("total_unidades", 0) > 0:
+            if st.button(
+                "🔄 Recalcular projeção de vendas",
+                key=f"recalc_vgv_{_tkey_cfg}",
+                help="Redistribui o VGV restante nos próximos meses"
+            ):
+                _vgv_auto = _calcula_vgv_projetado(
+                    _vendas,
+                    _estado_cfg.get("total_unidades", 0),
+                    _estado_cfg.get("cronograma", {}),
+                    _estado_cfg.get("data_inicio", {"ano": 2024, "mes": 1}),
+                )
+                _estado_cfg["vgv"] = _vgv_auto
+                save_rolling(_titulo_cfg, force=True)
+                safe_toast("VGV recalculado!", "🔄")
+                st.rerun()
+
     # DRE mensal
     with st.expander("📋 DRE Mensal (histórico real)", expanded=False):
         st.caption(
@@ -2258,21 +2442,27 @@ def render_configuracoes():
                 column_config={
                     "Mês": st.column_config.TextColumn("Mês", disabled=True),
                     "Unidades": st.column_config.NumberColumn("Unidades", min_value=0, step=1),
-                    "Preço/Un": st.column_config.NumberColumn("Preço/Un (R$)", min_value=0, format="R$ %.0f"),
+                    "Preço/Un": st.column_config.NumberColumn(
+                        "Preço/Un (R$)", min_value=0, format="R$ %.0f"
+                    ),
                 },
-                hide_index=True, use_container_width=True, height=400,
+                hide_index=True,
+                use_container_width=True,
+                height=400,
                 key=f"vgv_cfg_{_tkey_cfg}"
             )
             for _m in range(_N_cfg):
                 if _m < len(_vgv_ed):
-                    _estado_cfg["vgv"][_m+1]["unidades"] = float(_vgv_ed.iloc[_m]["Unidades"])
-                    _estado_cfg["vgv"][_m+1]["preco"]    = float(_vgv_ed.iloc[_m]["Preço/Un"])
-            _vgv_total = sum(_estado_cfg["vgv"].get(_m+1,{"unidades":0,"preco":0})["unidades"] *
-                             _estado_cfg["vgv"].get(_m+1,{"unidades":0,"preco":0})["preco"]
-                             for _m in range(_N_cfg))
+                    _estado_cfg["vgv"][_m + 1]["unidades"] = float(_vgv_ed.iloc[_m]["Unidades"])
+                    _estado_cfg["vgv"][_m + 1]["preco"]    = float(_vgv_ed.iloc[_m]["Preço/Un"])
+            _vgv_total = sum(
+                _estado_cfg["vgv"].get(_m + 1, {"unidades": 0, "preco": 0})["unidades"] *
+                _estado_cfg["vgv"].get(_m + 1, {"unidades": 0, "preco": 0})["preco"]
+                for _m in range(_N_cfg)
+            )
             st.metric("VGV Total", fmt(_vgv_total))
-        except Exception as _e:
-            st.dataframe(_vgv_df, use_container_width=True)
+        except Exception:
+            st.warning("⚠️ Não foi possível renderizar o editor de VGV. Tente recarregar a página.")
 
     with st.expander("📊 Avanço Físico — POC", expanded=False):
         st.caption("% de obra concluída ao fim de cada mês (0–100). Atualizar mensalmente com o real.")
