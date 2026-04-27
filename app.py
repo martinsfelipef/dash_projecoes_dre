@@ -2426,43 +2426,47 @@ def render_configuracoes():
     st.caption("Usados na aba Rolling Forecast para projetar receita futura.")
 
     with st.expander("📈 VGV — Receita por Competência", expanded=False):
-        st.caption("Valor de venda por mês. Representa o VGV reconhecido no mês da venda.")
-        _cr_cfg = _estado_cfg.get("cronograma", {})
-        _N_cfg  = _cr_cfg.get("n_meses", 24)
-        _LABELS_cfg = gen_labels(_N_cfg, _estado_cfg.get("data_inicio", {"ano":2024,"mes":1}))
-        _vgv_cfg = _estado_cfg.get("vgv", {m+1: {"unidades":0,"preco":350000.0} for m in range(_N_cfg)})
-        _vgv_df = pd.DataFrame({
-            "Mês":     _LABELS_cfg[:_N_cfg],
-            "Unidades":[int(_vgv_cfg.get(m+1,{"unidades":0})["unidades"]) for m in range(_N_cfg)],
-            "Preço/Un":[float(_vgv_cfg.get(m+1,{"preco":350000.0})["preco"]) for m in range(_N_cfg)],
-        })
-        try:
-            _vgv_ed = st.data_editor(
-                _vgv_df,
-                column_config={
-                    "Mês": st.column_config.TextColumn("Mês", disabled=True),
-                    "Unidades": st.column_config.NumberColumn("Unidades", min_value=0, step=1),
-                    "Preço/Un": st.column_config.NumberColumn(
-                        "Preço/Un (R$)", min_value=0, format="R$ %.0f"
-                    ),
-                },
-                hide_index=True,
+        st.caption(
+            "Preenchido automaticamente pelo Relatório de Vendas. "
+            "Para atualizar, suba um novo relatório no Bloco 1."
+        )
+
+        _N_cfg  = _estado_cfg.get("cronograma", {}).get("n_meses", 24)
+        _di_cfg = _estado_cfg.get("data_inicio", {"ano": 2024, "mes": 1})
+        _LABELS_cfg = gen_labels(_N_cfg, _di_cfg)
+        _vgv_cfg = _estado_cfg.get(
+            "vgv",
+            {m+1: {"unidades": 0, "preco": 350000.0} for m in range(_N_cfg)}
+        )
+
+        _rows_vgv = []
+        _vgv_total = 0.0
+        for _m in range(_N_cfg):
+            _un  = _vgv_cfg.get(_m+1, {"unidades": 0})["unidades"]
+            _prc = _vgv_cfg.get(_m+1, {"preco": 0.0})["preco"]
+            _val = float(_un) * float(_prc)
+            _vgv_total += _val
+            if _val > 0 or _un > 0:
+                _rows_vgv.append({
+                    "Mês":       _LABELS_cfg[_m] if _m < len(_LABELS_cfg) else f"M{_m+1}",
+                    "Unidades":  int(_un),
+                    "Preço/Un":  f"R$ {float(_prc):,.0f}",
+                    "VGV mês":   f"R$ {_val:,.0f}",
+                })
+
+        if _rows_vgv:
+            st.dataframe(
+                pd.DataFrame(_rows_vgv),
                 use_container_width=True,
-                height=400,
-                key=f"vgv_cfg_{_tkey_cfg}"
-            )
-            for _m in range(_N_cfg):
-                if _m < len(_vgv_ed):
-                    _estado_cfg["vgv"][_m + 1]["unidades"] = float(_vgv_ed.iloc[_m]["Unidades"])
-                    _estado_cfg["vgv"][_m + 1]["preco"]    = float(_vgv_ed.iloc[_m]["Preço/Un"])
-            _vgv_total = sum(
-                _estado_cfg["vgv"].get(_m + 1, {"unidades": 0, "preco": 0})["unidades"] *
-                _estado_cfg["vgv"].get(_m + 1, {"unidades": 0, "preco": 0})["preco"]
-                for _m in range(_N_cfg)
+                hide_index=True,
+                height=min(400, 38 + len(_rows_vgv) * 35)
             )
             st.metric("VGV Total", fmt(_vgv_total))
-        except Exception:
-            st.warning("⚠️ Não foi possível renderizar o editor de VGV. Tente recarregar a página.")
+        else:
+            st.info(
+                "Nenhuma venda registrada ainda. "
+                "Suba o Relatório de Vendas no Bloco 1 para preencher automaticamente."
+            )
 
     with st.expander("📊 Avanço Físico — POC", expanded=False):
         st.caption("% de obra concluída ao fim de cada mês (0–100). Atualizar mensalmente com o real.")
