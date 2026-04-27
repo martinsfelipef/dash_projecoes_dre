@@ -2691,13 +2691,24 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
         _drift = (1 + 0.005) ** i  # 0,5%/mês ≈ 6%/ano
 
         if i < n_hist:
-            # Mês histórico: usa dado real
-            rec_bruta.append(float(rb_hist[i]))
-            imp_rec.append(float(imp_hist[i]))
+            # CPV, despesas, resultado financeiro e IR sempre vêm do histórico real
             cpv.append(float(cpv_hist[i]))
             desp_op.append(float(dop_hist[i]))
             res_fin.append(float(rf_hist[i]))
             ir.append(float(ir_hist[i]))
+
+            # Receita: depende da visão
+            if "Caixa" in visao:
+                # Caixa: usa receita real da DRE histórica
+                _rec_h = float(rb_hist[i])
+                _imp_h = float(imp_hist[i])
+            else:
+                # Competência ou POC: usa VGV do relatório de vendas
+                _rec_h = _receita_mes(i)
+                _imp_h = _rec_h * imp_pct if _rec_h != 0 else float(imp_hist[i])
+
+            rec_bruta.append(_rec_h)
+            imp_rec.append(_imp_h)
         else:
             # Mês futuro: projeção
             _rec = _receita_mes(i)
