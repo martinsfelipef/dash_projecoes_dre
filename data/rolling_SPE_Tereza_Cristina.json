@@ -120,152 +120,152 @@
   },
   "vgv": {
     "1": {
-      "unidades": 1,
-      "preco": 525433.0
+      "unidades": 6,
+      "preco": 552101.5
     },
     "2": {
-      "unidades": 0,
-      "preco": 447242.5
+      "unidades": 4,
+      "preco": 508346.5
     },
     "3": {
-      "unidades": 0,
-      "preco": 447242.5
+      "unidades": 6,
+      "preco": 568856.1666666666
     },
     "4": {
-      "unidades": 1,
-      "preco": 584958.0
+      "unidades": 6,
+      "preco": 514068.3333333333
     },
     "5": {
-      "unidades": 2,
-      "preco": 552285.5
+      "unidades": 6,
+      "preco": 523673.5
     },
     "6": {
-      "unidades": 0,
-      "preco": 447242.5
+      "unidades": 2,
+      "preco": 505859.5
     },
     "7": {
-      "unidades": 0,
-      "preco": 447242.5
+      "unidades": 1,
+      "preco": 460000.0
     },
     "8": {
-      "unidades": 0,
-      "preco": 447242.5
+      "unidades": 1,
+      "preco": 553100.0
     },
     "9": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     },
     "10": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     },
     "11": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     },
     "12": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     },
     "13": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     },
     "14": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     },
     "15": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     },
     "16": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     },
     "17": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     },
     "18": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     },
     "19": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     },
     "20": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     },
     "21": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     },
     "22": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     },
     "23": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     },
     "24": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     },
     "25": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     },
     "26": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     },
     "27": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     },
     "28": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     },
     "29": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     },
     "30": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     },
     "31": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     },
     "32": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     },
     "33": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     },
     "34": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     },
     "35": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     },
     "36": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     },
     "37": {
       "unidades": 0,
-      "preco": 447242.5
+      "preco": 509990.76
     }
   },
   "poc_acum": [
@@ -1347,98 +1347,58 @@
   },
   "vendas": {
     "obra_nome": "",
-    "unidades_vendidas": 34,
-    "vgv_vendido": 15206245.0,
-    "preco_medio": 447242.5,
+    "unidades_vendidas": 49,
+    "vgv_vendido": 24989547.0,
+    "preco_medio": 509990.7551020408,
     "vendas_por_mes": {
-      "2024-05": {
+      "2025-09": {
         "unidades": 4,
-        "vgv": 1682026.0
-      },
-      "2024-04": {
-        "unidades": 1,
-        "vgv": 396162.0
-      },
-      "2025-05": {
-        "unidades": 1,
-        "vgv": 525190.0
-      },
-      "2023-05": {
-        "unidades": 3,
-        "vgv": 973744.0
-      },
-      "2024-12": {
-        "unidades": 2,
-        "vgv": 847100.0
-      },
-      "2025-04": {
-        "unidades": 1,
-        "vgv": 577578.0
-      },
-      "2024-07": {
-        "unidades": 3,
-        "vgv": 1363399.0
-      },
-      "2024-03": {
-        "unidades": 1,
-        "vgv": 529286.0
-      },
-      "2024-09": {
-        "unidades": 1,
-        "vgv": 443207.0
+        "vgv": 2033386.0
       },
       "2025-11": {
-        "unidades": 1,
-        "vgv": 584958.0
+        "unidades": 6,
+        "vgv": 3084410.0
       },
-      "2023-04": {
-        "unidades": 1,
-        "vgv": 495000.0
-      },
-      "2023-09": {
-        "unidades": 3,
-        "vgv": 1105715.0
-      },
-      "2025-08": {
-        "unidades": 1,
-        "vgv": 525433.0
-      },
-      "2023-06": {
-        "unidades": 1,
-        "vgv": 463177.0
-      },
-      "2025-03": {
-        "unidades": 1,
-        "vgv": 457240.0
-      },
-      "2024-10": {
-        "unidades": 2,
-        "vgv": 933993.0
-      },
-      "2024-06": {
-        "unidades": 2,
-        "vgv": 898945.0
-      },
-      "2023-10": {
-        "unidades": 1,
-        "vgv": 386485.0
+      "2025-10": {
+        "unidades": 6,
+        "vgv": 3413137.0
       },
       "2025-12": {
+        "unidades": 6,
+        "vgv": 3142041.0
+      },
+      "2025-08": {
+        "unidades": 6,
+        "vgv": 3312609.0
+      },
+      "2025-07": {
+        "unidades": 11,
+        "vgv": 5268132.0
+      },
+      "2026-01": {
         "unidades": 2,
-        "vgv": 1104571.0
+        "vgv": 1011719.0
       },
-      "2023-07": {
+      "2026-03": {
         "unidades": 1,
-        "vgv": 426336.0
+        "vgv": 553100.0
       },
-      "2025-02": {
+      "2025-06": {
+        "unidades": 4,
+        "vgv": 2031013.0
+      },
+      "2025-04": {
+        "unidades": 2,
+        "vgv": 680000.0
+      },
+      "2026-02": {
         "unidades": 1,
-        "vgv": 486700.0
+        "vgv": 460000.0
       }
     },
-    "data_ultima_venda": "2025-12-16",
-    "arquivo_nome": "Res.Marta Darelar elatorio - 2026-04-24T144253.837.xlsx",
-    "data_upload": "2026-04-27T20:07:06.365164"
+    "data_ultima_venda": "2026-03-11",
+    "arquivo_nome": "Res.Tereza Cristina relatorio - 2026-04-24T144222.675.xlsx",
+    "data_upload": "2026-04-27T20:07:14.346799"
   },
   "total_unidades": 0
 }
