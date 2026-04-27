@@ -2578,7 +2578,24 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
     rf_hist   = list(emp_base.get("res_fin",   [0.0]*12))
     ir_hist   = list(emp_base.get("ir",        [0.0]*12))
 
-    n_hist = len(rb_hist)  # normalmente 12
+    # n_hist_len = quantos meses tem a DRE histórica (normalmente 12)
+    n_hist_len = len(rb_hist)
+
+    # Descobre em qual índice do horizonte (0-based) começa a DRE histórica.
+    # A DRE histórica representa o ano de 2025 (jan a dez).
+    # O horizonte pode começar antes (ex: abr/2023).
+    import datetime as _dt_mod
+    _inicio_dre_hist = {"ano": 2025, "mes": 1}  # jan/2025 — início fixo da DRE anual
+
+    _idx_inicio_dre = (
+        (_inicio_dre_hist["ano"] - data_inicio["ano"]) * 12 +
+        (_inicio_dre_hist["mes"] - data_inicio["mes"])
+    )
+    _idx_inicio_dre = max(0, _idx_inicio_dre)
+    _idx_fim_dre    = _idx_inicio_dre + n_hist_len  # exclusive
+
+    # n_hist = índice até onde temos dados históricos (fim da DRE)
+    n_hist = _idx_fim_dre
 
     # ── Médias históricas (para projeção de custos não-obra) ──────────
     def _media(lst):
@@ -2723,37 +2740,51 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
     for i in range(N):
         _drift = (1 + 0.005) ** i  # 0,5%/mês ≈ 6%/ano
 
-        if i < n_hist:
-            # CPV, despesas, resultado financeiro e IR sempre vêm do histórico real
-            cpv.append(float(cpv_hist[i]))
-            desp_op.append(float(dop_hist[i]))
-            res_fin.append(float(rf_hist[i]))
-            ir.append(float(ir_hist[i]))
+        # Índice relativo dentro da DRE histórica (pode ser negativo se i < _idx_inicio_dre)
+        _i_dre = i - _idx_inicio_dre
+
+        if 0 <= _i_dre < n_hist_len:
+            # ── Mês coberto pela DRE histórica ──────────────────────
+            # CPV e custos: sempre da DRE histórica real
+            cpv.append(float(cpv_hist[_i_dre]))
+            desp_op.append(float(dop_hist[_i_dre]))
+            res_fin.append(float(rf_hist[_i_dre]))
+            ir.append(float(ir_hist[_i_dre]))
 
             # Receita: depende da visão
             if "Caixa" in visao:
-                # Caixa: usa receita real da DRE histórica
-                _rec_h = float(rb_hist[i])
-                _imp_h = float(imp_hist[i])
+                rec_bruta.append(float(rb_hist[_i_dre]))
+                imp_rec.append(float(imp_hist[_i_dre]))
             else:
-                # Competência ou POC: usa VGV do relatório de vendas
+                # Competência ou POC: usa VGV real do relatório de vendas
                 _rec_h = _receita_mes(i)
-                _imp_h = _rec_h * imp_pct if _rec_h != 0 else float(imp_hist[i])
+                _imp_h = _rec_h * imp_pct if _rec_h != 0 else float(imp_hist[_i_dre])
+                rec_bruta.append(_rec_h)
+                imp_rec.append(_imp_h)
+
+        elif i < _idx_inicio_dre:
+            # ── Mês anterior à DRE histórica (ex: 2023, 2024) ───────
+            # Não temos dados reais — mas podemos ter vendas reais (Competência)
+            _rec_h = _receita_mes(i)
+            _imp_h = _rec_h * imp_pct if _rec_h != 0 else 0.0
 
             rec_bruta.append(_rec_h)
             imp_rec.append(_imp_h)
+            # CPV: usa CFF se disponível, senão zero
+            cpv.append(_cpv_cff(i) if not is_matriz else 0.0)
+            desp_op.append(dop_media * _drift if dop_media != 0 else 0.0)
+            res_fin.append(rf_media  * _drift if rf_media  != 0 else 0.0)
+            ir.append(ir_media       * _drift if ir_media  != 0 else 0.0)
+
         else:
-            # Mês futuro: projeção
-            _rec = _receita_mes(i)
+            # ── Mês futuro (após DRE histórica) ─────────────────────
+            _rec     = _receita_mes(i)
             _cpv_fut = _cpv_cff(i) if not is_matriz else 0.0
             if is_matriz:
-                # Matriz recebe BDI sobre CPV das SPEs (simplificado)
-                _cpv_spe_est = abs(_cpv_cff(i))
-                _rec = _rec_bdi_mes(i, _cpv_spe_est)
+                _rec = _rec_bdi_mes(i, abs(_cpv_cff(i)))
 
-            _meses_fut = i - n_hist + 1
-            _dop = dop_media * _drift if dop_media != 0 else 0.0
-            _rf  = rf_media  * _drift if rf_media  != 0 else 0.0
+            _dop  = dop_media * _drift if dop_media != 0 else 0.0
+            _rf   = rf_media  * _drift if rf_media  != 0 else 0.0
             _ir_v = ir_media  * _drift if ir_media  != 0 else 0.0
             _imp  = _rec * imp_pct if _rec != 0 else 0.0
 
@@ -2784,7 +2815,8 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
         "lai":           lai,
         "ir":            ir,
         "lucro_liq":     lucro_liq,
-        "n_hist":        n_hist,   # quantos meses são reais
+        "n_hist":        _idx_fim_dre,   # índice até onde temos DRE histórica
+        "idx_obra":      _idx_inicio_dre + _idx_inicio_dre,  # índice de início da obra
     }
 
 
@@ -2810,12 +2842,28 @@ def render_rolling_forecast():
         _est = get_rolling_state(_tit)
         _cr  = _est.get("cronograma", {})
 
-        # Período
+        # Período: começa na primeira venda ou início da obra
+        # (o que for mais cedo) e termina no fim da obra
         _di  = _est.get("data_inicio", {"ano": 2024, "mes": 1})
         _df  = _est.get("data_fim",    {"ano": 2026, "mes": 12})
         if _cr:
             _di = _cr.get("data_inicio", _di)
             _df = _cr.get("data_fim",    _df)
+
+        # Verifica se há vendas anteriores ao início da obra
+        _vendas_st = _est.get("vendas", {})
+        if _vendas_st and _vendas_st.get("vendas_por_mes"):
+            _meses_vendas = sorted(_vendas_st["vendas_por_mes"].keys())
+            if _meses_vendas:
+                _primeira_venda = _meses_vendas[0]  # "AAAA-MM"
+                _pv_ano = int(_primeira_venda[:4])
+                _pv_mes = int(_primeira_venda[5:7])
+                # Se a primeira venda é anterior ao início da obra, recua o início
+                _di_dt  = (_di["ano"] - 2000) * 12 + _di["mes"]
+                _pv_dt  = (_pv_ano  - 2000) * 12 + _pv_mes
+                if _pv_dt < _di_dt:
+                    _di = {"ano": _pv_ano, "mes": _pv_mes}
+
         _N = (
             (_df["ano"] - _di["ano"]) * 12 +
             (_df["mes"] - _di["mes"]) + 1
