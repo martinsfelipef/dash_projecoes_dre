@@ -2617,6 +2617,42 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
 
     # ── Receita por visão ─────────────────────────────────────────────
     vgv_cfg   = estado.get("vgv", {})
+
+    # ── Mapa de receita real por mês da obra (Competência/POC) ───────
+    # Vendas podem ter acontecido ANTES do início da obra (ex: 2023).
+    # Precisamos mapear cada venda para o índice correto no horizonte.
+    _vendas_state = estado.get("vendas", {})
+    _vendas_por_mes = _vendas_state.get("vendas_por_mes", {}) if _vendas_state else {}
+
+    # Constrói dict: índice_mes (0-based) → receita real vendida
+    _rec_real_por_idx = {}
+    _inicio_dt_v = datetime.date(data_inicio["ano"], data_inicio["mes"], 1)
+    for _mes_str, _dados_mes in _vendas_por_mes.items():
+        try:
+            _ano_v  = int(_mes_str[:4])
+            _mes_v  = int(_mes_str[5:7])
+            _idx_v  = (_ano_v - _inicio_dt_v.year) * 12 + (_mes_v - _inicio_dt_v.month)
+            if _idx_v < 0:
+                # Venda anterior ao início da obra: acumula no mês 0
+                _idx_v = 0
+            if _idx_v < N:
+                _rec_real_por_idx[_idx_v] = (
+                    _rec_real_por_idx.get(_idx_v, 0.0) + _dados_mes.get("vgv", 0.0)
+                )
+        except Exception:
+            pass
+
+    # VGV total vendido (para POC)
+    _vgv_total_vendido = _vendas_state.get("vgv_vendido", 0.0) if _vendas_state else 0.0
+    # VGV total projetado (vendido + futuro)
+    _vgv_total_proj = sum(
+        vgv_cfg.get(mm, {}).get("unidades", 0) *
+        vgv_cfg.get(mm, {}).get("preco", 350000.0)
+        for mm in range(1, N + 1)
+    )
+    # VGV total completo = real vendido + futuro projetado
+    _vgv_total_completo = _vgv_total_vendido + max(_vgv_total_proj - _vgv_total_vendido, 0)
+
     poc_cfg   = estado.get("poc_acum", [0]*N)
     pct_ent   = estado.get("pct_entrada", 7.0) / 100
     parc_un   = estado.get("parcela_un", 1500.0)
@@ -2628,48 +2664,45 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
         m = i + 1  # 1-based
 
         if "Competência" in visao or "Compet" in visao:
-            # VGV reconhecido no mês da venda
+            # Meses com venda real: usa o valor real do relatório de vendas
+            if i in _rec_real_por_idx:
+                return _rec_real_por_idx[i]
+            # Meses futuros: usa vgv_cfg (projeção automática)
             un  = vgv_cfg.get(m, {}).get("unidades", 0)
             prc = vgv_cfg.get(m, {}).get("preco", 350000.0)
             return float(un) * float(prc)
 
         elif "POC" in visao:
-            # VGV × incremento de POC no mês
-            poc_atual  = poc_cfg[i] if i < len(poc_cfg) else 0
-            poc_ant    = poc_cfg[i-1] if i > 0 and i-1 < len(poc_cfg) else 0
-            delta_poc  = max(poc_atual - poc_ant, 0) / 100
-            vgv_total  = sum(
-                vgv_cfg.get(mm, {}).get("unidades", 0) *
-                vgv_cfg.get(mm, {}).get("preco", 350000.0)
-                for mm in range(1, N+1)
-            )
-            return vgv_total * delta_poc
+            # VGV total × incremento de POC no mês
+            poc_atual = poc_cfg[i] if i < len(poc_cfg) else 0
+            poc_ant   = poc_cfg[i-1] if i > 0 and i-1 < len(poc_cfg) else 0
+            delta_poc = max(poc_atual - poc_ant, 0) / 100
+            return _vgv_total_completo * delta_poc
 
         else:  # Caixa
-            # Entrada no mês da venda + parcelas mensais
-            un     = vgv_cfg.get(m, {}).get("unidades", 0)
-            prc    = vgv_cfg.get(m, {}).get("preco", 350000.0)
+            # Entrada no mês da venda + parcelas acumuladas mensais
+            un      = vgv_cfg.get(m, {}).get("unidades", 0)
+            prc     = vgv_cfg.get(m, {}).get("preco", 350000.0)
             entrada = float(un) * float(prc) * pct_ent
-            # Parcelas: de todos os meses já vendidos até agora
+
+            # Parcelas: soma de todas as unidades vendidas até este mês
             parcelas = 0.0
-            for mm in range(1, m+1):
+            for mm in range(1, m + 1):
                 _un_mm = vgv_cfg.get(mm, {}).get("unidades", 0)
                 if _un_mm > 0 and mm <= mes_ent:
                     parcelas += float(_un_mm) * parc_un
-            # Saldo na entrega (BDI sobre CPV)
+
+            # Saldo na entrega
             saldo_ent = 0.0
             if m == mes_ent:
-                vgv_total = sum(
-                    vgv_cfg.get(mm, {}).get("unidades", 0) *
-                    vgv_cfg.get(mm, {}).get("preco", 350000.0)
-                    for mm in range(1, N+1)
+                _total_ent   = _vgv_total_completo * pct_ent
+                _total_parc  = sum(
+                    vgv_cfg.get(mm, {}).get("unidades", 0) * parc_un *
+                    max(mes_ent - mm, 0)
+                    for mm in range(1, mes_ent + 1)
                 )
-                total_entrada  = vgv_total * pct_ent
-                total_parcelas = sum(
-                    vgv_cfg.get(mm, {}).get("unidades", 0) * parc_un * min(mes_ent - mm, 0)
-                    for mm in range(1, mes_ent+1)
-                )
-                saldo_ent = max(vgv_total - total_entrada - total_parcelas, 0)
+                saldo_ent = max(_vgv_total_completo - _total_ent - _total_parc, 0)
+
             return entrada + parcelas + saldo_ent
 
     # ── Receita BDI da Matriz (só para Matriz) ────────────────────────
