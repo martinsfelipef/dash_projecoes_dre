@@ -112,27 +112,27 @@
       "preco": 447242.5
     },
     "22": {
-      "unidades": 0,
+      "unidades": 1,
       "preco": 447242.5
     },
     "23": {
-      "unidades": 0,
+      "unidades": 1,
       "preco": 447242.5
     },
     "24": {
-      "unidades": 0,
+      "unidades": 1,
       "preco": 447242.5
     },
     "25": {
-      "unidades": 0,
+      "unidades": 1,
       "preco": 447242.5
     },
     "26": {
-      "unidades": 0,
+      "unidades": 1,
       "preco": 447242.5
     },
     "27": {
-      "unidades": 0,
+      "unidades": 1,
       "preco": 447242.5
     }
   },
@@ -1383,7 +1383,7 @@
     },
     "data_ultima_venda": "2025-12-16",
     "arquivo_nome": "Res.Marta Darelar elatorio - 2026-04-24T144253.837.xlsx",
-    "data_upload": "2026-04-27T20:07:38.277962"
+    "data_upload": "2026-04-27T20:07:40.718230"
   },
-  "total_unidades": 0
+  "total_unidades": 40
 }
