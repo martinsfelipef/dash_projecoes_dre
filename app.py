@@ -2837,11 +2837,17 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
 
             rec_bruta.append(_rec_h)
             imp_rec.append(_imp_h)
-            # CPV: usa CFF se disponível, senão zero
-            cpv.append(_cpv_cff(i) if not is_matriz else 0.0)
-            desp_op.append(dop_media * _drift if dop_media != 0 else 0.0)
-            res_fin.append(rf_media  * _drift if rf_media  != 0 else 0.0)
-            ir.append(ir_media       * _drift if ir_media  != 0 else 0.0)
+            # Antes do início da obra: apenas receita, sem custos
+            if i < _offset_obra:
+                cpv.append(0.0)
+                desp_op.append(0.0)
+                res_fin.append(0.0)
+                ir.append(0.0)
+            else:
+                cpv.append(_cpv_cff(i) if not is_matriz else 0.0)
+                desp_op.append(dop_media * _drift if dop_media != 0 else 0.0)
+                res_fin.append(rf_media  * _drift if rf_media  != 0 else 0.0)
+                ir.append(ir_media       * _drift if ir_media  != 0 else 0.0)
 
         else:
             # ── Mês futuro (após DRE histórica) ─────────────────────
