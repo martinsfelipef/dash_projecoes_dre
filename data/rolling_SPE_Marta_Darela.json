@@ -28,28 +28,112 @@
   },
   "vgv": {
     "1": {
-      "unidades": 0.0,
-      "preco": 350000.0
+      "unidades": 3,
+      "preco": 454466.3333333333
     },
     "2": {
-      "unidades": 0.0,
-      "preco": 350000.0
+      "unidades": 0,
+      "preco": 447242.5
     },
     "3": {
-      "unidades": 0.0,
-      "preco": 350000.0
+      "unidades": 1,
+      "preco": 443207.0
     },
     "4": {
-      "unidades": 0.0,
-      "preco": 350000.0
+      "unidades": 2,
+      "preco": 466996.5
     },
     "5": {
-      "unidades": 0.0,
-      "preco": 350000.0
+      "unidades": 0,
+      "preco": 447242.5
     },
     "6": {
-      "unidades": 0.0,
-      "preco": 350000.0
+      "unidades": 2,
+      "preco": 423550.0
+    },
+    "7": {
+      "unidades": 0,
+      "preco": 447242.5
+    },
+    "8": {
+      "unidades": 1,
+      "preco": 486700.0
+    },
+    "9": {
+      "unidades": 1,
+      "preco": 457240.0
+    },
+    "10": {
+      "unidades": 1,
+      "preco": 577578.0
+    },
+    "11": {
+      "unidades": 1,
+      "preco": 525190.0
+    },
+    "12": {
+      "unidades": 0,
+      "preco": 447242.5
+    },
+    "13": {
+      "unidades": 0,
+      "preco": 447242.5
+    },
+    "14": {
+      "unidades": 1,
+      "preco": 525433.0
+    },
+    "15": {
+      "unidades": 0,
+      "preco": 447242.5
+    },
+    "16": {
+      "unidades": 0,
+      "preco": 447242.5
+    },
+    "17": {
+      "unidades": 1,
+      "preco": 584958.0
+    },
+    "18": {
+      "unidades": 2,
+      "preco": 552285.5
+    },
+    "19": {
+      "unidades": 0,
+      "preco": 447242.5
+    },
+    "20": {
+      "unidades": 0,
+      "preco": 447242.5
+    },
+    "21": {
+      "unidades": 0,
+      "preco": 447242.5
+    },
+    "22": {
+      "unidades": 0,
+      "preco": 447242.5
+    },
+    "23": {
+      "unidades": 0,
+      "preco": 447242.5
+    },
+    "24": {
+      "unidades": 0,
+      "preco": 447242.5
+    },
+    "25": {
+      "unidades": 0,
+      "preco": 447242.5
+    },
+    "26": {
+      "unidades": 0,
+      "preco": 447242.5
+    },
+    "27": {
+      "unidades": 0,
+      "preco": 447242.5
     }
   },
   "poc_acum": [
@@ -59,6 +143,9 @@
     0,
     0,
     0,
+    100,
+    100,
+    100,
     100,
     100,
     100,
@@ -1202,5 +1289,101 @@
     ],
     "data_upload": "2026-04-20T11:34:18.937495",
     "arquivo_nome": "Cronograma físicco-financeiro Marta (Brocks).xlsx"
-  }
+  },
+  "vendas": {
+    "obra_nome": "",
+    "unidades_vendidas": 34,
+    "vgv_vendido": 15206245.0,
+    "preco_medio": 447242.5,
+    "vendas_por_mes": {
+      "2024-05": {
+        "unidades": 4,
+        "vgv": 1682026.0
+      },
+      "2024-04": {
+        "unidades": 1,
+        "vgv": 396162.0
+      },
+      "2025-05": {
+        "unidades": 1,
+        "vgv": 525190.0
+      },
+      "2023-05": {
+        "unidades": 3,
+        "vgv": 973744.0
+      },
+      "2024-12": {
+        "unidades": 2,
+        "vgv": 847100.0
+      },
+      "2025-04": {
+        "unidades": 1,
+        "vgv": 577578.0
+      },
+      "2024-07": {
+        "unidades": 3,
+        "vgv": 1363399.0
+      },
+      "2024-03": {
+        "unidades": 1,
+        "vgv": 529286.0
+      },
+      "2024-09": {
+        "unidades": 1,
+        "vgv": 443207.0
+      },
+      "2025-11": {
+        "unidades": 1,
+        "vgv": 584958.0
+      },
+      "2023-04": {
+        "unidades": 1,
+        "vgv": 495000.0
+      },
+      "2023-09": {
+        "unidades": 3,
+        "vgv": 1105715.0
+      },
+      "2025-08": {
+        "unidades": 1,
+        "vgv": 525433.0
+      },
+      "2023-06": {
+        "unidades": 1,
+        "vgv": 463177.0
+      },
+      "2025-03": {
+        "unidades": 1,
+        "vgv": 457240.0
+      },
+      "2024-10": {
+        "unidades": 2,
+        "vgv": 933993.0
+      },
+      "2024-06": {
+        "unidades": 2,
+        "vgv": 898945.0
+      },
+      "2023-10": {
+        "unidades": 1,
+        "vgv": 386485.0
+      },
+      "2025-12": {
+        "unidades": 2,
+        "vgv": 1104571.0
+      },
+      "2023-07": {
+        "unidades": 1,
+        "vgv": 426336.0
+      },
+      "2025-02": {
+        "unidades": 1,
+        "vgv": 486700.0
+      }
+    },
+    "data_ultima_venda": "2025-12-16",
+    "arquivo_nome": "Res.Marta Darelar elatorio - 2026-04-24T144253.837.xlsx",
+    "data_upload": "2026-04-27T20:07:29.484039"
+  },
+  "total_unidades": 0
 }
