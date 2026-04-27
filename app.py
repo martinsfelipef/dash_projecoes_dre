@@ -2653,6 +2653,7 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
 
     # Offset: quantos meses o horizonte completo começa ANTES da obra
     # Ex: horizonte começa abr/23, obra começa jul/24 → offset = 15
+    _cr = estado.get("cronograma", {})
     _cr_di = _cr.get("data_inicio", data_inicio) if _cr else data_inicio
     _offset_obra = (
         (_cr_di["ano"] - data_inicio["ano"]) * 12 +
