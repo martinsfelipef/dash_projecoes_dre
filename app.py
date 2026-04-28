@@ -118,6 +118,12 @@ except ImportError:
     def parse_vendas_sienge(data, arquivo_nome=""):
         return {"erro": "Parser não encontrado. Verifique utils/parser_vendas_sienge.py"}
 
+try:
+    from parser_recebiveis_sienge import parse_recebiveis_sienge
+except ImportError:
+    def parse_recebiveis_sienge(data, arquivo_nome=""):
+        return {"erro": "Parser não encontrado. Verifique utils/parser_recebiveis_sienge.py"}
+
 st.set_page_config(page_title="Dashboard Financeiro | Brocks",
                    page_icon="🏗️", layout="wide",
                    initial_sidebar_state="expanded")
@@ -516,6 +522,7 @@ def get_rolling_state(nome: str) -> dict:
                 "data_fim":     {"ano": 2027, "mes": 12},
                 "historico_cpl": [],
                 "vendas":          None,
+                "recebiveis":      None,
                 "total_unidades":  0,
             }
             for _k, _v in _defaults.items():
@@ -546,6 +553,7 @@ def get_rolling_state(nome: str) -> dict:
                 "data_fim":     {"ano": 2027, "mes": 12},
                 "historico_cpl": [],
                 "vendas":          None,
+                "recebiveis":      None,
                 "total_unidades":  0,
             }
 
@@ -2768,6 +2776,98 @@ def render_configuracoes():
                 safe_toast("VGV recalculado!", "🔄")
                 st.rerun()
 
+    with st.expander("💰 Recebíveis — Contas a Receber", expanded=True):
+        st.caption(
+            "Suba o relatório 'Contas a Receber — Recebíveis' exportado do SIENGE. "
+            "Exporte sempre com data inicial = hoje para ter apenas recebimentos futuros."
+        )
+
+        _rec = _estado_cfg.get("recebiveis")
+        if _rec:
+            # Resumo por tipo
+            _rt = _rec.get("resumo_tipos", {})
+            _arq_rec = _rec.get("arquivo_nome","?")
+            _dt_rec  = ""
+            try:
+                from datetime import datetime as _dtt_r
+                _dt_rec = _dtt_r.fromisoformat(
+                    _rec.get("data_upload","")
+                ).strftime("%d/%m/%Y %H:%M")
+            except Exception:
+                pass
+
+            st.success(f"✅ **{_arq_rec}** · {_dt_rec}")
+
+            # Tabela resumo por tipo
+            _nomes_tc = {
+                "PM": "Parcelas Mensais",
+                "FI": "Financiamento Bancário",
+                "CH": "À Vista / Cheque",
+                "RF": "Reforço",
+                "PC": "Parcela Complementar",
+                "PI": "Entrada / Sinal",
+                "PE": "Permuta ⚠️ (excluído)",
+            }
+            _rows_rt = []
+            for _tc in ["PM","FI","CH","RF","PC","PI","PE"]:
+                if _tc not in _rt: continue
+                _d = _rt[_tc]
+                _rows_rt.append({
+                    "Tipo":      f"{_tc} — {_nomes_tc.get(_tc, _tc)}",
+                    "Unidades":  _d["unidades"],
+                    "Parcelas":  _d["parcelas"],
+                    "Total":     _d["valor"],
+                    "Incluído":  "❌" if _tc == "PE" else "✅",
+                })
+            if _rows_rt:
+                _df_rt = pd.DataFrame(_rows_rt)
+                try:
+                    st.dataframe(
+                        _df_rt.style.format({"Total": "R$ {:,.0f}"}),
+                        use_container_width=True,
+                        hide_index=True,
+                        height=min(250, 38 + len(_rows_rt)*35)
+                    )
+                except Exception:
+                    st.dataframe(_df_rt, use_container_width=True, hide_index=True)
+
+            # KPIs principais
+            _rc1, _rc2, _rc3 = st.columns(3)
+            _rc1.metric("Total Recebível", fmt(_rec["total_recebiveis"]))
+            _rc2.metric("Financiamentos (FI)", fmt(_rec["total_fi"]),
+                        f"{_rec['n_unidades_fi']} unidades")
+            _rc3.metric("Parcelas (PM)", fmt(_rec["total_pm"]),
+                        f"{_rec['n_unidades_pm']} unidades")
+
+            if _rec.get("unidades_permuta"):
+                st.warning(
+                    f"⚠️ **{len(_rec['unidades_permuta'])} unidade(s) em permuta excluídas:** "
+                    f"{', '.join(_rec['unidades_permuta'])}"
+                )
+
+        # Uploader
+        _arq_rec_up = st.file_uploader(
+            "Selecione o relatório de recebíveis (.xlsx)",
+            type=["xlsx","xls"],
+            key=f"up_rec_{_tkey_cfg}",
+            label_visibility="collapsed"
+        )
+        if _arq_rec_up:
+            _rec_raw = parse_recebiveis_sienge(_arq_rec_up.read(), _arq_rec_up.name)
+            if "erro" in _rec_raw:
+                st.error(f"❌ {_rec_raw['erro']}")
+            else:
+                _estado_cfg["recebiveis"] = _rec_raw
+                save_rolling(_titulo_cfg, force=True)
+                safe_toast(
+                    f"✅ Recebíveis carregados: "
+                    f"R$ {_rec_raw['total_recebiveis']:,.0f} · "
+                    f"FI R$ {_rec_raw['total_fi']:,.0f} · "
+                    f"{len(_rec_raw['unidades_permuta'])} permutas excluídas",
+                    "✅"
+                )
+                st.rerun()
+
     # DRE mensal
     with st.expander("📋 DRE Mensal (histórico real)", expanded=False):
         st.caption(
@@ -2886,8 +2986,8 @@ def render_configuracoes():
 
     with st.expander("💵 Parâmetros Caixa", expanded=False):
         st.caption(
-            "Parâmetros de recebimento para projeção por Caixa. "
-            f"Configurando: **{_spe_sel}**"
+            "⚠️ Usado apenas se o relatório de Recebíveis não estiver carregado. "
+            "Com recebíveis carregados, a visão Caixa usa os dados reais do SIENGE."
         )
 
         _cf1, _cf2 = st.columns(2)
@@ -3097,6 +3197,25 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
     # ── Receita por visão ─────────────────────────────────────────────
     vgv_cfg   = estado.get("vgv", {})
 
+    # Recebíveis reais (se disponível)
+    _recebiveis = estado.get("recebiveis", {})
+    _rec_por_mes = _recebiveis.get("por_mes", {}) if _recebiveis else {}
+    _rec_pm_mes  = _recebiveis.get("pm_por_mes", {}) if _recebiveis else {}
+    _rec_fi_mes  = _recebiveis.get("fi_por_mes", {}) if _recebiveis else {}
+    _tem_recebiveis = bool(_rec_por_mes)
+
+    # Fator CUB para ajuste de valores futuros
+    # Aplica a partir da data de exportação do relatório
+    _data_exp_str = _recebiveis.get("data_exportacao", "") if _recebiveis else ""
+    try:
+        _data_exp = datetime.date(
+            int(_data_exp_str[6:10]),
+            int(_data_exp_str[3:5]),
+            1
+        )
+    except Exception:
+        _data_exp = datetime.date.today()
+
     # ── Mapa de receita real por mês da obra (Competência/POC) ───────
     # Vendas podem ter acontecido ANTES do início da obra (ex: 2023).
     # Precisamos mapear cada venda para o índice correto no horizonte.
@@ -3163,18 +3282,37 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
         else:  # Caixa
             if m_obra < 1:
                 return 0.0
+
+            # Se temos recebíveis reais, usa direto com ajuste CUB
+            if _tem_recebiveis:
+                # Calcula mês/ano deste índice
+                _inicio_dt_c = datetime.date(data_inicio["ano"], data_inicio["mes"], 1)
+                _mes_idx_c   = (_inicio_dt_c.month + i - 1) % 12 + 1
+                _ano_idx_c   = _inicio_dt_c.year + (_inicio_dt_c.month + i - 1) // 12
+                _chave_c     = f"{_ano_idx_c}-{_mes_idx_c:02d}"
+
+                _val_rec = _rec_por_mes.get(_chave_c, 0.0)
+
+                # Ajuste CUB: meses após a data de exportação
+                _meses_apos_exp = (
+                    (_ano_idx_c - _data_exp.year) * 12 +
+                    (_mes_idx_c - _data_exp.month)
+                )
+                if _meses_apos_exp > 0:
+                    _fator_cub = (1 + cub_m) ** _meses_apos_exp
+                    _val_rec *= _fator_cub
+
+                return _val_rec
+
+            # Fallback: fórmula se não tem recebíveis
             un      = vgv_cfg.get(m_obra, {}).get("unidades", 0)
             prc     = vgv_cfg.get(m_obra, {}).get("preco", 350000.0)
             entrada = float(un) * float(prc) * pct_ent
-
-            # Parcelas: soma de todas as unidades vendidas até este mês (índice obra)
             parcelas = 0.0
             for mm_obra in range(1, m_obra + 1):
                 _un_mm = vgv_cfg.get(mm_obra, {}).get("unidades", 0)
                 if _un_mm > 0 and mm_obra <= mes_ent:
                     parcelas += float(_un_mm) * parc_un
-
-            # Saldo na entrega
             saldo_ent = 0.0
             if m_obra == mes_ent:
                 _total_ent  = _vgv_total_completo * pct_ent
@@ -3184,7 +3322,6 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
                     for mm in range(1, mes_ent + 1)
                 )
                 saldo_ent = max(_vgv_total_completo - _total_ent - _total_parc, 0)
-
             return entrada + parcelas + saldo_ent
 
     # ── Receita BDI da Matriz (só para Matriz) ────────────────────────
