@@ -2779,94 +2779,59 @@ def render_configuracoes():
     with st.expander("💰 Recebíveis — Contas a Receber", expanded=True):
         st.caption(
             "Suba o relatório 'Contas a Receber — Recebíveis' exportado do SIENGE. "
-            "Exporte sempre com data inicial = hoje para ter apenas recebimentos futuros."
+            "Exporte sempre com data inicial = hoje para ter apenas recebimentos futuros. "
+            "O painel detalhado aparece na aba 📅 Rolling Forecast → visão Caixa."
         )
 
         _rec = _estado_cfg.get("recebiveis")
         if _rec:
-            # Resumo por tipo
-            _rt = _rec.get("resumo_tipos", {})
-            _arq_rec = _rec.get("arquivo_nome","?")
-            _dt_rec  = ""
+            _arq_rec_nome = _rec.get("arquivo_nome","?")
+            _dt_rec = ""
             try:
-                from datetime import datetime as _dtt_r
-                _dt_rec = _dtt_r.fromisoformat(
+                from datetime import datetime as _dtt
+                _dt_rec = _dtt.fromisoformat(
                     _rec.get("data_upload","")
                 ).strftime("%d/%m/%Y %H:%M")
             except Exception:
                 pass
-
-            st.success(f"✅ **{_arq_rec}** · {_dt_rec}")
-
-            # Tabela resumo por tipo
-            _nomes_tc = {
-                "PM": "Parcelas Mensais",
-                "FI": "Financiamento Bancário",
-                "CH": "À Vista / Cheque",
-                "RF": "Reforço",
-                "PC": "Parcela Complementar",
-                "PI": "Entrada / Sinal",
-                "PE": "Permuta ⚠️ (excluído)",
-            }
-            _rows_rt = []
-            for _tc in ["PM","FI","CH","RF","PC","PI","PE"]:
-                if _tc not in _rt: continue
-                _d = _rt[_tc]
-                _rows_rt.append({
-                    "Tipo":      f"{_tc} — {_nomes_tc.get(_tc, _tc)}",
-                    "Unidades":  _d["unidades"],
-                    "Parcelas":  _d["parcelas"],
-                    "Total":     _d["valor"],
-                    "Incluído":  "❌" if _tc == "PE" else "✅",
-                })
-            if _rows_rt:
-                _df_rt = pd.DataFrame(_rows_rt)
-                try:
-                    st.dataframe(
-                        _df_rt.style.format({"Total": "R$ {:,.0f}"}),
-                        use_container_width=True,
-                        hide_index=True,
-                        height=min(250, 38 + len(_rows_rt)*35)
-                    )
-                except Exception:
-                    st.dataframe(_df_rt, use_container_width=True, hide_index=True)
-
-            # KPIs principais
-            _rc1, _rc2, _rc3 = st.columns(3)
-            _rc1.metric("Total Recebível", fmt(_rec["total_recebiveis"]))
-            _rc2.metric("Financiamentos (FI)", fmt(_rec["total_fi"]),
-                        f"{_rec['n_unidades_fi']} unidades")
-            _rc3.metric("Parcelas (PM)", fmt(_rec["total_pm"]),
-                        f"{_rec['n_unidades_pm']} unidades")
-
-            if _rec.get("unidades_permuta"):
-                st.warning(
-                    f"⚠️ **{len(_rec['unidades_permuta'])} unidade(s) em permuta excluídas:** "
-                    f"{', '.join(_rec['unidades_permuta'])}"
-                )
-
-        # Uploader
-        _arq_rec_up = st.file_uploader(
-            "Selecione o relatório de recebíveis (.xlsx)",
-            type=["xlsx","xls"],
-            key=f"up_rec_{_tkey_cfg}",
-            label_visibility="collapsed"
-        )
-        if _arq_rec_up:
-            _rec_raw = parse_recebiveis_sienge(_arq_rec_up.read(), _arq_rec_up.name)
-            if "erro" in _rec_raw:
-                st.error(f"❌ {_rec_raw['erro']}")
-            else:
-                _estado_cfg["recebiveis"] = _rec_raw
+            _n_pe = len(_rec.get("unidades_permuta",[]))
+            st.success(
+                f"✅ **{_arq_rec_nome}** · {_dt_rec}\n\n"
+                f"Total recebível: **{fmt(_rec.get('total_recebiveis',0))}** · "
+                f"FI: **{fmt(_rec.get('total_fi',0))}** · "
+                f"PM: **{fmt(_rec.get('total_pm',0))}**"
+                + (f" · ⚠️ {_n_pe} permuta(s) excluída(s)" if _n_pe else "")
+            )
+            if st.button("🔄 Substituir recebíveis",
+                         key=f"sub_rec_{_tkey_cfg}"):
+                _estado_cfg["recebiveis"] = None
                 save_rolling(_titulo_cfg, force=True)
-                safe_toast(
-                    f"✅ Recebíveis carregados: "
-                    f"R$ {_rec_raw['total_recebiveis']:,.0f} · "
-                    f"FI R$ {_rec_raw['total_fi']:,.0f} · "
-                    f"{len(_rec_raw['unidades_permuta'])} permutas excluídas",
-                    "✅"
-                )
+                safe_toast("Recebíveis removidos. Suba a nova versão.", "🔄")
                 st.rerun()
+        else:
+            _arq_rec_up = st.file_uploader(
+                "Selecione o relatório de recebíveis (.xlsx)",
+                type=["xlsx","xls"],
+                key=f"up_rec_{_tkey_cfg}",
+                label_visibility="collapsed"
+            )
+            if _arq_rec_up:
+                _rec_raw = parse_recebiveis_sienge(
+                    _arq_rec_up.read(), _arq_rec_up.name
+                )
+                if "erro" in _rec_raw:
+                    st.error(f"❌ {_rec_raw['erro']}")
+                else:
+                    _estado_cfg["recebiveis"] = _rec_raw
+                    save_rolling(_titulo_cfg, force=True)
+                    safe_toast(
+                        f"✅ Recebíveis carregados: "
+                        f"R$ {_rec_raw['total_recebiveis']:,.0f} · "
+                        f"FI R$ {_rec_raw['total_fi']:,.0f} · "
+                        f"{len(_rec_raw.get('unidades_permuta',[]))} permuta(s) excluída(s)",
+                        "✅"
+                    )
+                    st.rerun()
 
     # DRE mensal
     with st.expander("📋 DRE Mensal (histórico real)", expanded=False):
@@ -3526,6 +3491,93 @@ def render_rolling_forecast():
         f"{'Consolidado (' + str(len(_ativas)) + ' empresas)' if len(_ativas) > 1 else ''}"
     )
     st.divider()
+
+    # ── Painel de Recebíveis (só visão Caixa) ────────────────────────
+    if "Caixa" in visao:
+        # Coleta recebíveis de todas as empresas ativas
+        _tem_rec_alguma = False
+        for _k_rec in _ativas:
+            _emp_r = st.session_state.clientes[cliente_sel]["empresas"][_k_rec]
+            _tit_r = _emp_r.get("nome", _k_rec)
+            _est_r = get_rolling_state(_tit_r)
+            if _est_r.get("recebiveis"):
+                _tem_rec_alguma = True
+                break
+
+        if _tem_rec_alguma:
+            st.markdown("### 💰 Recebíveis — Contas a Receber")
+            st.caption(
+                "Fonte: relatório SIENGE. PE (permuta) excluído. "
+                "Valores futuros ajustados pelo CUB configurado."
+            )
+
+            # Para cada empresa ativa com recebíveis
+            for _k_rec in _ativas:
+                _emp_r = st.session_state.clientes[cliente_sel]["empresas"][_k_rec]
+                _tit_r = _emp_r.get("nome", _k_rec)
+                _est_r = get_rolling_state(_tit_r)
+                _rec_r = _est_r.get("recebiveis")
+                if not _rec_r: continue
+
+                if len(_ativas) > 1:
+                    st.markdown(f"**{_k_rec}**")
+
+                _rt_r = _rec_r.get("resumo_tipos", {})
+                _nomes_tc = {
+                    "PM": "Parcelas Mensais",
+                    "FI": "Financiamento Bancário",
+                    "CH": "À Vista / Cheque",
+                    "RF": "Reforço",
+                    "PC": "Parcela Complementar",
+                    "PI": "Entrada / Sinal",
+                    "PE": "Permuta ⚠️ (excluído)",
+                }
+                _rows_rt = []
+                for _tc in ["PM","FI","CH","RF","PC","PI","PE"]:
+                    if _tc not in _rt_r: continue
+                    _d = _rt_r[_tc]
+                    _rows_rt.append({
+                        "Tipo":     f"{_tc} — {_nomes_tc.get(_tc,_tc)}",
+                        "Unidades": _d["unidades"],
+                        "Parcelas": _d["parcelas"],
+                        "Total":    _d["valor"],
+                        "":         "❌" if _tc == "PE" else "✅",
+                    })
+
+                if _rows_rt:
+                    _df_rt = pd.DataFrame(_rows_rt)
+                    try:
+                        st.dataframe(
+                            _df_rt.style.format({"Total": "R$ {:,.0f}"}),
+                            use_container_width=True,
+                            hide_index=True,
+                            height=min(250, 38 + len(_rows_rt)*35)
+                        )
+                    except Exception:
+                        st.dataframe(_df_rt, use_container_width=True, hide_index=True)
+
+                # KPIs
+                _rc1, _rc2, _rc3 = st.columns(3)
+                _rc1.metric("Total Recebível",       fmt(_rec_r["total_recebiveis"]))
+                _rc2.metric("Financiamentos (FI)",   fmt(_rec_r["total_fi"]),
+                            f"{_rec_r['n_unidades_fi']} unidades")
+                _rc3.metric("Parcelas Mensais (PM)", fmt(_rec_r["total_pm"]),
+                            f"{_rec_r['n_unidades_pm']} unidades")
+
+                _pe_list = _rec_r.get("unidades_permuta",[])
+                if _pe_list:
+                    st.warning(
+                        f"⚠️ **{len(_pe_list)} unidade(s) em permuta excluídas:** "
+                        f"{', '.join(_pe_list)}"
+                    )
+
+            st.divider()
+        else:
+            st.info(
+                "ℹ️ Carregue o relatório de Recebíveis em "
+                "**⚙️ Configurações → Recebíveis** para ver o fluxo de caixa real."
+            )
+            st.divider()
 
     # ── GRÁFICO: DRE mensal projetada ─────────────────────────────────
     _n_hist = _dre_final.get("n_hist", 12)
