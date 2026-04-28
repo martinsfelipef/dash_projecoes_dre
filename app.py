@@ -672,8 +672,16 @@ with st.sidebar:
     # Filtra apenas empresas ativas para cálculos e seletor
     empresas_cliente = {k: v for k, v in empresas_cliente.items()
                         if st.session_state["empresas_ativas"].get(k, True)}
-    opcoes = ["Consolidado"] + list(empresas_cliente.keys())
-    empresa_sel = st.selectbox("Empresa", opcoes, label_visibility="collapsed")
+    # Empresa selecionada = a única ativa, ou "Consolidado" se mais de uma
+    _todas_empresas = list(st.session_state.clientes[cliente_sel]["empresas"].keys())
+    _ativas_check = [
+        k for k in _todas_empresas
+        if st.session_state.get("empresas_ativas", {}).get(k, True)
+    ]
+    if len(_ativas_check) == 1:
+        empresa_sel = _ativas_check[0]
+    else:
+        empresa_sel = "Consolidado"
 
     st.divider()
     st.markdown("**📊 Visão de Receita**")
