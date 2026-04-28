@@ -102,7 +102,7 @@ def _parse_sienge_full(data: bytes) -> list:
                     pass
     return [{"codigo": c, **itens[c]} for c in ordem]
 
-from parser_template import parse_template_align
+
 from rolling_forecast import (calc_competencia,calc_caixa,calc_poc,
                                build_dre_rolling,bdi_matriz_mensal)
 from parser_cronograma_sienge import parse_cronograma_sienge
@@ -118,7 +118,7 @@ except ImportError:
     def parse_vendas_sienge(data, arquivo_nome=""):
         return {"erro": "Parser não encontrado. Verifique utils/parser_vendas_sienge.py"}
 
-st.set_page_config(page_title="Dashboard Financeiro | Align",
+st.set_page_config(page_title="Dashboard Financeiro | Brocks",
                    page_icon="🏗️", layout="wide",
                    initial_sidebar_state="expanded")
 
@@ -697,32 +697,7 @@ with st.sidebar:
             "💰 Caixa (realizado)","📋 Competência (vendas)","🏗️ POC (% avanço físico)"
         ], key="visao_sel", label_visibility="collapsed")
 
-    rec_override_map = {}
-    if "POC" in visao:
-        st.divider(); st.markdown("**⚙️ Parâmetros POC**")
-        st.caption("⚠️ Estes parâmetros afetam apenas a **DRE Analítica (Tab 1)** "
-                   "— visão histórica de como a receita passada é reconhecida. "
-                   "Para projeções futuras, use a aba Rolling Forecast.")
-        vgv=st.number_input("VGV Total (R$)",value=5_000_000.0,step=100_000.0,format="%.0f",key="vgv_poc")
-        poc,defs=[],[3,6,10,16,22,30,40,52,62,74,86,100]
-        c1,c2=st.columns(2)
-        for i,m in enumerate(MESES):
-            with(c1 if i%2==0 else c2):
-                poc.append(st.number_input(m,0,100,defs[i],key=f"poc{i}"))
-        delta_poc=np.diff(np.concatenate([[0],np.array(poc)/100]))
-        for k in empresas_cliente: rec_override_map[k]=(vgv*delta_poc).tolist()
-    elif "Competência" in visao:
-        st.divider(); st.markdown("**⚙️ VGV Vendas por Mês**")
-        st.caption("⚠️ Estes valores representam as vendas **já realizadas**, "
-                   "para fins de reconhecimento de receita na DRE histórica. "
-                   "Para projetar vendas futuras, use a aba Rolling Forecast.")
-        vgv_comp,defs=[],[0,0,0,0,180000,250000,320000,400000,250000,280000,220000,350000]
-        c1,c2=st.columns(2)
-        for i,m in enumerate(MESES):
-            with(c1 if i%2==0 else c2):
-                vgv_comp.append(st.number_input(m,value=float(defs[i]),step=10000.0,key=f"comp{i}",format="%.0f"))
-        for k in empresas_cliente:
-            if "SPE" in k or "Tereza" in k: rec_override_map[k]=vgv_comp
+    rec_override_map = {}  # Receita configurada na aba Configurações
 
     st.divider()
     # ── DREs já no sistema ─────────────────────────────────────────────
@@ -742,15 +717,13 @@ with st.sidebar:
     st.divider()
     # ── Adicionar / atualizar DRE ──────────────────────────────────────
     with st.expander("➕ Adicionar / atualizar DRE", expanded=False):
-        tipo_up=st.selectbox("Tipo",["SIENGE","Template Align"],
-                             label_visibility="collapsed")
+        st.caption("Arquivo Excel exportado do SIENGE — Demonstrativo de Resultado.")
         uploaded=st.file_uploader("",type=["xlsx","xls"],
                                   label_visibility="collapsed",
                                   key="uploader_dre")
         if uploaded:
             bdata=uploaded.read()
-            res=parse_sienge(bdata) if tipo_up=="SIENGE" \
-                else parse_template_align(bdata)
+            res = parse_sienge(bdata)
             if "erro" in res:
                 safe_toast(res["erro"],"❌")
             else:
@@ -800,20 +773,47 @@ with st.sidebar:
 
     st.divider()
     st.divider()
-    with st.expander("⚙️ Gerenciar empresas"):
-        for k in list(empresas_cliente.keys()):
-            cn2,cd=st.columns([3,1]); cn2.write(k)
-            if cd.button("🗑️",key=f"del_{k}"):
-                del st.session_state.clientes[cliente_sel]["empresas"][k]
-                save_state(); safe_toast(f"{k} removida","🗑️")
-                st.rerun()
-        st.divider()
-        novo=st.text_input("Novo cliente:",key="novo_cli",placeholder="Ex: Loja ABC")
-        if st.button("➕ Criar",use_container_width=True):
-            if novo.strip():
-                st.session_state.clientes[novo.strip()]={"empresas":{}}
-                save_state(); safe_toast(f"Cliente {novo.strip()} criado!","✅")
-                st.rerun()
+    with st.expander("🏗️ Nova SPE"):
+        st.caption(
+            "Adicione um novo empreendimento ao sistema. "
+            "Após criar, acesse a aba ⚙️ Configurações para subir o CFF, CPL e DRE."
+        )
+        _novo_spe_nome = st.text_input(
+            "Nome da SPE:",
+            key="novo_spe_nome",
+            placeholder="Ex: SPE Residencial João XXIII"
+        )
+        _novo_spe_cnpj = st.text_input(
+            "CNPJ (opcional):",
+            key="novo_spe_cnpj",
+            placeholder="00.000.000/0001-00"
+        )
+        if st.button("➕ Criar SPE", use_container_width=True, type="primary"):
+            _nome = _novo_spe_nome.strip()
+            if _nome:
+                if _nome not in st.session_state.clientes[cliente_sel]["empresas"]:
+                    # Estrutura padrão de uma nova SPE
+                    st.session_state.clientes[cliente_sel]["empresas"][_nome] = {
+                        "nome":     _nome,
+                        "cnpj":     _novo_spe_cnpj.strip(),
+                        "fonte":    "Upload",
+                        "rec_bruta": [0.0]*12,
+                        "imp_rec":   [0.0]*12,
+                        "cpv":       [0.0]*12,
+                        "desp_op":   [0.0]*12,
+                        "res_fin":   [0.0]*12,
+                        "ir":        [0.0]*12,
+                        "rec_bdi":   [0.0]*12,
+                        "desp_bdi":  [0.0]*12,
+                        "raw_lines": [],
+                    }
+                    save_state()
+                    safe_toast(f"SPE '{_nome}' criada! Acesse ⚙️ Configurações para carregar os dados.", "✅")
+                    st.rerun()
+                else:
+                    safe_toast(f"Já existe uma SPE com o nome '{_nome}'.", "⚠️")
+            else:
+                safe_toast("Digite o nome da SPE.", "⚠️")
 
 
 
@@ -892,10 +892,7 @@ with st.sidebar:
                 st.info("Nenhum padrão definido pelo Admin ainda.")
 
     st.divider()
-    st.caption("Desenvolvido por:")
-    st.caption("Align Gestão de Negócios")
-    st.caption("@2026")
-    st.caption("Acesse: [alignconsultoria.com.br](https://alignconsultoria.com.br)")
+    st.caption("Brocks Empreendimentos Ltda © 2026")
 
 # ── Cálculos base ─────────────────────────────────────────────────────────────
 dres={k:dre(emp,rec_override_map.get(k)) for k,emp in empresas_cliente.items()}
@@ -2786,11 +2783,8 @@ def render_configuracoes():
             f"Fonte: {'Upload' if _fonte_dre == 'Upload' else 'Dados padrão'}"
         )
         # Uploader para nova DRE mensal
-        _tipo_up = st.selectbox(
-            "Tipo de arquivo:", ["SIENGE", "Template Align"],
-            key=f"tipo_dre_cfg_{_tkey_cfg}",
-            label_visibility="visible"
-        )
+        _tipo_up = "SIENGE"
+        st.caption("Arquivo Excel exportado do SIENGE — Demonstrativo de Resultado.")
         _arq_dre_up = st.file_uploader(
             "Selecione o arquivo DRE (.xlsx)",
             type=["xlsx","xls"],
@@ -2799,7 +2793,7 @@ def render_configuracoes():
         )
         if _arq_dre_up:
             _bdata = _arq_dre_up.read()
-            _res_dre = parse_sienge(_bdata) if _tipo_up == "SIENGE" else parse_template_align(_bdata)
+            _res_dre = parse_sienge(_bdata)
             if "erro" in _res_dre:
                 st.error(f"❌ {_res_dre['erro']}")
             else:
