@@ -1497,61 +1497,195 @@ def render_resumo_obras():
 
             _k1, _k2, _k3, _k4, _k5, _k6 = st.columns(6)
 
-            # SPI
+            # ── SPI ──────────────────────────────────────────────────
             with _k1:
-                st.markdown(
-                    f"**{_semaforo_spi(_spi)} SPI**\n\n"
-                    f"### {_spi:.3f}\n\n"
-                    f"{'✅ No prazo' if _spi >= 0.95 else '⚠️ Atenção' if _spi >= 0.85 else '🔴 Atrasado'}"
+                _spi_status = (
+                    "✅ No prazo" if _spi >= 0.95
+                    else "⚠️ Atenção" if _spi >= 0.85
+                    else "🔴 Atrasado"
+                )
+                st.metric(
+                    label=f"{_semaforo_spi(_spi)} SPI — Índice de Prazo",
+                    value=f"{_spi:.3f}",
+                    delta=_spi_status,
+                    delta_color="normal" if _spi >= 0.95 else "inverse",
+                    help=(
+                        "**SPI — Schedule Performance Index**\n\n"
+                        "Mede se a obra está no ritmo planejado.\n\n"
+                        f"**Fórmula:** % físico medido ÷ % físico previsto\n\n"
+                        f"**Este empreendimento:**\n"
+                        f"- Avanço medido: {_pct_medido:.1f}%\n"
+                        f"- Avanço previsto: {_pct_planejado:.1f}%\n"
+                        f"- SPI = {_pct_medido:.1f} ÷ {_pct_planejado:.1f} = **{_spi:.3f}**\n\n"
+                        "**Como ler:**\n"
+                        "- SPI = 1,0 → obra exatamente no prazo\n"
+                        "- SPI > 1,0 → obra adiantada\n"
+                        "- SPI < 1,0 → obra atrasada\n\n"
+                        "**Semáforo:** 🟢 ≥ 0,95 · 🟡 0,85–0,94 · 🔴 < 0,85"
+                    )
+                )
+                st.caption(f"Previsto: {_pct_planejado:.1f}% · Medido: {_pct_medido:.1f}%")
+
+            # ── CPI ──────────────────────────────────────────────────
+            with _k2:
+                _cpi_status = (
+                    "✅ Abaixo do custo" if _cpi >= 0.95
+                    else "⚠️ Atenção" if _cpi >= 0.85
+                    else "🔴 Acima do custo"
+                )
+                st.metric(
+                    label=f"{_semaforo_cpi(_cpi)} CPI — Índice de Custo",
+                    value=f"{_cpi:.3f}",
+                    delta=_cpi_status,
+                    delta_color="normal" if _cpi >= 0.95 else "inverse",
+                    help=(
+                        "**CPI — Cost Performance Index**\n\n"
+                        "Mede a eficiência de custo da obra.\n\n"
+                        "**Fórmula:** Valor medido ÷ Valor realizado (desembolsado)\n\n"
+                        f"**Este empreendimento:**\n"
+                        f"- Valor medido: {fmt(_medido)}\n"
+                        f"- Valor realizado: {fmt(_realizado)}\n"
+                        f"- CPI = {fmt(_medido)} ÷ {fmt(_realizado)} = **{_cpi:.3f}**\n\n"
+                        "**Como ler:**\n"
+                        "- CPI = 1,0 → gastando exatamente o previsto\n"
+                        "- CPI > 1,0 → cada R$1 gasto entrega mais que R$1 de obra ✅\n"
+                        "- CPI < 1,0 → cada R$1 gasto entrega menos que R$1 de obra ⚠️\n\n"
+                        "**Atenção:** CPI alto no início da obra pode cair se precisar "
+                        "acelerar o ritmo para recuperar atraso de prazo (SPI baixo).\n\n"
+                        "**Semáforo:** 🟢 ≥ 0,95 · 🟡 0,85–0,94 · 🔴 < 0,85"
+                    )
+                )
+                st.caption("Medido ÷ Realizado (desembolsado)")
+
+            # ── % FÍSICO ─────────────────────────────────────────────
+            with _k3:
+                _diff_pp = _pct_medido - _pct_planejado
+                _fis_sem = "🟢" if _diff_pp >= -2 else "🟡" if _diff_pp >= -8 else "🔴"
+                st.metric(
+                    label=f"{_fis_sem} % Avanço Físico",
+                    value=f"{_pct_medido:.1f}%",
+                    delta=f"{_diff_pp:+.1f} pp vs previsto",
+                    delta_color="normal" if _diff_pp >= -2 else "inverse",
+                    help=(
+                        "**% Avanço Físico (Medido)**\n\n"
+                        "Percentual da obra concluído, medido pelo "
+                        "boletim de medição do SIENGE.\n\n"
+                        f"**Este empreendimento:**\n"
+                        f"- Medido: **{_pct_medido:.1f}%** da obra concluída\n"
+                        f"- Previsto pelo cronograma: **{_pct_planejado:.1f}%**\n"
+                        f"- Diferença: **{_diff_pp:+.1f} pp**\n\n"
+                        "**Como ler:**\n"
+                        "- Positivo (+) → obra adiantada em relação ao cronograma\n"
+                        "- Negativo (−) → obra atrasada em relação ao cronograma\n\n"
+                        "**Fonte:** Arquivo CPL (Custo por Nível) do SIENGE, "
+                        "coluna Valor Medido Acumulado.\n\n"
+                        "**Semáforo:** 🟢 ≤ 2pp atraso · 🟡 2–8pp · 🔴 > 8pp"
+                    )
                 )
                 st.caption(f"Previsto: {_pct_planejado:.1f}%")
 
-            # CPI
-            with _k2:
-                st.markdown(
-                    f"**{_semaforo_cpi(_cpi)} CPI**\n\n"
-                    f"### {_cpi:.3f}\n\n"
-                    f"{'✅ Abaixo do custo' if _cpi >= 0.95 else '⚠️ Atenção' if _cpi >= 0.85 else '🔴 Acima do custo'}"
-                )
-                st.caption(f"Medido/Realizado")
-
-            # % Avanço Físico
-            with _k3:
-                _diff_pp = _pct_medido - _pct_planejado
-                st.markdown(
-                    f"**{'🟢' if _diff_pp >= -2 else '🟡' if _diff_pp >= -8 else '🔴'} "
-                    f"% Físico**\n\n"
-                    f"### {_pct_medido:.1f}%\n\n"
-                    f"Previsto: {_pct_planejado:.1f}%"
-                )
-                st.caption(f"Δ {_diff_pp:+.1f} pp")
-
-            # Verba Disponível
+            # ── VERBA DISPONÍVEL ─────────────────────────────────────
             with _k4:
-                st.markdown(
-                    f"**{_semaforo_verba(_verba_pct)} Verba Disp.**\n\n"
-                    f"### {fmt(_verba_disp)}\n\n"
-                    f"{_verba_pct:.1f}% do orçado"
+                _verba_pct = (_verba_disp / _orcado * 100) if _orcado > 0 else 0
+                st.metric(
+                    label=f"{_semaforo_verba(_verba_pct)} Verba Disponível",
+                    value=fmt(_verba_disp),
+                    delta=f"{_verba_pct:.1f}% do orçado",
+                    delta_color="normal" if _verba_pct >= 20 else "inverse",
+                    help=(
+                        "**Verba Disponível**\n\n"
+                        "Saldo orçamentário ainda não comprometido em contratos.\n\n"
+                        "**Fórmula:** Orçado Total − Total Comprometido\n\n"
+                        f"**Este empreendimento:**\n"
+                        f"- Orçado total: {fmt(_orcado)}\n"
+                        f"- Já comprometido: {fmt(_comprometido)}\n"
+                        f"- Verba disponível: **{fmt(_verba_disp)}** "
+                        f"({_verba_pct:.1f}% do orçado)\n\n"
+                        "**Como ler:**\n"
+                        "- Alta verba disponível → liberdade orçamentária para "
+                        "novos contratos\n"
+                        "- Verba baixa → risco de estouro se surgirem imprevistos\n\n"
+                        "**Comprometido** inclui contratos assinados mas ainda "
+                        "não executados/pagos.\n\n"
+                        "**Semáforo:** 🟢 ≥ 20% · 🟡 10–19% · 🔴 < 10%"
+                    )
                 )
                 st.caption("Orçado − Comprometido")
 
-            # EAC
+            # ── EAC ──────────────────────────────────────────────────
             with _k5:
-                st.markdown(
-                    f"**{_semaforo_eac(_eac, _orcado)} EAC**\n\n"
-                    f"### {fmt(_eac)}\n\n"
-                    f"Desvio: {_eac_desvio_pct:+.1f}%"
+                _eac_desvio_pct = ((_eac - _orcado) / _orcado * 100) if _orcado > 0 else 0
+                _eac_sem = _semaforo_eac(_eac, _orcado)
+                st.metric(
+                    label=f"{_eac_sem} EAC — Custo Final Projetado",
+                    value=fmt(_eac),
+                    delta=f"Desvio: {_eac_desvio_pct:+.1f}%",
+                    delta_color="normal" if _eac_desvio_pct <= 3 else "inverse",
+                    help=(
+                        "**EAC — Estimate at Completion**\n\n"
+                        "Projeção do custo total da obra se o ritmo atual de "
+                        "eficiência de custo se mantiver até o fim.\n\n"
+                        "**Fórmula:** Realizado + (Orçado Restante ÷ CPI)\n\n"
+                        f"**Este empreendimento:**\n"
+                        f"- Já realizado: {fmt(_realizado)}\n"
+                        f"- Orçado restante: {fmt(_orcado - _realizado)}\n"
+                        f"- CPI atual: {_cpi:.3f}\n"
+                        f"- EAC = {fmt(_realizado)} + "
+                        f"({fmt(_orcado - _realizado)} ÷ {_cpi:.3f}) "
+                        f"= **{fmt(_eac)}**\n\n"
+                        "**Como ler:**\n"
+                        "- EAC < Orçado → obra deve terminar abaixo do orçamento ✅\n"
+                        "- EAC = Orçado → obra deve terminar no orçamento\n"
+                        "- EAC > Orçado → obra deve estourar o orçamento ⚠️\n\n"
+                        f"Orçado: {fmt(_orcado)} · "
+                        f"Projeção: {fmt(_eac)} · "
+                        f"Desvio: {_eac_desvio_pct:+.1f}%\n\n"
+                        "**Semáforo:** 🟢 desvio ≤ 3% · 🟡 3–8% · 🔴 > 8%"
+                    )
                 )
-                st.caption("Custo Final Projetado")
+                st.caption(f"Orçado: {fmt(_orcado)}")
 
-            # CTP
+            # ── CTP ──────────────────────────────────────────────────
             with _k6:
-                st.markdown(
-                    f"**💼 CTP**\n\n"
-                    f"### {fmt(_saldo_ctp)}\n\n"
-                    f"Custo mínimo: {fmt(_custo_min)}"
+                st.metric(
+                    label="💼 CTP — Contratos em Aberto",
+                    value=fmt(_saldo_ctp),
+                    delta=f"Custo mínimo: {fmt(_custo_min)}",
+                    delta_color="off",
+                    help=(
+                        "**CTP — Contratos de Terceiros/Prestadores**\n\n"
+                        "Saldo de contratos já assinados mas ainda não "
+                        "executados ou pagos.\n\n"
+                        f"**Este empreendimento:**\n"
+                        f"- CTP: {fmt(_saldo_ctp)}\n"
+                        f"- Já realizado (pago): {fmt(_realizado)}\n"
+                        f"- Custo mínimo: **{fmt(_custo_min)}**\n\n"
+                        "**Custo Mínimo** = Realizado + CTP\n"
+                        "É o valor mínimo que a obra vai custar mesmo que "
+                        "tudo pare agora — porque esses contratos já estão "
+                        "assinados e precisam ser honrados.\n\n"
+                        "**Como ler:**\n"
+                        "- CTP alto → muitos contratos em andamento, "
+                        "obra com boa cobertura\n"
+                        "- CTP baixo → poucos contratos ativos, pode indicar "
+                        "necessidade de novas contratações para avançar\n\n"
+                        "**Fonte:** Arquivo CPL (Custo por Nível) do SIENGE, "
+                        "coluna Saldo de Contratos."
+                    )
                 )
-                st.caption("Contratos abertos")
+                st.caption("Contratos assinados ainda não executados")
+
+            # Alerta específico: obra atrasada mas dentro do custo
+            if _spi < 0.85 and _cpi >= 0.95:
+                st.warning(
+                    f"⚠️ **Atenção: obra atrasada mas com custo controlado.**\n\n"
+                    f"SPI {_spi:.3f} indica atraso físico de "
+                    f"**{abs(_pct_medido - _pct_planejado):.1f} pp** em relação ao previsto. "
+                    f"Para recuperar o prazo, será necessário acelerar o ritmo — "
+                    f"o que tende a aumentar os custos e pressionar o CPI ({_cpi:.3f}) "
+                    f"atual para baixo. "
+                    f"Monitore o CPI nos próximos meses."
+                )
 
             st.divider()
 
