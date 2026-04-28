@@ -2285,7 +2285,7 @@ def render_configuracoes():
         )
         if _total_un_input != _total_un:
             _estado_cfg["total_unidades"] = _total_un_input
-            mark_rolling_dirty(_titulo_cfg)
+            save_rolling(_titulo_cfg, force=True)
 
         # Mostra resumo se já tem vendas carregadas
         _vendas = _estado_cfg.get("vendas")
