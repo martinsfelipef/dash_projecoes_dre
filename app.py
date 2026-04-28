@@ -1084,15 +1084,122 @@ def render_resumo_obras():
                 st.session_state[_roll_emp_key] = _spe_k
                 st.rerun()
 
+    # ── Modo Consolidado ──────────────────────────────────────────────
+    if empresa_sel == "Consolidado" and len(_spes_ativas) > 1:
+        st.divider()
+        st.markdown("### 📊 Consolidado das Obras")
+
+        _rows_cons = []
+        _tot_orc = _tot_med = _tot_real = _tot_comp = _tot_verba = 0.0
+
+        for _sk in _spes_ativas:
+            _ed  = st.session_state.clientes[cliente_sel]["empresas"][_sk]
+            _tk  = _ed.get("nome", _sk)
+            _ek  = get_rolling_state(_tk)
+            _hk  = _ek.get("historico_cpl", [])
+            _snk = _hk[-1] if _hk else {}
+            _crk = _ek.get("cronograma", {})
+
+            _orc  = _snk.get("orcado_total", 0.0)
+            _med  = _snk.get("medido_acum", 0.0)
+            _real = _snk.get("realizado_acum", 0.0)
+            _comp = _snk.get("comprometido", 0.0)
+            _verb = _snk.get("verba_disponivel", 0.0)
+            _cpik = _snk.get("cpi", 0.0)
+            _eack = _snk.get("eac", 0.0)
+
+            # SPI
+            _spik = 1.0
+            _pf_k = _snk.get("periodo_final","")
+            if _crk and _pf_k:
+                try:
+                    _mes_k = int(_pf_k[5:7]); _ano_k = int(_pf_k[:4])
+                    _acum_k = 0.0; _tot_k = _crk.get("total_obra",1)
+                    for _mi,_mv in zip(_crk.get("meses",[]),_crk.get("custos_por_mes",[])):
+                        _acum_k += _mv
+                        if _mi["mes"]==_mes_k and _mi["ano"]==_ano_k: break
+                    _ppl_k = (_acum_k/_tot_k*100) if _tot_k>0 else 0
+                    _pmd_k = _snk.get("pct_medido",0)
+                    _spik  = (_pmd_k/_ppl_k) if _ppl_k>0 else 1.0
+                except Exception:
+                    _spik = 1.0
+
+            # Datas
+            _di_k = _crk.get("data_inicio", _ek.get("data_inicio",{"ano":2024,"mes":1}))
+            _df_k = _crk.get("data_fim",    _ek.get("data_fim",   {"ano":2027,"mes":12}))
+            import datetime as _dttc
+            _hoje_c = _dttc.date.today()
+            _fim_c  = _dttc.date(_df_k["ano"], _df_k["mes"], 1)
+            _rest_k = max((_fim_c.year-_hoje_c.year)*12+(_fim_c.month-_hoje_c.month),0)
+
+            _tot_orc  += _orc
+            _tot_med  += _med
+            _tot_real += _real
+            _tot_comp += _comp
+            _tot_verba+= _verb
+
+            _sem_spi = "🟢" if _spik>=0.95 else "🟡" if _spik>=0.85 else "🔴"
+            _sem_cpi = "🟢" if _cpik>=0.95 else "🟡" if _cpik>=0.85 else "🔴"
+            _pf_fmt  = f"{MESES[int(_pf_k[5:7])-1]}/{_pf_k[:4]}" if _pf_k else "—"
+
+            _rows_cons.append({
+                "Obra":          _sk,
+                "Fim":           f"{MESES[_df_k['mes']-1]}/{_df_k['ano']}",
+                "Restam":        f"{_rest_k} meses",
+                "Orçado":        _orc,
+                "Medido":        _med,
+                "% Físico":      f"{_snk.get('pct_medido',0):.1f}%",
+                "Realizado":     _real,
+                "Verba Disp.":   _verb,
+                f"{_sem_spi} SPI": f"{_spik:.3f}",
+                f"{_sem_cpi} CPI": f"{_cpik:.3f}" if _cpik else "—",
+                "CPL":           _pf_fmt,
+            })
+
+        if _rows_cons:
+            _df_c = pd.DataFrame(_rows_cons)
+            _fmt_c = {
+                "Orçado":    "R$ {:,.0f}",
+                "Medido":    "R$ {:,.0f}",
+                "Realizado": "R$ {:,.0f}",
+                "Verba Disp.":"R$ {:,.0f}",
+            }
+            try:
+                st.dataframe(
+                    _df_c.style.format(_fmt_c),
+                    use_container_width=True, hide_index=True
+                )
+            except Exception:
+                st.dataframe(_df_c, use_container_width=True, hide_index=True)
+
+            st.divider()
+            _cc1,_cc2,_cc3,_cc4 = st.columns(4)
+            _cc1.metric("Total Orçado",     fmt(_tot_orc))
+            _cc2.metric("Total Medido",      fmt(_tot_med))
+            _cc3.metric("Total Realizado",   fmt(_tot_real))
+            _cc4.metric("Total Verba Disp.", fmt(_tot_verba))
+
+        st.divider()
+        st.info("💡 Selecione uma SPE específica na sidebar para ver o detalhe da obra.")
+        return
+
     _empresa_roll = st.session_state.get(_roll_emp_key, _spes_ativas[0])
     titulo = st.session_state.clientes[cliente_sel]["empresas"][_empresa_roll].get(
         "nome", _empresa_roll
     )
 
-    st.caption(
-        f"Configurando: **{_empresa_roll}** · "
-        f"{'✅ Cronograma carregado' if 'cronograma' in get_rolling_state(titulo) else '⬜ Sem cronograma'}"
-    )
+    _tem_cff_cap = "cronograma" in get_rolling_state(titulo)
+    _tem_cpl_cap = bool(get_rolling_state(titulo).get("historico_cpl"))
+    if _tem_cff_cap and _tem_cpl_cap:
+        _status_cap = "✅ CFF e CPL carregados"
+    elif _tem_cff_cap:
+        _status_cap = "✅ CFF carregado · ⬜ Sem CPL"
+    elif _tem_cpl_cap:
+        _status_cap = "⬜ Sem CFF · ✅ CPL carregado"
+    else:
+        _status_cap = "⬜ Sem dados — configure na aba ⚙️ Configurações"
+
+    st.caption(f"Visualizando: **{_empresa_roll}** · {_status_cap}")
     st.divider()
 
     st.markdown(f"## 🏗️ Resumo de Obras — {_empresa_roll}")
@@ -1232,11 +1339,49 @@ def render_resumo_obras():
         st.markdown(f"### 🏗️ {_obra_nome}")
         _periodo_cpl_str = ""
         if _cpl_atual.get("periodo_final"):
-            _periodo_cpl_str = f" · 📊 CPL: **{_cpl_atual['periodo_final']}**"
+            _pf = _cpl_atual["periodo_final"]
+            try:
+                _pf_fmt = f"{MESES[int(_pf[5:7])-1]}/{_pf[:4]}"
+            except Exception:
+                _pf_fmt = _pf
+            _periodo_cpl_str = f" · 📊 CPL: **{_pf_fmt}**"
         st.caption(
             f"📍 {_inicio_str} → {_fim_str} · **{_meses_rest} meses restantes**"
             f"{_periodo_cpl_str}"
         )
+
+        # Barra de progresso do cronograma
+        import datetime as _dtt
+        _hoje_dt   = _dtt.date.today()
+        _inicio_dt = _dtt.date(estado["data_inicio"]["ano"], estado["data_inicio"]["mes"], 1)
+        _fim_dt2   = _dtt.date(estado["data_fim"]["ano"],    estado["data_fim"]["mes"],    1)
+        _total_dias = max((_fim_dt2 - _inicio_dt).days, 1)
+        _dias_pass  = max((_hoje_dt - _inicio_dt).days, 0)
+        _pct_prazo  = min(_dias_pass / _total_dias * 100, 100)
+        _meses_pass = max(
+            (_hoje_dt.year - _inicio_dt.year) * 12 +
+            (_hoje_dt.month - _inicio_dt.month), 0
+        )
+
+        _pc1, _pc2 = st.columns([3, 1])
+        with _pc1:
+            st.caption(f"⏱️ Prazo da obra: {_pct_prazo:.0f}% decorrido")
+            st.progress(min(_pct_prazo / 100, 1.0))
+        with _pc2:
+            st.caption(
+                f"**{_meses_pass}** meses passados\n\n"
+                f"**{_meses_rest}** meses restantes"
+            )
+
+        # Alerta se prazo decorrido > % físico medido
+        if _tem_cpl and _pct_medido > 0:
+            _diff_prazo_fisico = _pct_prazo - _pct_medido
+            if _diff_prazo_fisico > 10:
+                st.warning(
+                    f"⚠️ **Atenção ao prazo:** {_pct_prazo:.0f}% do tempo decorrido "
+                    f"vs {_pct_medido:.1f}% de avanço físico — "
+                    f"diferença de **{_diff_prazo_fisico:.0f} pp**."
+                )
 
         # Aviso de confiabilidade (< 30% de avanço)
         if _tem_cpl and _pct_medido < 30:
@@ -1282,7 +1427,16 @@ def render_resumo_obras():
 
         # Linhas Medido e Realizado (do histórico CPL)
         if _hist_cpl:
-            _labels_cpl = [s.get("periodo_final","") for s in _hist_cpl]
+            def _fmt_periodo(p):
+                """Converte "2026-02-28" → "Fev/26"."""
+                try:
+                    _ano = int(p[:4])
+                    _mes = int(p[5:7])
+                    return f"{MESES[_mes-1]}/{str(_ano)[-2:]}"
+                except Exception:
+                    return p
+
+            _labels_cpl = [_fmt_periodo(s.get("periodo_final","")) for s in _hist_cpl]
             _y_medido   = [s.get("pct_medido", 0) for s in _hist_cpl]
             _y_realizado= [s.get("pct_realizado", 0) for s in _hist_cpl]
 
@@ -1463,6 +1617,99 @@ def render_resumo_obras():
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     key="dl_desvios_etapa"
                 )
+
+            st.divider()
+
+            # ── EVOLUÇÃO DOS KPIs ─────────────────────────────────────
+            if len(_hist_cpl) >= 2:
+                st.markdown("### 📉 Evolução dos KPIs")
+                st.caption("Tendência de SPI e CPI ao longo dos meses medidos.")
+
+                _periodos_ev = []
+                _spi_ev      = []
+                _cpi_ev      = []
+                _medido_ev   = []
+                _realizado_ev= []
+
+                for _snap_ev in _hist_cpl:
+                    _pf_ev = _snap_ev.get("periodo_final","")
+                    try:
+                        _lbl_ev = f"{MESES[int(_pf_ev[5:7])-1]}/{_pf_ev[:4]}"
+                    except Exception:
+                        _lbl_ev = _pf_ev
+
+                    # SPI para este snapshot
+                    _spi_snap = 1.0
+                    if _tem_cff and _pf_ev:
+                        try:
+                            _mes_ev = int(_pf_ev[5:7])
+                            _ano_ev = int(_pf_ev[:4])
+                            _acum_ev = 0.0
+                            _tot_cff = _cr.get("total_obra", 1)
+                            for _mi, _mv in zip(_cr.get("meses",[]), _cr.get("custos_por_mes",[])):
+                                _acum_ev += _mv
+                                if _mi["mes"] == _mes_ev and _mi["ano"] == _ano_ev:
+                                    break
+                            _pct_plan_ev = (_acum_ev / _tot_cff * 100) if _tot_cff > 0 else 0
+                            _pct_med_ev  = _snap_ev.get("pct_medido", 0)
+                            _spi_snap    = (_pct_med_ev / _pct_plan_ev) if _pct_plan_ev > 0 else 1.0
+                        except Exception:
+                            _spi_snap = 1.0
+
+                    _periodos_ev.append(_lbl_ev)
+                    _spi_ev.append(round(_spi_snap, 3))
+                    _cpi_ev.append(round(_snap_ev.get("cpi", 1.0), 3))
+                    _medido_ev.append(round(_snap_ev.get("pct_medido", 0), 1))
+                    _realizado_ev.append(round(_snap_ev.get("pct_realizado", 0), 1))
+
+                # Gráfico de linha SPI e CPI
+                _fg_ev = go.Figure()
+                _fg_ev.add_scatter(
+                    x=_periodos_ev, y=_spi_ev,
+                    name="SPI", mode="lines+markers",
+                    line=dict(color=CHART_TEAL, width=2.5),
+                    marker=dict(size=8)
+                )
+                _fg_ev.add_scatter(
+                    x=_periodos_ev, y=_cpi_ev,
+                    name="CPI", mode="lines+markers",
+                    line=dict(color=CHART_AMBER, width=2.5),
+                    marker=dict(size=8)
+                )
+                # Linha de referência = 1.0
+                _fg_ev.add_hline(
+                    y=1.0, line_dash="dash",
+                    line_color=GRAY, line_width=1.5,
+                    annotation_text="Meta = 1.0",
+                    annotation_font_size=10
+                )
+                # Zona de atenção (0.85 a 0.95)
+                _fg_ev.add_hrect(
+                    y0=0.85, y1=0.95,
+                    fillcolor="rgba(255,200,0,0.1)",
+                    layer="below", line_width=0
+                )
+                _fg_ev.update_layout(
+                    title="Evolução SPI e CPI",
+                    **PL(300)
+                )
+                _fg_ev.update_xaxes(showgrid=False, tickfont=dict(size=10))
+                _fg_ev.update_yaxes(
+                    gridcolor=BORDER,
+                    range=[max(0, min(_spi_ev + _cpi_ev) - 0.1),
+                           max(_spi_ev + _cpi_ev) + 0.1]
+                )
+                st.plotly_chart(_fg_ev, use_container_width=True)
+
+                # Tabela resumo da evolução
+                _df_ev = pd.DataFrame({
+                    "Período":    _periodos_ev,
+                    "SPI":        [f"{v:.3f}" for v in _spi_ev],
+                    "CPI":        [f"{v:.3f}" for v in _cpi_ev],
+                    "% Medido":   [f"{v:.1f}%" for v in _medido_ev],
+                    "% Realizado":[f"{v:.1f}%" for v in _realizado_ev],
+                })
+                st.dataframe(_df_ev, use_container_width=True, hide_index=True)
 
         else:
             # Sem CPL: mostra só o que tem do CFF
