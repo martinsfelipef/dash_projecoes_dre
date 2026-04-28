@@ -2669,7 +2669,8 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
     dop_media  = _media(dop_hist)   # negativo
     rf_media   = _media(rf_hist)
     ir_media   = _media(ir_hist)    # negativo
-    imp_pct    = (sum(imp_hist) / sum(rb_hist)) if sum(rb_hist) != 0 else 0.0
+    imp_pct_hist = (sum(imp_hist) / sum(rb_hist)) if sum(rb_hist) != 0 else 0.0
+    imp_pct_proj = 0.04  # RET: 4% fixo para meses projetados
     ir_pct     = (sum(ir_hist)  / sum(rb_hist)) if sum(rb_hist) != 0 else 0.0
     cub_m      = estado.get("cub_mensal", 0.5) / 100  # ex: 0.005
 
@@ -2825,7 +2826,7 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
             else:
                 # Competência ou POC: usa VGV real do relatório de vendas
                 _rec_h = _receita_mes(i)
-                _imp_h = _rec_h * imp_pct if _rec_h != 0 else float(imp_hist[_i_dre])
+                _imp_h = float(imp_hist[_i_dre])
                 rec_bruta.append(_rec_h)
                 imp_rec.append(_imp_h)
 
@@ -2833,7 +2834,7 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
             # ── Mês anterior à DRE histórica (ex: 2023, 2024) ───────
             # Não temos dados reais — mas podemos ter vendas reais (Competência)
             _rec_h = _receita_mes(i)
-            _imp_h = _rec_h * imp_pct if _rec_h != 0 else 0.0
+            _imp_h = -abs(_rec_h * imp_pct_proj) if _rec_h != 0 else 0.0
 
             rec_bruta.append(_rec_h)
             imp_rec.append(_imp_h)
@@ -2859,7 +2860,7 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
             _dop  = dop_media * _drift if dop_media != 0 else 0.0
             _rf   = rf_media  * _drift if rf_media  != 0 else 0.0
             _ir_v = ir_media  * _drift if ir_media  != 0 else 0.0
-            _imp  = _rec * imp_pct if _rec != 0 else 0.0
+            _imp  = -abs(_rec * imp_pct_proj) if _rec != 0 else 0.0
 
             rec_bruta.append(_rec)
             imp_rec.append(_imp)
@@ -3063,12 +3064,17 @@ def render_rolling_forecast():
     _mg_liq    = (_ll_total / _rb_total * 100) if _rb_total else 0
     _mg_ebt    = (_ebt_total / _rb_total * 100) if _rb_total else 0
 
-    _kp1, _kp2, _kp3, _kp4, _kp5 = st.columns(5)
-    _kp1.metric("Receita Total", fmt(_rb_total))
-    _kp2.metric("CPV Total",     fmt(abs(_cpv_total)))
-    _kp3.metric("Margem Bruta",  f"{_mg_bruta:.1f}%")
-    _kp4.metric("EBITDA Total",  fmt(_ebt_total), f"{_mg_ebt:.1f}%")
-    _kp5.metric("Lucro Líquido", fmt(_ll_total),  f"{_mg_liq:.1f}%")
+    _cpv_pct = (abs(_cpv_total) / _rb_total * 100) if _rb_total else 0
+    _ll_pct  = (_ll_total / _rb_total * 100) if _rb_total else 0
+
+    _kp1, _kp2, _kp3, _kp4 = st.columns(4)
+    _kp1.metric("Receita Total",   fmt(_rb_total))
+    _kp2.metric("CPV Total",       fmt(abs(_cpv_total)),
+                f"{_cpv_pct:.1f}% da receita")
+    _kp3.metric("Lucro Líquido",   fmt(_ll_total),
+                f"{_ll_pct:.1f}% da receita")
+    _kp4.metric("Margem Líquida",  f"{_ll_pct:.1f}%",
+                help="Lucro Líquido ÷ Receita Total")
 
     st.divider()
 
