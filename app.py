@@ -3067,14 +3067,12 @@ def render_rolling_forecast():
     _cpv_pct = (abs(_cpv_total) / _rb_total * 100) if _rb_total else 0
     _ll_pct  = (_ll_total / _rb_total * 100) if _rb_total else 0
 
-    _kp1, _kp2, _kp3, _kp4 = st.columns(4)
+    _kp1, _kp2, _kp3 = st.columns(3)
     _kp1.metric("Receita Total",   fmt(_rb_total))
     _kp2.metric("CPV Total",       fmt(abs(_cpv_total)),
                 f"{_cpv_pct:.1f}% da receita")
     _kp3.metric("Lucro Líquido",   fmt(_ll_total),
                 f"{_ll_pct:.1f}% da receita")
-    _kp4.metric("Margem Líquida",  f"{_ll_pct:.1f}%",
-                help="Lucro Líquido ÷ Receita Total")
 
     st.divider()
 
