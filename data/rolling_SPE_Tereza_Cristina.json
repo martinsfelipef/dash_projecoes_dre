@@ -152,36 +152,36 @@
       "preco": 553100.0
     },
     "9": {
-      "unidades": 0,
-      "preco": 509990.76
+      "unidades": 1,
+      "preco": 1083730.35
     },
     "10": {
-      "unidades": 0,
-      "preco": 509990.76
+      "unidades": 1,
+      "preco": 1083730.35
     },
     "11": {
-      "unidades": 0,
-      "preco": 509990.76
+      "unidades": 1,
+      "preco": 1083730.35
     },
     "12": {
-      "unidades": 0,
-      "preco": 509990.76
+      "unidades": 1,
+      "preco": 1083730.35
     },
     "13": {
-      "unidades": 0,
-      "preco": 509990.76
+      "unidades": 1,
+      "preco": 1083730.35
     },
     "14": {
-      "unidades": 0,
-      "preco": 509990.76
+      "unidades": 1,
+      "preco": 1083730.35
     },
     "15": {
-      "unidades": 0,
-      "preco": 509990.76
+      "unidades": 1,
+      "preco": 1083730.35
     },
     "16": {
-      "unidades": 0,
-      "preco": 509990.76
+      "unidades": 1,
+      "preco": 1083730.35
     },
     "17": {
       "unidades": 0,
@@ -345,12 +345,12 @@
   "mes_entrega": 12,
   "g_custos": 10.0,
   "data_inicio": {
-    "ano": 2026,
-    "mes": 1
+    "mes": 8,
+    "ano": 2025
   },
   "data_fim": {
-    "ano": 2028,
-    "mes": 8
+    "mes": 8,
+    "ano": 2028
   },
   "historico_cpl": [
     {
@@ -1400,5 +1400,5 @@
     "arquivo_nome": "Res.Tereza Cristina relatorio - 2026-04-24T144222.675.xlsx",
     "data_upload": "2026-04-27T20:07:21.120326"
   },
-  "total_unidades": 0
+  "total_unidades": 66
 }
