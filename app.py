@@ -1689,68 +1689,82 @@ def render_resumo_obras():
 
             st.divider()
 
-            # ── TABELA DE DESVIOS POR ETAPA ───────────────────────────
-            st.markdown("### 🔍 Desvios por Etapa (nível 2 da EAP)")
+            # ── TABELA DE DESVIOS POR ETAPA ──────────────────────────
+            st.markdown("### 🔍 Top 5 Etapas — Eficiência de Custo")
             st.caption(
-                "Ordenado do maior estouro ao maior saldo. "
-                "% Desvio Total = (Orçado − Comprometido) ÷ Orçado × 100. "
-                "NEGATIVO = estouro."
+                "As 5 maiores etapas por orçamento. "
+                "Eficiência = % Medido − % Realizado: "
+                "positivo = gastando menos que o avanço justifica ✅ · "
+                "negativo = estouro ⚠️"
             )
+
             _etapas = _cpl_atual.get("etapas_nivel2", [])
             if _etapas:
-                # Ordena: estouros primeiro (pct_desvio mais negativo)
-                _etapas_ord = sorted(_etapas, key=lambda x: x.get("pct_desvio", 0))
+                # Filtra etapas sem orçamento e ordena pelas 5 maiores
+                _etapas_validas = [
+                    e for e in _etapas
+                    if e.get("orcado", 0) > 0 and e.get("descricao", "").strip()
+                ]
+                _etapas_top5 = sorted(
+                    _etapas_validas,
+                    key=lambda x: x.get("orcado", 0),
+                    reverse=True
+                )[:5]
+
                 _rows_et = []
-                for _et in _etapas_ord:
-                    _pd = _et.get("pct_desvio", 0)
-                    if _pd < -8:     _sem = "🔴"
-                    elif _pd < 0:    _sem = "🟡"
-                    else:            _sem = "🟢"
+                for _et in _etapas_top5:
+                    _orc  = _et.get("orcado", 0)
+                    _med  = _et.get("medido", 0)
+                    _real = _et.get("realizado", 0)
+                    _verb = _et.get("verba_disp", 0)
+
+                    _pct_med  = (_med  / _orc * 100) if _orc > 0 else 0
+                    _pct_real = (_real / _orc * 100) if _orc > 0 else 0
+                    _efic     = _pct_med - _pct_real
+
+                    if _efic >= 0:
+                        _sem = "🟢"
+                        _efic_txt = f"+{_efic:.1f}%"
+                    elif _efic >= -5:
+                        _sem = "🟡"
+                        _efic_txt = f"{_efic:.1f}%"
+                    else:
+                        _sem = "🔴"
+                        _efic_txt = f"{_efic:.1f}%"
+
                     _rows_et.append({
-                        "Status":    _sem,
-                        "Etapa":     _et["descricao"][:35],
-                        "Orçado":    _et["orcado"],
-                        "Medido":    _et["medido"],
-                        "Realizado": _et["realizado"],
-                        "Comprometido": _et["comprometido"],
-                        "Verba Disp.": _et["verba_disp"],
-                        "% Desvio":  f"{_pd:+.1f}%",
+                        "":           _sem,
+                        "Etapa":      _et["descricao"][:30],
+                        "Orçado":     _orc,
+                        "% Medido":   f"{_pct_med:.0f}%",
+                        "% Realizado":f"{_pct_real:.0f}%",
+                        "Eficiência": _efic_txt,
+                        "Verba":      _verb,
                     })
+
                 _df_et = pd.DataFrame(_rows_et)
-                _fmt_et = {
-                    "Orçado": "R$ {:,.0f}",
-                    "Medido": "R$ {:,.0f}",
-                    "Realizado": "R$ {:,.0f}",
-                    "Comprometido": "R$ {:,.0f}",
-                    "Verba Disp.": "R$ {:,.0f}",
-                }
+
                 def _hl_et(row):
-                    if "🔴" in str(row.get("Status","")):
-                        return ["background-color:#fff0f0"]*len(row)
-                    elif "🟡" in str(row.get("Status","")):
-                        return ["background-color:#fffbe6"]*len(row)
-                    return [""]*len(row)
+                    if "🔴" in str(row.get("", "")):
+                        return ["background-color:#fff0f0"] * len(row)
+                    elif "🟡" in str(row.get("", "")):
+                        return ["background-color:#fffbe6"] * len(row)
+                    return [""] * len(row)
+
                 try:
                     st.dataframe(
-                        _df_et.style.format(_fmt_et).apply(_hl_et, axis=1),
+                        _df_et.style
+                            .format({"Orçado": "R$ {:,.0f}", "Verba": "R$ {:,.0f}"})
+                            .apply(_hl_et, axis=1),
                         use_container_width=True,
                         hide_index=True,
-                        height=400
+                        height=220
                     )
                 except Exception:
                     st.dataframe(_df_et, use_container_width=True, hide_index=True)
 
-                # Download
-                _buf_et = io.BytesIO()
-                with pd.ExcelWriter(_buf_et, engine="openpyxl") as _w:
-                    _df_et.to_excel(_w, index=False, sheet_name="Desvios")
-                st.download_button(
-                    "📥 Exportar desvios",
-                    data=_buf_et.getvalue(),
-                    file_name=f"Desvios_{_empresa_roll.replace(' ','_')}_{_cpl_atual.get('periodo_final','')}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    key="dl_desvios_etapa"
-                )
+            else:
+                st.info("Carregue o CPL na aba ⚙️ Configurações para ver os desvios.")
 
             st.divider()
 
