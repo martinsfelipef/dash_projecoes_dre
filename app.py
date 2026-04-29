@@ -2457,7 +2457,8 @@ def render_fcff_dcf():
 
 
 def _calcula_vgv_projetado(vendas: dict, total_unidades: int,
-                            cronograma: dict, data_inicio: dict) -> dict:
+                            cronograma: dict, data_inicio: dict,
+                            unidades_report: dict = None) -> dict:
     """
     Calcula o dict VGV para o estado do rolling.
 
@@ -2471,12 +2472,22 @@ def _calcula_vgv_projetado(vendas: dict, total_unidades: int,
     """
     import datetime
 
-    vendas_por_mes = vendas.get("vendas_por_mes", {})
-    unidades_vendidas = vendas.get("unidades_vendidas", 0)
-    preco_medio = vendas.get("preco_medio", 0.0)
+    vendas_por_mes    = vendas.get("vendas_por_mes", {}) if vendas else {}
+    unidades_vendidas = vendas.get("unidades_vendidas", 0) if vendas else 0
+    preco_medio_vendas = vendas.get("preco_medio", 0.0) if vendas else 0.0
 
-    # VGV restante
-    restantes = max(total_unidades - unidades_vendidas, 0)
+    # Usa Relatório de Unidades se disponível (mais preciso)
+    if unidades_report and unidades_report.get("total_unidades", 0) > 0:
+        _total    = unidades_report["total_unidades"]
+        _disp     = unidades_report.get("disponiveis", 0)
+        _vgv_vend = unidades_report.get("vgv_vendido", 0.0)
+        _vendidas = unidades_report.get("vendidas", 0)
+        preco_medio = _vgv_vend / _vendidas if _vendidas > 0 else preco_medio_vendas
+        restantes   = _disp  # usa disponíveis reais do relatório
+    else:
+        preco_medio = preco_medio_vendas
+        restantes   = max(total_unidades - unidades_vendidas, 0)
+
     vgv_restante = restantes * preco_medio
 
     # Período da obra
@@ -2774,6 +2785,17 @@ def render_configuracoes():
                 else:
                     _estado_cfg["unidades_report"] = _un_raw
                     _estado_cfg["total_unidades"]  = _un_raw["total_unidades"]
+                    # Recalcula VGV automaticamente com dados do relatório de unidades
+                    _vendas_atual = _estado_cfg.get("vendas")
+                    if _vendas_atual:
+                        _vgv_recalc = _calcula_vgv_projetado(
+                            _vendas_atual,
+                            _un_raw["total_unidades"],
+                            _estado_cfg.get("cronograma", {}),
+                            _estado_cfg.get("data_inicio", {"ano": 2024, "mes": 1}),
+                            _un_raw,
+                        )
+                        _estado_cfg["vgv"] = _vgv_recalc
                     save_rolling(_titulo_cfg, force=True)
                     safe_toast(
                         f"✅ {_un_raw['total_unidades']} unidades · "
@@ -2843,6 +2865,7 @@ def render_configuracoes():
                     _estado_cfg.get("total_unidades", 0),
                     _estado_cfg.get("cronograma", {}),
                     _estado_cfg.get("data_inicio", {"ano": 2024, "mes": 1}),
+                    _estado_cfg.get("unidades_report"),
                 )
                 _estado_cfg["vgv"] = _vgv_auto
                 save_rolling(_titulo_cfg, force=True)
@@ -2866,6 +2889,7 @@ def render_configuracoes():
                     _estado_cfg.get("total_unidades", 0),
                     _estado_cfg.get("cronograma", {}),
                     _estado_cfg.get("data_inicio", {"ano": 2024, "mes": 1}),
+                    _estado_cfg.get("unidades_report"),
                 )
                 _estado_cfg["vgv"] = _vgv_auto
                 save_rolling(_titulo_cfg, force=True)
@@ -2983,48 +3007,6 @@ def render_configuracoes():
     st.markdown("### 💰 Bloco 2 — Parâmetros de Receita")
     st.caption("Usados na aba Rolling Forecast para projetar receita futura.")
 
-    with st.expander("📈 VGV — Receita por Competência", expanded=False):
-        st.caption(
-            "Preenchido automaticamente pelo Relatório de Vendas. "
-            "Para atualizar, suba um novo relatório no Bloco 1."
-        )
-
-        _N_cfg  = _estado_cfg.get("cronograma", {}).get("n_meses", 24)
-        _di_cfg = _estado_cfg.get("data_inicio", {"ano": 2024, "mes": 1})
-        _LABELS_cfg = gen_labels(_N_cfg, _di_cfg)
-        _vgv_cfg = _estado_cfg.get(
-            "vgv",
-            {m+1: {"unidades": 0, "preco": 350000.0} for m in range(_N_cfg)}
-        )
-
-        _rows_vgv = []
-        _vgv_total = 0.0
-        for _m in range(_N_cfg):
-            _un  = _vgv_cfg.get(_m+1, {"unidades": 0})["unidades"]
-            _prc = _vgv_cfg.get(_m+1, {"preco": 0.0})["preco"]
-            _val = float(_un) * float(_prc)
-            _vgv_total += _val
-            if _val > 0 or _un > 0:
-                _rows_vgv.append({
-                    "Mês":       _LABELS_cfg[_m] if _m < len(_LABELS_cfg) else f"M{_m+1}",
-                    "Unidades":  int(_un),
-                    "Preço/Un":  f"R$ {float(_prc):,.0f}",
-                    "VGV mês":   f"R$ {_val:,.0f}",
-                })
-
-        if _rows_vgv:
-            st.dataframe(
-                pd.DataFrame(_rows_vgv),
-                use_container_width=True,
-                hide_index=True,
-                height=min(400, 38 + len(_rows_vgv) * 35)
-            )
-            st.metric("VGV Total", fmt(_vgv_total))
-        else:
-            st.info(
-                "Nenhuma venda registrada ainda. "
-                "Suba o Relatório de Vendas no Bloco 1 para preencher automaticamente."
-            )
 
     with st.expander("📊 Avanço Físico — POC", expanded=False):
         st.caption("% de obra concluída ao fim de cada mês (0–100). Atualizar mensalmente com o real.")
