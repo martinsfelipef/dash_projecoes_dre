@@ -1400,7 +1400,7 @@
     "arquivo_nome": "Res.Tereza Cristina relatorio - 2026-04-24T144222.675.xlsx",
     "data_upload": "2026-04-27T20:07:21.120326"
   },
-  "total_unidades": 258,
+  "total_unidades": 68,
   "recebiveis": {
     "obra_nome": "",
     "data_exportacao": "",
@@ -1734,5 +1734,360 @@
     "arquivo_nome": "Contas a receber - recebíveis Tereza.xlsx",
     "data_upload": "2026-04-28T20:50:05.061904"
   },
-  "unidades_report": null
+  "unidades_report": {
+    "obra_nome": "85 - Residencial Tereza Cristina",
+    "total_unidades": 68,
+    "vendidas": 0,
+    "permuta": 0,
+    "disponiveis": 0,
+    "vgv_vendido": 0,
+    "preco_medio": 0.0,
+    "vgv_disponivel": 0,
+    "unidades_permuta": [],
+    "unidades_disponiveis": [],
+    "por_status": {
+      "APTO 201": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 202": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 203": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 204": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 205": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 206": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 301": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 302": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 303": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 304": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 305": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 306": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 401": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 402": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 403": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 404": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 405": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 406": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 501": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 502": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 503": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 504": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 505": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 506": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 601": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 602": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 603": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 604": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 605": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 606": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 701": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 702": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 703": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 704": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 705": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 706": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 801": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 802": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 803": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 804": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 805": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 806": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 901": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 902": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 903": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 904": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 905": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 906": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 1001": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 1002": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 1003": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 1004": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 1005": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 1006": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 1101": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 1102": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 1103": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 1104": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 1105": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 1106": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 1201": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 1202": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 1203": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 1204": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 1205": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "APTO 1206": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "TC APTO 402": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      },
+      "TC APTO 602": {
+        "count": 1,
+        "valor": 0.0,
+        "unidades": []
+      }
+    },
+    "arquivo_nome": "Relatório de unidades Tereza Cristina.xlsx",
+    "data_upload": "2026-04-29T21:04:32.443925"
+  }
 }
