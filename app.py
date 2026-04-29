@@ -3846,8 +3846,13 @@ def render_rolling_forecast():
             _idx_fi = _entradas_fc.index(max(_entradas_fc))
             _fg_fc.add_vline(
                 x=_labels_all[_idx_fi],
-                line_dash="dot", line_color=CHART_BLUE, line_width=1.5,
-                annotation=dict(text="Repasse", font=dict(size=10))
+                line_dash="dot", line_color=CHART_BLUE, line_width=1.5
+            )
+            _fg_fc.add_annotation(
+                x=_labels_all[_idx_fi], y=1, yref="paper",
+                text="Repasse", showarrow=False,
+                font=dict(size=10, color=CHART_BLUE),
+                xanchor="left", yanchor="bottom"
             )
 
         _fg_fc.update_layout(
