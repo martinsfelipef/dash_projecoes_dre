@@ -3852,3 +3852,4 @@ elif _tab == TABS[3]: render_rolling_forecast()
 elif _tab == TABS[4]: render_indicadores()
 elif _tab == TABS[5]: render_sensibilidade()
 elif _tab == TABS[6]: render_fcff_dcf()
+
