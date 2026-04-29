@@ -2683,11 +2683,11 @@ def render_configuracoes():
                 )
                 st.rerun()
 
-    # ── VENDAS ────────────────────────────────────────────────────────
-    with st.expander("🏠 Relatório de Vendas", expanded=True):
+    # ── UNIDADES ──────────────────────────────────────────────────────
+    with st.expander("🏢 Relatório de Unidades (Estoque)", expanded=True):
         st.caption(
-            "Suba o relatório 'Vendas por Empreendimento — Simplificado' "
-            "exportado do SIENGE. Atualizar mensalmente."
+            "Suba o relatório 'Unidades por Empreendimento (Sintético)' "
+            "do SIENGE. Este relatório define o total de unidades e o VGV."
         )
 
         # ── Relatório de Unidades ─────────────────────────────────
@@ -2783,6 +2783,13 @@ def render_configuracoes():
                         "✅"
                     )
                     st.rerun()
+
+    # ── VENDAS ────────────────────────────────────────────────────────
+    with st.expander("🏠 Relatório de Vendas", expanded=True):
+        st.caption(
+            "Suba o relatório 'Vendas por Empreendimento — Simplificado' "
+            "exportado do SIENGE. Atualizar mensalmente."
+        )
 
         # Mostra resumo se já tem vendas carregadas
         _vendas = _estado_cfg.get("vendas")
