@@ -747,7 +747,8 @@ with st.sidebar:
                                       value=res["nome"][:40])
                 dest_op=list(st.session_state.clientes.keys())+\
                         ["+ Novo cliente"]
-                dest=st.selectbox("Adicionar ao cliente:",dest_op)
+                dest = "Brocks Empreendimentos"  # destino fixo — sem selectbox
+
                 @st.dialog("👁️ Preview — DRE", width="large")
                 def _modal_preview(df):
                     st.dataframe(df.style.format("R$ {:,.2f}"),
