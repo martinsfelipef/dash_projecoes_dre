@@ -119,6 +119,12 @@ except ImportError:
         return {"erro": "Parser não encontrado. Verifique utils/parser_vendas_sienge.py"}
 
 try:
+    from parser_unidades_sienge import parse_unidades_sienge
+except ImportError:
+    def parse_unidades_sienge(data, arquivo_nome=""):
+        return {"erro": "Parser não encontrado. Verifique utils/parser_unidades_sienge.py"}
+
+try:
     from parser_recebiveis_sienge import parse_recebiveis_sienge
 except ImportError:
     def parse_recebiveis_sienge(data, arquivo_nome=""):
@@ -523,6 +529,7 @@ def get_rolling_state(nome: str) -> dict:
                 "historico_cpl": [],
                 "vendas":          None,
                 "recebiveis":      None,
+                "unidades_report": None,
                 "total_unidades":  0,
             }
             for _k, _v in _defaults.items():
@@ -554,6 +561,7 @@ def get_rolling_state(nome: str) -> dict:
                 "historico_cpl": [],
                 "vendas":          None,
                 "recebiveis":      None,
+                "unidades_report": None,
                 "total_unidades":  0,
             }
 
@@ -2682,18 +2690,99 @@ def render_configuracoes():
             "exportado do SIENGE. Atualizar mensalmente."
         )
 
-        # Total de unidades do empreendimento
-        _total_un = int(_estado_cfg.get("total_unidades", 0))
-        _total_un_input = st.number_input(
-            "Total de unidades do empreendimento",
-            min_value=0, step=1,
-            value=_total_un,
-            key=f"total_un_{_tkey_cfg}",
-            help="Número total de unidades (incluindo as não vendidas)"
-        )
-        if _total_un_input != _total_un:
-            _estado_cfg["total_unidades"] = _total_un_input
-            save_rolling(_titulo_cfg, force=True)
+        # ── Relatório de Unidades ─────────────────────────────────
+        _un_report = _estado_cfg.get("unidades_report")
+
+        if _un_report:
+            # Mostra resumo automático
+            _un_arq = _un_report.get("arquivo_nome","?")
+            _un_dt  = ""
+            try:
+                from datetime import datetime as _dtt
+                _un_dt = _dtt.fromisoformat(
+                    _un_report.get("data_upload","")
+                ).strftime("%d/%m/%Y %H:%M")
+            except Exception:
+                pass
+
+            st.success(f"✅ **{_un_arq}** · {_un_dt}")
+
+            _uc1, _uc2, _uc3, _uc4 = st.columns(4)
+            _uc1.metric("Total",        _un_report["total_unidades"],
+                        help="Aptos + Salas (sem garagens)")
+            _uc2.metric("Vendidas",     _un_report["vendidas"])
+            _uc3.metric("Permuta",      _un_report["permuta"],
+                        help=", ".join(_un_report.get("unidades_permuta",[])))
+            _uc4.metric("Disponíveis",  _un_report["disponiveis"])
+
+            st.caption(
+                f"VGV vendido: **{fmt(_un_report['vgv_vendido'])}** · "
+                f"Preço médio: **{fmt(_un_report['preco_medio'])}** · "
+                f"Ainda a vender: **{_un_report['disponiveis']} unidades**"
+            )
+
+            # Atualiza total_unidades automaticamente
+            if _estado_cfg.get("total_unidades",0) != _un_report["total_unidades"]:
+                _estado_cfg["total_unidades"] = _un_report["total_unidades"]
+                mark_rolling_dirty(_titulo_cfg)
+
+            if st.button("🔄 Substituir relatório de unidades",
+                         key=f"sub_un_{_tkey_cfg}"):
+                _estado_cfg["unidades_report"] = None
+                save_rolling(_titulo_cfg, force=True)
+                safe_toast("Relatório removido. Suba a nova versão.", "🔄")
+                st.rerun()
+        else:
+            # Campo manual como fallback
+            _total_un = int(_estado_cfg.get("total_unidades", 0))
+            _vendas_st = _estado_cfg.get("vendas",{})
+            _min_un = _vendas_st.get("unidades_vendidas", 0) if _vendas_st else 0
+
+            _total_un_input = st.number_input(
+                "Total de unidades do empreendimento",
+                min_value=0, step=1,
+                value=_total_un,
+                key=f"total_un_{_tkey_cfg}",
+                help=(
+                    "Número total de apartamentos + salas (sem garagens). "
+                    f"Mínimo: {_min_un} (unidades já vendidas)."
+                    if _min_un else
+                    "Número total de apartamentos + salas (sem garagens)."
+                )
+            )
+            if _min_un > 0 and _total_un_input < _min_un:
+                st.warning(
+                    f"⚠️ Total informado ({_total_un_input}) é menor que "
+                    f"as unidades já vendidas ({_min_un})."
+                )
+            if _total_un_input != _total_un:
+                _estado_cfg["total_unidades"] = _total_un_input
+                save_rolling(_titulo_cfg, force=True)
+
+            # Uploader do relatório de unidades
+            st.caption("Ou suba o Relatório de Unidades para preenchimento automático:")
+            _arq_un_up = st.file_uploader(
+                "Relatório de Unidades (.xlsx)",
+                type=["xlsx","xls"],
+                key=f"up_un_{_tkey_cfg}",
+                label_visibility="collapsed"
+            )
+            if _arq_un_up:
+                _un_raw = parse_unidades_sienge(_arq_un_up.read(), _arq_un_up.name)
+                if "erro" in _un_raw:
+                    st.error(f"❌ {_un_raw['erro']}")
+                else:
+                    _estado_cfg["unidades_report"] = _un_raw
+                    _estado_cfg["total_unidades"]  = _un_raw["total_unidades"]
+                    save_rolling(_titulo_cfg, force=True)
+                    safe_toast(
+                        f"✅ {_un_raw['total_unidades']} unidades · "
+                        f"{_un_raw['vendidas']} vendidas · "
+                        f"{_un_raw['disponiveis']} disponíveis · "
+                        f"{_un_raw['permuta']} permuta(s)",
+                        "✅"
+                    )
+                    st.rerun()
 
         # Mostra resumo se já tem vendas carregadas
         _vendas = _estado_cfg.get("vendas")
