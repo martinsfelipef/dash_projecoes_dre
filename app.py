@@ -3008,6 +3008,12 @@ def render_configuracoes():
     st.markdown("### 💰 Bloco 2 — Parâmetros de Receita")
     st.caption("Usados na aba Rolling Forecast para projetar receita futura.")
 
+    # Deriva horizonte da SPE selecionada (necessário para POC e BDI mensal)
+    _cr_cfg     = _estado_cfg.get("cronograma", {})
+    _di_cfg     = _cr_cfg.get("data_inicio", _estado_cfg.get("data_inicio", {"ano": 2024, "mes": 1}))
+    _df_cfg     = _cr_cfg.get("data_fim",    _estado_cfg.get("data_fim",    {"ano": 2026, "mes": 12}))
+    _N_cfg      = max(1, min((_df_cfg["ano"] - _di_cfg["ano"]) * 12 + (_df_cfg["mes"] - _di_cfg["mes"]) + 1, 120))
+    _LABELS_cfg = gen_labels(_N_cfg, _di_cfg)
 
     with st.expander("📊 Avanço Físico — POC", expanded=False):
         st.caption("% de obra concluída ao fim de cada mês (0–100). Atualizar mensalmente com o real.")
@@ -3841,8 +3847,7 @@ def render_rolling_forecast():
             _fg_fc.add_vline(
                 x=_labels_all[_idx_fi],
                 line_dash="dot", line_color=CHART_BLUE, line_width=1.5,
-                annotation_text="Repasse",
-                annotation_font_size=10
+                annotation=dict(text="Repasse", font=dict(size=10))
             )
 
         _fg_fc.update_layout(
