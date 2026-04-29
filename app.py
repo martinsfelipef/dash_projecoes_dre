@@ -3719,129 +3719,377 @@ def render_rolling_forecast():
 
     st.divider()
 
-    # ── KPIs RESUMO ───────────────────────────────────────────────────
-    _rb_total  = sum(_dre_final["rec_bruta"])
-    _cpv_total = sum(_dre_final["cpv"])
-    _ll_total  = sum(_dre_final["lucro_liq"])
-    _ebt_total = sum(_dre_final["ebitda"])
-    _mg_bruta  = (sum(_dre_final["lucro_bruto"]) / _rb_total * 100) if _rb_total else 0
-    _mg_liq    = (_ll_total / _rb_total * 100) if _rb_total else 0
-    _mg_ebt    = (_ebt_total / _rb_total * 100) if _rb_total else 0
+    # ══════════════════════════════════════════════════════════════════
+    # VISÃO CAIXA: layout diferente das outras visões
+    # ══════════════════════════════════════════════════════════════════
+    if "Caixa" in visao:
 
-    _cpv_pct = (abs(_cpv_total) / _rb_total * 100) if _rb_total else 0
-    _ll_pct  = (_ll_total / _rb_total * 100) if _rb_total else 0
+        # ── Prepara dados de fluxo de caixa ──────────────────────────
+        _entradas_fc  = [max(v, 0) for v in _dre_final["rec_bruta"]]
+        _saidas_fc    = [abs(c) + abs(d)
+                        for c, d in zip(_dre_final["cpv"], _dre_final["desp_op"])]
+        _saldo_fc     = [e - s for e, s in zip(_entradas_fc, _saidas_fc)]
+        _saldo_acum_fc= []
+        _acum_fc = 0.0
+        for _sv in _saldo_fc:
+            _acum_fc += _sv
+            _saldo_acum_fc.append(_acum_fc)
 
-    _kp1, _kp2, _kp3 = st.columns(3)
-    _kp1.metric("Receita Total",   fmt(_rb_total))
-    _kp2.metric("CPV Total",       fmt(abs(_cpv_total)),
-                f"{_cpv_pct:.1f}% da receita")
-    _kp3.metric("Lucro Líquido",   fmt(_ll_total),
-                f"{_ll_pct:.1f}% da receita")
+        _min_saldo_fc  = min(_saldo_acum_fc) if _saldo_acum_fc else 0
+        _max_saldo_fc  = max(_saldo_acum_fc) if _saldo_acum_fc else 0
+        _saldo_final_fc= _saldo_acum_fc[-1] if _saldo_acum_fc else 0
 
-    st.divider()
+        # Pega total de recebíveis do estado (se disponível)
+        _total_rec_fc = 0.0
+        _total_fi_fc  = 0.0
+        _total_pm_fc  = 0.0
+        for _k_fc in _ativas:
+            _emp_fc = st.session_state.clientes[cliente_sel]["empresas"][_k_fc]
+            _tit_fc = _emp_fc.get("nome", _k_fc)
+            _est_fc = get_rolling_state(_tit_fc)
+            _rec_fc = _est_fc.get("recebiveis", {})
+            if _rec_fc:
+                _total_rec_fc += _rec_fc.get("total_recebiveis", 0.0)
+                _total_fi_fc  += _rec_fc.get("total_fi", 0.0)
+                _total_pm_fc  += _rec_fc.get("total_pm", 0.0)
 
-    # ── TABELA DRE COMPLETA ───────────────────────────────────────────
-    with st.expander("📋 DRE Completa Mês a Mês", expanded=False):
-        _linhas_dre = [
-            ("Receita Bruta",       "rec_bruta",    False),
-            ("(-) Impostos s/ Rec", "imp_rec",      False),
-            ("Receita Líquida",     "rec_liq",      True),
-            ("(-) CPV",             "cpv",          False),
-            ("Lucro Bruto",         "lucro_bruto",  True),
-            ("(-) Despesas Op.",    "desp_op",      False),
-            ("EBITDA",              "ebitda",       True),
-            ("Resultado Financeiro","res_fin",       False),
-            ("LAIR",                "lai",          False),
-            ("(-) IR/CSLL",         "ir",           False),
-            ("Lucro Líquido",       "lucro_liq",    True),
-        ]
-        _df_rows = {}
-        for _nome, _campo, _bold in _linhas_dre:
-            _df_rows[_nome] = _dre_final.get(_campo, [0]*_N_final)
+        # ── 4 KPIs executivos ─────────────────────────────────────────
+        st.markdown("### 💰 Posição de Caixa")
+        _ck1, _ck2, _ck3, _ck4 = st.columns(4)
 
-        _df_dre = pd.DataFrame(_df_rows, index=_labels_all).T
-
-        # Coluna Total
-        _df_dre["TOTAL"] = _df_dre.sum(axis=1)
-
-        # Formata
-        def _fmt_v(v):
-            try:
-                fv = float(v)
-                return f"R$ {fv:,.0f}" if fv >= 0 else f"(R$ {abs(fv):,.0f})"
-            except Exception:
-                return str(v)
-
-        _totais_bold = [n for n, _, b in _linhas_dre if b]
-
-        def _hl_dre(row):
-            if row.name in _totais_bold:
-                return [f"background-color:{BLIGHT};font-weight:700"]*len(row)
-            return [""]*len(row)
-
-        try:
-            st.dataframe(
-                _df_dre.style
-                    .format(_fmt_v)
-                    .apply(_hl_dre, axis=1),
-                use_container_width=True,
-                height=420
+        _ck1.metric(
+            "Total a Receber",
+            fmt(_total_rec_fc) if _total_rec_fc else fmt(sum(_entradas_fc)),
+            help=(
+                "Soma de todas as parcelas (PM), financiamentos (FI) "
+                "e recebimentos à vista futuros. Fonte: relatório de recebíveis SIENGE."
             )
-        except Exception:
-            st.dataframe(_df_dre, use_container_width=True)
+        )
+        _ck2.metric(
+            "Repasse Bancário (FI)",
+            fmt(_total_fi_fc) if _total_fi_fc else "—",
+            help=(
+                "Valor que os bancos vão transferir para a Brocks "
+                "quando os compradores financiarem seus imóveis. "
+                "Maior evento de caixa do empreendimento."
+            )
+        )
+        if _min_saldo_fc < 0:
+            _ck3.metric(
+                "🔴 Necessidade de Capital",
+                fmt(abs(_min_saldo_fc)),
+                "Pico negativo do saldo",
+                delta_color="inverse",
+                help=(
+                    "O caixa fica negativo neste valor em algum momento. "
+                    "Indica necessidade de aporte ou financiamento de obra."
+                )
+            )
+        else:
+            _ck3.metric(
+                "✅ Saldo Mínimo",
+                fmt(_min_saldo_fc),
+                "Caixa sempre positivo",
+                help="O caixa nunca fica negativo. Menor saldo ao longo do período."
+            )
 
-        # Download
-        _buf_rf = io.BytesIO()
-        with pd.ExcelWriter(_buf_rf, engine="openpyxl") as _w:
-            _df_dre.to_excel(_w, sheet_name="Rolling Forecast")
-        st.download_button(
-            "📥 Exportar DRE Projetada",
-            data=_buf_rf.getvalue(),
-            file_name=f"RollingForecast_{_titulo_final.replace(' ','_')}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            key="dl_rolling"
+        _ck4.metric(
+            "Saldo Final",
+            fmt(_saldo_final_fc),
+            f"Ao fim da obra",
+            delta_color="normal" if _saldo_final_fc >= 0 else "inverse",
+            help=(
+                "Caixa acumulado ao final do empreendimento. "
+                "Representa o dinheiro efetivamente disponível após "
+                "receber tudo e pagar tudo."
+            )
         )
 
-    # ── FLUXO DE CAIXA PROJETADO ──────────────────────────────────────
-    st.divider()
-    st.markdown("### 💸 Necessidade de Caixa")
-    _entradas = [max(v, 0) for v in _dre_final["rec_bruta"]]
-    _saidas   = [abs(c) + abs(d) for c, d in zip(_dre_final["cpv"], _dre_final["desp_op"])]
-    _saldo    = [e - s for e, s in zip(_entradas, _saidas)]
-    _saldo_acum = []
-    _acum = 0.0
-    for _sv in _saldo:
-        _acum += _sv
-        _saldo_acum.append(_acum)
+        st.divider()
 
-    _fg_fc = go.Figure()
-    _fg_fc.add_bar(x=_labels_all, y=_entradas,
-                   name="Entradas", marker_color=CHART_TEAL, opacity=0.8)
-    _fg_fc.add_bar(x=_labels_all, y=[-s for s in _saidas],
-                   name="Saídas", marker_color=SOFT_RED, opacity=0.8)
-    _fg_fc.add_scatter(x=_labels_all, y=_saldo_acum,
-                       name="Saldo acumulado",
-                       mode="lines+markers",
-                       line=dict(color=GOLD, width=2.5),
-                       marker=dict(size=5))
-    _fg_fc.add_hline(y=0, line_dash="dash", line_color=GRAY, line_width=1)
-    _fg_fc.update_layout(
-        title="Fluxo de Caixa — Entradas vs Saídas",
-        barmode="relative", **PL(380)
-    )
-    _fg_fc.update_xaxes(showgrid=False, tickfont=dict(size=9))
-    _fg_fc.update_yaxes(gridcolor=BORDER, tickprefix="R$ ", tickformat=",.0f")
-    st.plotly_chart(_fg_fc, use_container_width=True)
-
-    _min_saldo = min(_saldo_acum) if _saldo_acum else 0
-    if _min_saldo < 0:
-        _mes_pico = _saldo_acum.index(_min_saldo)
-        st.error(
-            f"⚠️ **Necessidade de capital:** caixa fica negativo em "
-            f"**{_labels_all[_mes_pico]}** com pico de **{fmt(abs(_min_saldo))}**."
+        # ── Gráfico único: Entradas vs Saídas ────────────────────────
+        st.markdown("### 📊 Fluxo de Caixa — Entradas vs Saídas")
+        st.caption(
+            "Barras verdes = entradas (recebimentos). "
+            "Barras vermelhas = saídas (obra + despesas). "
+            "Linha dourada = saldo acumulado."
         )
+
+        _fg_fc = go.Figure()
+        _fg_fc.add_bar(
+            x=_labels_all, y=_entradas_fc,
+            name="Entradas", marker_color=CHART_TEAL, opacity=0.85
+        )
+        _fg_fc.add_bar(
+            x=_labels_all, y=[-s for s in _saidas_fc],
+            name="Saídas", marker_color=SOFT_RED, opacity=0.75
+        )
+        _fg_fc.add_scatter(
+            x=_labels_all, y=_saldo_acum_fc,
+            name="Saldo acumulado",
+            mode="lines+markers",
+            line=dict(color=GOLD, width=2.5),
+            marker=dict(size=5)
+        )
+        _fg_fc.add_hline(y=0, line_dash="dash", line_color=GRAY, line_width=1.5)
+
+        # Marca o mês do repasse bancário se disponível
+        if _total_fi_fc > 0:
+            # Encontra o mês com maior entrada (provavelmente o FI)
+            _idx_fi = _entradas_fc.index(max(_entradas_fc))
+            _fg_fc.add_vline(
+                x=_labels_all[_idx_fi],
+                line_dash="dot", line_color=CHART_BLUE, line_width=1.5,
+                annotation_text="Repasse",
+                annotation_font_size=10
+            )
+
+        _fg_fc.update_layout(
+            barmode="relative",
+            **PL(420)
+        )
+        _fg_fc.update_xaxes(showgrid=False, tickfont=dict(size=9))
+        _fg_fc.update_yaxes(
+            gridcolor=BORDER, tickprefix="R$ ", tickformat=",.0f"
+        )
+        st.plotly_chart(_fg_fc, use_container_width=True)
+
+        # Alerta de necessidade de capital
+        if _min_saldo_fc < 0:
+            _mes_pico = _saldo_acum_fc.index(_min_saldo_fc)
+            st.error(
+                f"⚠️ **Necessidade de capital:** caixa fica negativo em "
+                f"**{_labels_all[_mes_pico]}** com pico de **{fmt(abs(_min_saldo_fc))}**. "
+                f"Considere linha de crédito ou antecipação de recebíveis."
+            )
+        else:
+            st.success(
+                f"✅ Caixa positivo ao longo de toda a projeção. "
+                f"Saldo final: **{fmt(_saldo_final_fc)}**"
+            )
+
+        st.divider()
+
+        # ── Recebíveis detalhados (ocultável) ────────────────────────
+        with st.expander("📋 Detalhe dos Recebíveis", expanded=False):
+            st.caption(
+                "Fonte: relatório SIENGE. "
+                "PE (permuta) excluído. "
+                "Valores ajustados pelo CUB configurado."
+            )
+            for _k_rec in _ativas:
+                _emp_r = st.session_state.clientes[cliente_sel]["empresas"][_k_rec]
+                _tit_r = _emp_r.get("nome", _k_rec)
+                _est_r = get_rolling_state(_tit_r)
+                _rec_r = _est_r.get("recebiveis")
+                if not _rec_r: continue
+
+                if len(_ativas) > 1:
+                    st.markdown(f"**{_k_rec}**")
+
+                _rt_r = _rec_r.get("resumo_tipos", {})
+                _nomes_tc = {
+                    "PM": "Parcelas Mensais",
+                    "FI": "Financiamento Bancário",
+                    "CH": "À Vista / Cheque",
+                }
+                _rows_rt = []
+                for _tc in ["PM", "FI", "CH"]:
+                    if _tc not in _rt_r: continue
+                    _d = _rt_r[_tc]
+                    _rows_rt.append({
+                        "Tipo":     f"{_tc} — {_nomes_tc.get(_tc, _tc)}",
+                        "Unidades": _d["unidades"],
+                        "Parcelas": _d["parcelas"],
+                        "Total":    _d["valor"],
+                    })
+                if _rows_rt:
+                    _df_rt = pd.DataFrame(_rows_rt)
+                    try:
+                        st.dataframe(
+                            _df_rt.style.format({"Total": "R$ {:,.0f}"}),
+                            use_container_width=True,
+                            hide_index=True,
+                            height=min(180, 38 + len(_rows_rt) * 35)
+                        )
+                    except Exception:
+                        st.dataframe(_df_rt, use_container_width=True, hide_index=True)
+
+                _pe_list = _rec_r.get("unidades_permuta", [])
+                if _pe_list:
+                    st.caption(
+                        f"⚠️ Permuta excluída: {', '.join(_pe_list)}"
+                    )
+
+        # ── DRE completa (ocultável) ──────────────────────────────────
+        with st.expander("📊 DRE Projetada Mês a Mês", expanded=False):
+            _linhas_dre = [
+                ("Receita Bruta",       "rec_bruta",    False),
+                ("(-) Impostos s/ Rec", "imp_rec",      False),
+                ("Receita Líquida",     "rec_liq",      True),
+                ("(-) CPV",             "cpv",          False),
+                ("Lucro Bruto",         "lucro_bruto",  True),
+                ("(-) Despesas Op.",    "desp_op",      False),
+                ("EBITDA",              "ebitda",       True),
+                ("Resultado Financeiro","res_fin",      False),
+                ("LAIR",                "lai",          False),
+                ("(-) IR/CSLL",         "ir",           False),
+                ("Lucro Líquido",       "lucro_liq",    True),
+            ]
+            _df_rows = {}
+            for _nome, _campo, _ in _linhas_dre:
+                _df_rows[_nome] = _dre_final.get(_campo, [0]*_N_final)
+            _df_dre_c = pd.DataFrame(_df_rows, index=_labels_all).T
+            _df_dre_c["TOTAL"] = _df_dre_c.sum(axis=1)
+
+            def _fmt_v(v):
+                try:
+                    fv = float(v)
+                    return f"R$ {fv:,.0f}" if fv >= 0 else f"(R$ {abs(fv):,.0f})"
+                except Exception:
+                    return str(v)
+
+            _totais_bold = [n for n, _, b in _linhas_dre if b]
+
+            def _hl_dre_c(row):
+                if row.name in _totais_bold:
+                    return [f"background-color:{BLIGHT};font-weight:700"]*len(row)
+                return [""]*len(row)
+
+            try:
+                st.dataframe(
+                    _df_dre_c.style.format(_fmt_v).apply(_hl_dre_c, axis=1),
+                    use_container_width=True,
+                    height=420
+                )
+            except Exception:
+                st.dataframe(_df_dre_c, use_container_width=True)
+
+            _buf_rf = io.BytesIO()
+            with pd.ExcelWriter(_buf_rf, engine="openpyxl") as _w:
+                _df_dre_c.to_excel(_w, sheet_name="Rolling Forecast")
+            st.download_button(
+                "📥 Exportar DRE Projetada",
+                data=_buf_rf.getvalue(),
+                file_name=f"RollingForecast_{_titulo_final.replace(' ','_')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                key="dl_rolling_caixa"
+            )
+
+    # ══════════════════════════════════════════════════════════════════
+    # VISÃO COMPETÊNCIA E POC: layout original (DRE + Fluxo)
+    # ══════════════════════════════════════════════════════════════════
     else:
-        st.success(f"✅ Caixa positivo ao longo de toda a projeção. Pico: {fmt(max(_saldo_acum))}")
+        _rb_total  = sum(_dre_final["rec_bruta"])
+        _cpv_total = sum(_dre_final["cpv"])
+        _ll_total  = sum(_dre_final["lucro_liq"])
+
+        _cpv_pct = (abs(_cpv_total) / _rb_total * 100) if _rb_total else 0
+        _ll_pct  = (_ll_total / _rb_total * 100) if _rb_total else 0
+
+        _kp1, _kp2, _kp3 = st.columns(3)
+        _kp1.metric("Receita Total",   fmt(_rb_total))
+        _kp2.metric("CPV Total",       fmt(abs(_cpv_total)),
+                    f"{_cpv_pct:.1f}% da receita")
+        _kp3.metric("Lucro Líquido",   fmt(_ll_total),
+                    f"{_ll_pct:.1f}% da receita")
+
+        st.divider()
+
+        with st.expander("📋 DRE Completa Mês a Mês", expanded=False):
+            _linhas_dre = [
+                ("Receita Bruta",       "rec_bruta",    False),
+                ("(-) Impostos s/ Rec", "imp_rec",      False),
+                ("Receita Líquida",     "rec_liq",      True),
+                ("(-) CPV",             "cpv",          False),
+                ("Lucro Bruto",         "lucro_bruto",  True),
+                ("(-) Despesas Op.",    "desp_op",      False),
+                ("EBITDA",              "ebitda",       True),
+                ("Resultado Financeiro","res_fin",      False),
+                ("LAIR",                "lai",          False),
+                ("(-) IR/CSLL",         "ir",           False),
+                ("Lucro Líquido",       "lucro_liq",    True),
+            ]
+            _df_rows = {}
+            for _nome, _campo, _ in _linhas_dre:
+                _df_rows[_nome] = _dre_final.get(_campo, [0]*_N_final)
+            _df_dre = pd.DataFrame(_df_rows, index=_labels_all).T
+            _df_dre["TOTAL"] = _df_dre.sum(axis=1)
+
+            def _fmt_v2(v):
+                try:
+                    fv = float(v)
+                    return f"R$ {fv:,.0f}" if fv >= 0 else f"(R$ {abs(fv):,.0f})"
+                except Exception:
+                    return str(v)
+
+            _totais_bold2 = [n for n, _, b in _linhas_dre if b]
+
+            def _hl_dre2(row):
+                if row.name in _totais_bold2:
+                    return [f"background-color:{BLIGHT};font-weight:700"]*len(row)
+                return [""]*len(row)
+
+            try:
+                st.dataframe(
+                    _df_dre.style.format(_fmt_v2).apply(_hl_dre2, axis=1),
+                    use_container_width=True,
+                    height=420
+                )
+            except Exception:
+                st.dataframe(_df_dre, use_container_width=True)
+
+            _buf_rf2 = io.BytesIO()
+            with pd.ExcelWriter(_buf_rf2, engine="openpyxl") as _w:
+                _df_dre.to_excel(_w, sheet_name="Rolling Forecast")
+            st.download_button(
+                "📥 Exportar DRE Projetada",
+                data=_buf_rf2.getvalue(),
+                file_name=f"RollingForecast_{_titulo_final.replace(' ','_')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                key="dl_rolling_dre"
+            )
+
+        # ── FLUXO DE CAIXA PROJETADO ──────────────────────────────────────
+        st.divider()
+        st.markdown("### 💸 Necessidade de Caixa")
+        _entradas = [max(v, 0) for v in _dre_final["rec_bruta"]]
+        _saidas   = [abs(c) + abs(d) for c, d in zip(_dre_final["cpv"], _dre_final["desp_op"])]
+        _saldo    = [e - s for e, s in zip(_entradas, _saidas)]
+        _saldo_acum = []
+        _acum = 0.0
+        for _sv in _saldo:
+            _acum += _sv
+            _saldo_acum.append(_acum)
+
+        _fg_fc = go.Figure()
+        _fg_fc.add_bar(x=_labels_all, y=_entradas,
+                    name="Entradas", marker_color=CHART_TEAL, opacity=0.8)
+        _fg_fc.add_bar(x=_labels_all, y=[-s for s in _saidas],
+                    name="Saídas", marker_color=SOFT_RED, opacity=0.8)
+        _fg_fc.add_scatter(x=_labels_all, y=_saldo_acum,
+                        name="Saldo acumulado",
+                        mode="lines+markers",
+                        line=dict(color=GOLD, width=2.5),
+                        marker=dict(size=5))
+        _fg_fc.add_hline(y=0, line_dash="dash", line_color=GRAY, line_width=1)
+        _fg_fc.update_layout(
+            title="Fluxo de Caixa — Entradas vs Saídas",
+            barmode="relative", **PL(380)
+        )
+        _fg_fc.update_xaxes(showgrid=False, tickfont=dict(size=9))
+        _fg_fc.update_yaxes(gridcolor=BORDER, tickprefix="R$ ", tickformat=",.0f")
+        st.plotly_chart(_fg_fc, use_container_width=True)
+
+        _min_saldo = min(_saldo_acum) if _saldo_acum else 0
+        if _min_saldo < 0:
+            _mes_pico = _saldo_acum.index(_min_saldo)
+            st.error(
+                f"⚠️ **Necessidade de capital:** caixa fica negativo em "
+                f"**{_labels_all[_mes_pico]}** com pico de **{fmt(abs(_min_saldo))}**."
+            )
+        else:
+            st.success(f"✅ Caixa positivo ao longo de toda a projeção. Pico: {fmt(max(_saldo_acum))}")
 
 
 # ── Roteamento ────────────────────────────────────────────────────────────────
