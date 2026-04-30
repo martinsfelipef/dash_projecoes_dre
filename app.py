@@ -978,21 +978,41 @@ def render_dre():
         }
         </style>
     """, unsafe_allow_html=True)
-    k1, k2, k3 = st.columns(3)
+    _is_spe = "matriz" not in titulo.lower() and empresa_sel != "Consolidado"
+
+    if _is_spe:
+        k1, k2, k3, k4 = st.columns(4)
+    else:
+        k1, k2, k3 = st.columns(3)
+
     kpi_popover(k1, "Receita Líquida", fmt(rl_t),
                 help_text="Receita Bruta − Impostos sobre receita (PIS, COFINS, ISS, etc.)")
+
+    if _is_spe:
+        _mg_cpv = (cpv_t / rl_t * 100) if rl_t != 0 else 0
+        kpi_popover(k2, "CPV / CSP", fmt(abs(cpv_t)),
+                    delta=f"{abs(_mg_cpv):.1f}% s/ Rec. Líq.",
+                    delta_color="inverse",
+                    help_text="Custo dos produtos/serviços vendidos — custo direto da operação.")
+        kp_op = k3
+        kp_ll = k4
+    else:
+        kp_op = k2
+        kp_ll = k3
+
     _desp_op_t  = float(final["desp_op"].sum())
     _mg_desp_op = (_desp_op_t / rl_t * 100) if rl_t != 0 else 0
-    kpi_popover(k2, "Despesas Operacionais", fmt(abs(_desp_op_t)),
+    kpi_popover(kp_op, "Despesas Operacionais", fmt(abs(_desp_op_t)),
                 delta=f"{abs(_mg_desp_op):.1f}% s/ Rec. Líq.",
                 delta_color="inverse",
                 help_text="Despesas administrativas, comerciais e gerais do período.")
     _mg_ll_abs = abs(mg_l)
     _mg_ll_color = "normal" if ll_t >= 0 else "inverse"
-    kpi_popover(k3, "Lucro Líquido", fmt(ll_t),
+    kpi_popover(kp_ll, "Lucro Líquido", fmt(ll_t),
                 delta=f"{_mg_ll_abs:.1f}% Mg Líquida",
                 delta_color=_mg_ll_color,
                 help_text="Resultado final após todas as deduções, incluindo IR/CSLL.")
+
     st.divider()
 
     c1,c2=st.columns(2)
@@ -1017,7 +1037,10 @@ def render_dre():
     with c3:
         f3=go.Figure()
         f3.add_bar(x=MESES,y=final["rec_liq"],name="Rec. Líquida",marker_color=CHART_NAVY,opacity=0.85)
+        if _is_spe:
+            f3.add_bar(x=MESES,y=final["cpv"],name="CPV",marker_color=SOFT_RED,opacity=0.85)
         f3.add_bar(x=MESES,y=final["desp_op"],name="Desp. Op.",marker_color=CHART_BLUE,opacity=0.75)
+
         f3.add_scatter(x=MESES,y=final["ebitda"],name="EBITDA",mode="lines+markers",
                        line=dict(color=GOLD,width=2.5),marker=dict(size=7,color=GOLD))
         f3.add_hline(y=0,line_dash="dash",line_color=GRAY,line_width=1)
