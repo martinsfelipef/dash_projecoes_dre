@@ -615,10 +615,10 @@ def excel_dre(df, sheet="DRE"):
         df.to_excel(w, sheet_name=sheet)
     return buf.getvalue()
 
-def kpi_popover(col, label, valor, delta=None, help_text=None):
+def kpi_popover(col, label, valor, delta=None, help_text=None, delta_color="normal"):
     with col:
-        if delta: st.metric(label, valor, delta, delta_color="normal")
-        else:     st.metric(label, valor)
+        if delta is not None: st.metric(label, valor, delta, delta_color=delta_color)
+        else:                  st.metric(label, valor)
         if help_text:
             try:
                 with st.popover("ℹ️", use_container_width=False):
@@ -974,9 +974,15 @@ def render_dre():
                 help_text="Receita Bruta − Impostos sobre receita (PIS, COFINS, ISS, etc.)")
     _desp_op_t  = float(final["desp_op"].sum())
     _mg_desp_op = (_desp_op_t / rl_t * 100) if rl_t != 0 else 0
-    kpi_popover(k2, "Despesas Operacionais", fmt(_desp_op_t), f"{_mg_desp_op:+.1f}% s/ Rec. Líq.",
+    kpi_popover(k2, "Despesas Operacionais", fmt(_desp_op_t),
+                delta=f"{abs(_mg_desp_op):.1f}% s/ Rec. Líq.",
+                delta_color="inverse",
                 help_text="Despesas administrativas, comerciais e gerais do período.")
-    kpi_popover(k3, "Lucro Líquido", fmt(ll_t), f"{mg_l:+.1f}% Mg Líquida",
+    _mg_ll_abs = abs(mg_l)
+    _mg_ll_color = "normal" if ll_t >= 0 else "inverse"
+    kpi_popover(k3, "Lucro Líquido", fmt(ll_t),
+                delta=f"{_mg_ll_abs:.1f}% Mg Líquida",
+                delta_color=_mg_ll_color,
                 help_text="Resultado final após todas as deduções, incluindo IR/CSLL.")
     st.divider()
 
