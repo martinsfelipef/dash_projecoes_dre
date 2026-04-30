@@ -969,12 +969,21 @@ def render_dre():
     
     st.caption(f"Demonstrativo de Resultado Analítico · Jan–Dez {ano_analise} · Visão: {visao.split('(')[0].strip()}")
     st.divider()
+
+    # Oculta setas dos deltas
+    st.markdown("""
+        <style>
+        [data-testid="stMetricDelta"] svg {
+            display: none !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
     k1, k2, k3 = st.columns(3)
     kpi_popover(k1, "Receita Líquida", fmt(rl_t),
                 help_text="Receita Bruta − Impostos sobre receita (PIS, COFINS, ISS, etc.)")
     _desp_op_t  = float(final["desp_op"].sum())
     _mg_desp_op = (_desp_op_t / rl_t * 100) if rl_t != 0 else 0
-    kpi_popover(k2, "Despesas Operacionais", fmt(_desp_op_t),
+    kpi_popover(k2, "Despesas Operacionais", fmt(abs(_desp_op_t)),
                 delta=f"{abs(_mg_desp_op):.1f}% s/ Rec. Líq.",
                 delta_color="inverse",
                 help_text="Despesas administrativas, comerciais e gerais do período.")
