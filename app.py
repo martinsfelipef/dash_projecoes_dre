@@ -333,10 +333,12 @@ def _show_login():
         <p style="color:#8F9BA8; font-size: 0.95rem; text-align:center; margin-bottom: 1.5rem;">Faça login para continuar</p>
         """, unsafe_allow_html=True)
 
-        username = st.text_input("Usuário", placeholder="seu usuário", key="_li_user")
-        password = st.text_input("Senha", type="password", placeholder="sua senha", key="_li_pass")
+        with st.form(key="_login_form"):
+            username = st.text_input("Usuário", placeholder="seu usuário", key="_li_user")
+            password = st.text_input("Senha", type="password", placeholder="sua senha", key="_li_pass")
+            submitted = st.form_submit_button("Entrar", type="primary", use_container_width=True)
 
-        if st.button("Entrar", type="primary", use_container_width=True):
+        if submitted:
             if _check_password(username, password):
                 admin_u = _admin_username()
                 role = "admin" if username == admin_u else "viewer"
@@ -2689,6 +2691,26 @@ def render_configuracoes():
                 _hist_upd.append(_cpl_raw)
                 _hist_upd.sort(key=lambda s: s.get("periodo_final",""))
                 _estado_cfg["historico_cpl"] = _hist_upd
+
+                # Atualiza poc_acum automaticamente com pct_medido do CPL
+                _pct_med_cpl = _cpl_raw.get("pct_medido", 0.0)
+                _per_fin_cpl = _cpl_raw.get("periodo_final", "")
+                if _pct_med_cpl > 0 and _per_fin_cpl:
+                    try:
+                        _ano_cpl2 = int(_per_fin_cpl[:4])
+                        _mes_cpl2 = int(_per_fin_cpl[5:7])
+                        _cr_poc2  = _estado_cfg.get("cronograma", {})
+                        _di_poc2  = _cr_poc2.get("data_inicio",
+                                        _estado_cfg.get("data_inicio", {"ano": 2024, "mes": 1}))
+                        _idx_poc2 = (_ano_cpl2 - _di_poc2["ano"]) * 12 + (_mes_cpl2 - _di_poc2["mes"])
+                        _poc_arr2 = list(_estado_cfg.get("poc_acum", [0] * 24))
+                        if 0 <= _idx_poc2 < len(_poc_arr2):
+                            _poc_arr2[_idx_poc2] = round(_pct_med_cpl, 1)
+                            _estado_cfg["poc_acum"] = _poc_arr2
+                            mark_rolling_dirty(_titulo_cfg)
+                    except Exception:
+                        pass  # Não bloquear o upload do CPL por erro no POC
+
                 save_rolling(_titulo_cfg, force=True)
                 safe_toast(
                     f"✅ CPL carregado: {_cpl_raw.get('periodo_final','?')} · "
@@ -3003,90 +3025,6 @@ def render_configuracoes():
     _N_cfg      = max(1, min((_df_cfg["ano"] - _di_cfg["ano"]) * 12 + (_df_cfg["mes"] - _di_cfg["mes"]) + 1, 120))
     _LABELS_cfg = gen_labels(_N_cfg, _di_cfg)
 
-    with st.expander("📊 Avanço Físico — POC", expanded=False):
-        st.caption("% de obra concluída ao fim de cada mês (0–100). Atualizar mensalmente com o real.")
-        _poc_cfg = _estado_cfg.get("poc_acum", [0]*_N_cfg)
-        if len(_poc_cfg) < _N_cfg:
-            _poc_cfg = _poc_cfg + [100]*((_N_cfg) - len(_poc_cfg))
-        _poc_cfg = _poc_cfg[:_N_cfg]
-        _poc_vals_cfg = []
-        _tkey_safe = re.sub(r"\W+","_",_titulo_cfg)
-        for _gs in range(0, _N_cfg, 3):
-            _grp = list(range(_gs, min(_gs+3, _N_cfg)))
-            _pc  = st.columns(len(_grp))
-            for _ci, _i in enumerate(_grp):
-                with _pc[_ci]:
-                    _poc_vals_cfg.append(st.number_input(
-                        _LABELS_cfg[_i], 0, 100, _poc_cfg[_i],
-                        step=1, key=f"poc_cfg_{_i}_{_tkey_safe}"
-                    ))
-        _estado_cfg["poc_acum"] = _poc_vals_cfg
-
-    with st.expander("💵 Parâmetros Caixa", expanded=False):
-        st.caption(
-            "⚠️ Usado apenas se o relatório de Recebíveis não estiver carregado. "
-            "Com recebíveis carregados, a visão Caixa usa os dados reais do SIENGE."
-        )
-
-        _cf1, _cf2 = st.columns(2)
-
-        _pct_ent = _cf1.number_input(
-            "Entrada — % do valor do contrato",
-            min_value=0.0, max_value=100.0, step=0.5, format="%.1f",
-            value=float(_estado_cfg.get("pct_entrada", 7.0)),
-            key=f"ent_cfg_{_tkey_cfg}",
-            help="% pago pelo comprador no ato da assinatura do contrato"
-        )
-        _parc_un = _cf2.number_input(
-            "Parcela mensal por unidade (R$)",
-            min_value=0.0, step=100.0, format="%.0f",
-            value=float(_estado_cfg.get("parcela_un", 1500.0)),
-            key=f"parc_cfg_{_tkey_cfg}",
-            help="Valor médio da parcela mensal por unidade durante a obra"
-        )
-
-        # Mês de entrega como seleção de mês/ano
-        _N_cfg_c  = _estado_cfg.get("cronograma", {}).get("n_meses", 24)
-        _di_cfg_c = _estado_cfg.get("data_inicio", {"ano": 2024, "mes": 1})
-        _LABELS_c = gen_labels(_N_cfg_c, _di_cfg_c)
-        _mes_ent_atual = int(_estado_cfg.get("mes_entrega", _N_cfg_c))
-        _mes_ent_idx   = min(_mes_ent_atual - 1, len(_LABELS_c) - 1)
-        _mes_ent_idx   = max(0, _mes_ent_idx)
-
-        _mes_ent_sel = st.selectbox(
-            "Mês de entrega das chaves",
-            options=list(range(len(_LABELS_c))),
-            index=_mes_ent_idx,
-            format_func=lambda x: _LABELS_c[x] if x < len(_LABELS_c) else f"M{x+1}",
-            key=f"mesent_cfg_{_tkey_cfg}",
-            help="Mês em que as chaves são entregues — saldo final é pago neste mês"
-        )
-        _mes_ent = _mes_ent_sel + 1  # 1-based
-
-        # Salva no estado da SPE correta
-        _estado_cfg.update({
-            "pct_entrada":  _pct_ent,
-            "parcela_un":   _parc_un,
-            "mes_entrega":  _mes_ent,
-        })
-
-        # Preview do fluxo estimado
-        _vgv_v = _estado_cfg.get("vendas", {})
-        _vgv_total_prev = (
-            _vgv_v.get("vgv_vendido", 0) if _vgv_v
-            else sum(
-                _estado_cfg.get("vgv", {}).get(m, {}).get("unidades", 0) *
-                _estado_cfg.get("vgv", {}).get(m, {}).get("preco", 0)
-                for m in range(1, _N_cfg_c + 1)
-            )
-        )
-        if _vgv_total_prev > 0 and _pct_ent > 0:
-            _ent_total  = _vgv_total_prev * _pct_ent / 100
-            _saldo_prev = max(_vgv_total_prev - _ent_total, 0)
-            st.caption(
-                f"📊 Estimativa: Entrada total ~**{fmt(_ent_total)}** · "
-                f"Saldo na entrega ~**{fmt(_saldo_prev)}**"
-            )
 
     st.divider()
 
@@ -3672,13 +3610,6 @@ def render_rolling_forecast():
                     except Exception:
                         st.dataframe(_df_rt, use_container_width=True, hide_index=True)
 
-                # KPIs
-                _rc1, _rc2, _rc3 = st.columns(3)
-                _rc1.metric("Total Recebível",       fmt(_rec_r["total_recebiveis"]))
-                _rc2.metric("Financiamentos (FI)",   fmt(_rec_r["total_fi"]),
-                            f"{_rec_r['n_unidades_fi']} unidades")
-                _rc3.metric("Parcelas Mensais (PM)", fmt(_rec_r["total_pm"]),
-                            f"{_rec_r['n_unidades_pm']} unidades")
 
                 _pe_list = _rec_r.get("unidades_permuta",[])
                 if _pe_list:
