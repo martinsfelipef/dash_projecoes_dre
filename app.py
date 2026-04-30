@@ -942,7 +942,7 @@ TABS=[
     "⚙️ Configurações",
     "📊 DRE Analítica",
     "🏗️ Resumo de Obras",
-    "📅 Rolling Forecast",
+    "📅 Forecast",
     "📐 Indicadores",
     "🎯 Sensibilidade",
     "💰 FCFF & DCF",
@@ -3477,7 +3477,7 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
 
 def render_rolling_forecast():
     import datetime
-    st.markdown("## 📅 Rolling Forecast")
+    st.markdown("## 📅 Forecast")
     st.caption("DRE projetada até o fim da obra — passado real + futuro projetado.")
 
     # ── Empresas ativas ───────────────────────────────────────────────
@@ -3574,7 +3574,8 @@ def render_rolling_forecast():
     )
     st.divider()
 
-    # ── Painel de Estoque de Unidades ─────────────────────────────────
+    # ── BLOCO 1: Estoque de Unidades ──────────────────────────────────────
+    st.markdown("### 🏢 Estoque de Unidades")
     _un_rpt = None
     if len(_ativas) == 1:
         _k_un = _ativas[0]
@@ -3593,109 +3594,105 @@ def render_rolling_forecast():
                 break
 
     if _un_rpt:
-        with st.expander("🏢 Estoque de Unidades", expanded=False):
-            _uc1, _uc2, _uc3, _uc4 = st.columns(4)
-            _uc1.metric("Total",       _un_rpt["total_unidades"],
-                        help="Aptos + Salas (sem garagens)")
-            _uc2.metric("Vendidas",    _un_rpt["vendidas"])
-            _uc3.metric("Permuta",     _un_rpt["permuta"],
-                        help=", ".join(_un_rpt.get("unidades_permuta", [])))
-            _uc4.metric("Disponíveis", _un_rpt["disponiveis"])
-            st.caption(
-                f"VGV vendido: **{fmt(_un_rpt['vgv_vendido'])}** · "
-                f"Preço médio: **{fmt(_un_rpt['preco_medio'])}** · "
-                f"Ainda a vender: **{_un_rpt['disponiveis']} unidades**"
-            )
-            _un_dt2 = ""
-            try:
-                from datetime import datetime as _dtt2
-                _un_dt2 = _dtt2.fromisoformat(
-                    _un_rpt.get("data_upload","")
-                ).strftime("%d/%m/%Y %H:%M")
-            except Exception:
-                pass
-            if _un_dt2:
-                st.caption(f"📅 Atualizado em: {_un_dt2}")
+        _uc1, _uc2, _uc3, _uc4 = st.columns(4)
+        _uc1.metric("Total",       _un_rpt["total_unidades"],
+                    help="Aptos + Salas (sem garagens)")
+        _uc2.metric("Vendidas",    _un_rpt["vendidas"])
+        _uc3.metric("Permuta",     _un_rpt["permuta"],
+                    help=", ".join(_un_rpt.get("unidades_permuta", [])) or "Nenhuma")
+        _uc4.metric("Disponíveis", _un_rpt["disponiveis"])
+        st.caption(
+            f"VGV vendido: **{fmt(_un_rpt['vgv_vendido'])}** · "
+            f"Preço médio: **{fmt(_un_rpt['preco_medio'])}** · "
+            f"Ainda a vender: **{_un_rpt['disponiveis']} unidades**"
+        )
+        _un_dt2 = ""
+        try:
+            from datetime import datetime as _dtt2
+            _un_dt2 = _dtt2.fromisoformat(
+                _un_rpt.get("data_upload","")
+            ).strftime("%d/%m/%Y %H:%M")
+        except Exception:
+            pass
+        if _un_dt2:
+            st.caption(f"📅 Atualizado em: {_un_dt2}")
+    else:
+        st.info("Carregue o Relatório de Unidades nas ⚙️ Configurações para ver o estoque.")
 
-    # ── Painel de Recebíveis (só visão Caixa) ────────────────────────
-    if "Caixa" in visao:
-        # Coleta recebíveis de todas as empresas ativas
-        _tem_rec_alguma = False
+    st.divider()
+
+    # ── BLOCO 2: Recebíveis — Posição de Caixa ────────────────────────────
+    st.markdown("### 💰 Recebíveis — Posição de Caixa")
+    _tem_rec_alguma = False
+    for _k_rec in _ativas:
+        _emp_r = st.session_state.clientes[cliente_sel]["empresas"][_k_rec]
+        _tit_r = _emp_r.get("nome", _k_rec)
+        _est_r = get_rolling_state(_tit_r)
+        if _est_r.get("recebiveis"):
+            _tem_rec_alguma = True
+            break
+
+    if _tem_rec_alguma:
+        st.caption(
+            "Fonte: relatório SIENGE. PE (permuta) excluído. "
+            "Valores futuros ajustados pelo CUB configurado."
+        )
+
         for _k_rec in _ativas:
             _emp_r = st.session_state.clientes[cliente_sel]["empresas"][_k_rec]
             _tit_r = _emp_r.get("nome", _k_rec)
             _est_r = get_rolling_state(_tit_r)
-            if _est_r.get("recebiveis"):
-                _tem_rec_alguma = True
-                break
+            _rec_r = _est_r.get("recebiveis")
+            if not _rec_r: continue
 
-        if _tem_rec_alguma:
-            st.markdown("### 💰 Recebíveis — Contas a Receber")
-            st.caption(
-                "Fonte: relatório SIENGE. PE (permuta) excluído. "
-                "Valores futuros ajustados pelo CUB configurado."
-            )
+            if len(_ativas) > 1:
+                st.markdown(f"**{_k_rec}**")
 
-            # Para cada empresa ativa com recebíveis
-            for _k_rec in _ativas:
-                _emp_r = st.session_state.clientes[cliente_sel]["empresas"][_k_rec]
-                _tit_r = _emp_r.get("nome", _k_rec)
-                _est_r = get_rolling_state(_tit_r)
-                _rec_r = _est_r.get("recebiveis")
-                if not _rec_r: continue
+            _rt_r = _rec_r.get("resumo_tipos", {})
+            _nomes_tc = {
+                "PM": "Parcelas Mensais",
+                "FI": "Financiamento Bancário",
+                "CH": "À Vista / Cheque",
+                "RF": "Reforço",
+                "PC": "Parcela Complementar",
+                "PI": "Entrada / Sinal",
+                "PE": "Permuta ⚠️ (excluído)",
+            }
+            _rows_rt = []
+            for _tc in ["PM","FI","CH","RF","PC","PI","PE"]:
+                if _tc not in _rt_r: continue
+                _d = _rt_r[_tc]
+                _rows_rt.append({
+                    "Tipo":     f"{_tc} — {_nomes_tc.get(_tc,_tc)}",
+                    "Unidades": _d["unidades"],
+                    "Parcelas": _d["parcelas"],
+                    "Total":    _d["valor"],
+                    "":         "❌" if _tc == "PE" else "✅",
+                })
 
-                if len(_ativas) > 1:
-                    st.markdown(f"**{_k_rec}**")
-
-                _rt_r = _rec_r.get("resumo_tipos", {})
-                _nomes_tc = {
-                    "PM": "Parcelas Mensais",
-                    "FI": "Financiamento Bancário",
-                    "CH": "À Vista / Cheque",
-                    "RF": "Reforço",
-                    "PC": "Parcela Complementar",
-                    "PI": "Entrada / Sinal",
-                    "PE": "Permuta ⚠️ (excluído)",
-                }
-                _rows_rt = []
-                for _tc in ["PM","FI","CH","RF","PC","PI","PE"]:
-                    if _tc not in _rt_r: continue
-                    _d = _rt_r[_tc]
-                    _rows_rt.append({
-                        "Tipo":     f"{_tc} — {_nomes_tc.get(_tc,_tc)}",
-                        "Unidades": _d["unidades"],
-                        "Parcelas": _d["parcelas"],
-                        "Total":    _d["valor"],
-                        "":         "❌" if _tc == "PE" else "✅",
-                    })
-
-                if _rows_rt:
-                    _df_rt = pd.DataFrame(_rows_rt)
-                    try:
-                        st.dataframe(
-                            _df_rt.style.format({"Total": "R$ {:,.0f}"}),
-                            use_container_width=True,
-                            hide_index=True,
-                            height=min(250, 38 + len(_rows_rt)*35)
-                        )
-                    except Exception:
-                        st.dataframe(_df_rt, use_container_width=True, hide_index=True)
-
-
-                _pe_list = _rec_r.get("unidades_permuta",[])
-                if _pe_list:
-                    st.warning(
-                        f"⚠️ **{len(_pe_list)} unidade(s) em permuta excluídas:** "
-                        f"{', '.join(_pe_list)}"
+            if _rows_rt:
+                _df_rt = pd.DataFrame(_rows_rt)
+                try:
+                    st.dataframe(
+                        _df_rt.style.format({"Total": "R$ {:,.0f}"}),
+                        use_container_width=True,
+                        hide_index=True,
+                        height=min(250, 38 + len(_rows_rt)*35)
                     )
+                except Exception:
+                    st.dataframe(_df_rt, use_container_width=True, hide_index=True)
 
-            st.divider()
-        else:
-            st.info(
-                "ℹ️ Carregue o relatório de Recebíveis em "
-                "**⚙️ Configurações → Recebíveis** para ver o fluxo de caixa real."
-            )
-            st.divider()
+            _pe_list = _rec_r.get("unidades_permuta",[])
+            if _pe_list:
+                st.warning(
+                    f"⚠️ **{len(_pe_list)} unidade(s) em permuta excluídas:** "
+                    f"{', '.join(_pe_list)}"
+                )
+    else:
+        st.info("Carregue o Relatório de Recebíveis nas ⚙️ Configurações para ver o fluxo de caixa real.")
+
+    st.divider()
+
 
     # ── GRÁFICO: DRE mensal projetada ─────────────────────────────────
     _n_hist = _dre_final.get("n_hist", 12)
