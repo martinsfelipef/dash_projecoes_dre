@@ -1356,7 +1356,7 @@ def render_resumo_obras():
         _fim_str    = f"{MESES[estado['data_fim']['mes']-1]}/{estado['data_fim']['ano']}"
         _hoje = _dt.date.today()
         _fim_dt = _dt.date(estado["data_fim"]["ano"], estado["data_fim"]["mes"], 1)
-        _meses_rest = max((_fim_dt.year - _hoje.year)*12 + (_fim_dt.month - _hoje.month), 0)
+        _meses_rest = 0  # calculado abaixo, após _meses_pass
 
         st.markdown(f"### 🏗️ {_obra_nome}")
         _periodo_cpl_str = ""
@@ -1380,10 +1380,12 @@ def render_resumo_obras():
         _total_dias = max((_fim_dt2 - _inicio_dt).days, 1)
         _dias_pass  = max((_hoje_dt - _inicio_dt).days, 0)
         _pct_prazo  = min(_dias_pass / _total_dias * 100, 100)
+        # +1 para manter consistência com N (contagem inclusiva de meses)
         _meses_pass = max(
             (_hoje_dt.year - _inicio_dt.year) * 12 +
-            (_hoje_dt.month - _inicio_dt.month), 0
+            (_hoje_dt.month - _inicio_dt.month) + 1, 1
         )
+        _meses_rest = max(N - _meses_pass, 0)
 
         _pc1, _pc2 = st.columns([3, 1])
         with _pc1:
