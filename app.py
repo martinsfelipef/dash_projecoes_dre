@@ -982,9 +982,11 @@ def render_dre():
         _end_idx = _start_idx + 12
 
         _out = {}
-        _keys = ["rec_bruta", "imp_rec", "rec_liq", "cpv", "lucro_bruto", "desp_op", "ebitda", "res_fin", "lai", "ir", "lucro_liq", "rec_bdi", "desp_bdi"]
+        _keys = ["rec_bruta", "imp_rec", "rec_liq", "cpv", "lucro_bruto", "desp_op", "ebitda", "res_fin", "lucro_antes_ir", "ir", "lucro_liq", "rec_bdi", "desp_bdi"]
         for key in _keys:
-            _full = _res_f.get(key, [0.0]*_N_f)
+            # build_dre_projetada retorna 'lai', mapeamos para 'lucro_antes_ir'
+            _src_key = "lai" if key == "lucro_antes_ir" else key
+            _full = _res_f.get(_src_key, [0.0]*_N_f)
             _slice = []
             for idx in range(_start_idx, _end_idx):
                 if 0 <= idx < len(_full): _slice.append(_full[idx])
