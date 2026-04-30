@@ -966,8 +966,44 @@ def render_dre():
         st.markdown(f"## 📊 {titulo}")
     with c_year:
         ano_analise = st.selectbox("Ano de Análise:", [2024, 2025, 2026, 2027], index=1)
-    
-    st.caption(f"Demonstrativo de Resultado Analítico · Jan–Dez {ano_analise} · Visão: {visao.split('(')[0].strip()}")
+
+    # --- Unificação com a Visão do Rolling Forecast ---
+    _visao_f = st.session_state.get("visao_sel", "💰 Caixa")
+
+    def _get_year_data_dynamic(k):
+        _emp = empresas_cliente[k]
+        _state = get_rolling_state(k)
+        _di = _state.get("data_inicio", {"ano": 2024, "mes": 1})
+        _N_f = 60 # horizonte suficiente para cobrir os anos do seletor
+        _LABELS_f = gen_labels(_N_f, _di)
+        _res_f = build_dre_projetada(_emp, _state, _visao_f, _N_f, _LABELS_f, _di)
+
+        _start_idx = (ano_analise - _di["ano"]) * 12 + (1 - _di["mes"])
+        _end_idx = _start_idx + 12
+
+        _out = {}
+        _keys = ["rec_bruta", "imp_rec", "rec_liq", "cpv", "lucro_bruto", "desp_op", "ebitda", "res_fin", "lai", "ir", "lucro_liq", "rec_bdi", "desp_bdi"]
+        for key in _keys:
+            _full = _res_f.get(key, [0.0]*_N_f)
+            _slice = []
+            for idx in range(_start_idx, _end_idx):
+                if 0 <= idx < len(_full): _slice.append(_full[idx])
+                else:                     _slice.append(0.0)
+            _out[key] = np.array(_slice)
+        return _out
+
+    if empresa_sel == "Consolidado":
+        _list_dres = [_get_year_data_dynamic(k) for k in dres.keys() if "matriz" not in k.lower()]
+        final = {key: sum(d[key] for d in _list_dres) for key in _list_dres[0].keys()}
+    else:
+        final = _get_year_data_dynamic(empresa_sel)
+
+    # Recalcula totais para o ano filtrado
+    rb_t = float(final["rec_bruta"].sum()); rl_t = float(final["rec_liq"].sum())
+    ll_t = float(final["lucro_liq"].sum()); cpv_t = float(final["cpv"].sum())
+    mg_l = (ll_t / rb_t * 100) if rb_t != 0 else 0
+
+    st.caption(f"Demonstrativo de Resultado Analítico · Jan–Dez {ano_analise} · Visão: {_visao_f.split('(')[0].strip()}")
     st.divider()
 
     # Oculta setas dos deltas
