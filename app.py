@@ -969,19 +969,14 @@ def render_dre():
     
     st.caption(f"Demonstrativo de Resultado Analítico · Jan–Dez {ano_analise} · Visão: {visao.split('(')[0].strip()}")
     st.divider()
-    k1,k2,k3,k4,k5,k6=st.columns(6)
-    kpi_popover(k1,"Receita Bruta",fmt(rb_t),
-                help_text="Total faturado antes de impostos e deduções.")
-    kpi_popover(k2,"Receita Líquida",fmt(rl_t),
+    k1, k2, k3 = st.columns(3)
+    kpi_popover(k1, "Receita Líquida", fmt(rl_t),
                 help_text="Receita Bruta − Impostos sobre receita (PIS, COFINS, ISS, etc.)")
-    kpi_popover(k3,"Lucro Bruto",fmt(lb_t),f"{mg_b:+.1f}% Mg Bruta",
-                help_text="Receita Líquida − CPV/CSP. Mede eficiência produtiva.")
-    kpi_popover(k4,"EBITDA",fmt(ebt_t),f"{mg_e:+.1f}% Mg EBITDA",
-                help_text="Lucro antes de juros, IR e depreciação. Proxy do caixa operacional.")
-    kpi_popover(k5,"Lucro Líquido",fmt(ll_t),f"{mg_l:+.1f}% Mg Líquida",
+    _desp_op_t = float(final["desp_op"].sum())
+    kpi_popover(k2, "Despesas Operacionais", fmt(_desp_op_t),
+                help_text="Despesas administrativas, comerciais e gerais do período.")
+    kpi_popover(k3, "Lucro Líquido", fmt(ll_t), f"{mg_l:+.1f}% Mg Líquida",
                 help_text="Resultado final após todas as deduções, incluindo IR/CSLL.")
-    kpi_popover(k6,"CPV / CSP",fmt(cpv_t),
-                help_text="Custo dos produtos/serviços vendidos — custo direto da operação.")
     st.divider()
 
     c1,c2=st.columns(2)
@@ -1006,7 +1001,6 @@ def render_dre():
     with c3:
         f3=go.Figure()
         f3.add_bar(x=MESES,y=final["rec_liq"],name="Rec. Líquida",marker_color=CHART_NAVY,opacity=0.85)
-        f3.add_bar(x=MESES,y=final["cpv"],name="CPV",marker_color=SOFT_RED,opacity=0.85)
         f3.add_bar(x=MESES,y=final["desp_op"],name="Desp. Op.",marker_color=CHART_BLUE,opacity=0.75)
         f3.add_scatter(x=MESES,y=final["ebitda"],name="EBITDA",mode="lines+markers",
                        line=dict(color=GOLD,width=2.5),marker=dict(size=7,color=GOLD))
