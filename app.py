@@ -972,8 +972,9 @@ def render_dre():
     k1, k2, k3 = st.columns(3)
     kpi_popover(k1, "Receita Líquida", fmt(rl_t),
                 help_text="Receita Bruta − Impostos sobre receita (PIS, COFINS, ISS, etc.)")
-    _desp_op_t = float(final["desp_op"].sum())
-    kpi_popover(k2, "Despesas Operacionais", fmt(_desp_op_t),
+    _desp_op_t  = float(final["desp_op"].sum())
+    _mg_desp_op = (_desp_op_t / rl_t * 100) if rl_t != 0 else 0
+    kpi_popover(k2, "Despesas Operacionais", fmt(_desp_op_t), f"{_mg_desp_op:+.1f}% s/ Rec. Líq.",
                 help_text="Despesas administrativas, comerciais e gerais do período.")
     kpi_popover(k3, "Lucro Líquido", fmt(ll_t), f"{mg_l:+.1f}% Mg Líquida",
                 help_text="Resultado final após todas as deduções, incluindo IR/CSLL.")
