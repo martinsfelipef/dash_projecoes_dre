@@ -4104,11 +4104,11 @@ def render_rolling_forecast():
         _cron = _est_nc.get("cronograma", {})
         if _cron:
             _tem_cff = True
-            _custos_mes = _cron.get("custos_por_mes", {})
-            for _ym, _custo in _custos_mes.items():
+            _custos_list = _cron.get("custos_por_mes", [])
+            _meses_list  = _cron.get("meses", [])
+            for _m_dict, _custo in zip(_meses_list, _custos_list):
                 try:
-                    _ano_c, _mes_c = int(_ym[:4]), int(_ym[5:7])
-                    if (_ano_c, _mes_c) > (_hoje_nc.year, _hoje_nc.month):
+                    if (_m_dict["ano"], _m_dict["mes"]) > (_hoje_nc.year, _hoje_nc.month):
                         _cpv_restante_tot += float(_custo)
                 except Exception:
                     pass
