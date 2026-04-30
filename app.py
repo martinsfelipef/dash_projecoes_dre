@@ -3911,111 +3911,61 @@ def render_rolling_forecast():
 
         st.divider()
 
-        # ── Recebíveis detalhados (ocultável) ────────────────────────
-        with st.expander("📋 Detalhe dos Recebíveis", expanded=False):
-            st.caption(
-                "Fonte: relatório SIENGE. "
-                "PE (permuta) excluído. "
-                "Valores ajustados pelo CUB configurado."
-            )
-            for _k_rec in _ativas:
-                _emp_r = st.session_state.clientes[cliente_sel]["empresas"][_k_rec]
-                _tit_r = _emp_r.get("nome", _k_rec)
-                _est_r = get_rolling_state(_tit_r)
-                _rec_r = _est_r.get("recebiveis")
-                if not _rec_r: continue
+        # ── DRE completa ──────────────────────────────────
+        st.markdown("### 📊 DRE Projetada Mês a Mês")
+        st.divider()
+        _linhas_dre = [
+            ("Receita Bruta",       "rec_bruta",    False),
+            ("(-) Impostos s/ Rec", "imp_rec",      False),
+            ("Receita Líquida",     "rec_liq",      True),
+            ("(-) CPV",             "cpv",          False),
+            ("Lucro Bruto",         "lucro_bruto",  True),
+            ("(-) Despesas Op.",    "desp_op",      False),
+            ("EBITDA",              "ebitda",       True),
+            ("Resultado Financeiro","res_fin",      False),
+            ("LAIR",                "lai",          False),
+            ("(-) IR/CSLL",         "ir",           False),
+            ("Lucro Líquido",       "lucro_liq",    True),
+        ]
+        _df_rows = {}
+        for _nome, _campo, _ in _linhas_dre:
+            _df_rows[_nome] = _dre_final.get(_campo, [0]*_N_final)
+        _df_dre_c = pd.DataFrame(_df_rows, index=_labels_all).T
+        _df_dre_c["TOTAL"] = _df_dre_c.sum(axis=1)
 
-                if len(_ativas) > 1:
-                    st.markdown(f"**{_k_rec}**")
-
-                _rt_r = _rec_r.get("resumo_tipos", {})
-                _nomes_tc = {
-                    "PM": "Parcelas Mensais",
-                    "FI": "Financiamento Bancário",
-                    "CH": "À Vista / Cheque",
-                }
-                _rows_rt = []
-                for _tc in ["PM", "FI", "CH"]:
-                    if _tc not in _rt_r: continue
-                    _d = _rt_r[_tc]
-                    _rows_rt.append({
-                        "Tipo":     f"{_tc} — {_nomes_tc.get(_tc, _tc)}",
-                        "Unidades": _d["unidades"],
-                        "Parcelas": _d["parcelas"],
-                        "Total":    _d["valor"],
-                    })
-                if _rows_rt:
-                    _df_rt = pd.DataFrame(_rows_rt)
-                    try:
-                        st.dataframe(
-                            _df_rt.style.format({"Total": "R$ {:,.0f}"}),
-                            use_container_width=True,
-                            hide_index=True,
-                            height=min(180, 38 + len(_rows_rt) * 35)
-                        )
-                    except Exception:
-                        st.dataframe(_df_rt, use_container_width=True, hide_index=True)
-
-                _pe_list = _rec_r.get("unidades_permuta", [])
-                if _pe_list:
-                    st.caption(
-                        f"⚠️ Permuta excluída: {', '.join(_pe_list)}"
-                    )
-
-        # ── DRE completa (ocultável) ──────────────────────────────────
-        with st.expander("📊 DRE Projetada Mês a Mês", expanded=False):
-            _linhas_dre = [
-                ("Receita Bruta",       "rec_bruta",    False),
-                ("(-) Impostos s/ Rec", "imp_rec",      False),
-                ("Receita Líquida",     "rec_liq",      True),
-                ("(-) CPV",             "cpv",          False),
-                ("Lucro Bruto",         "lucro_bruto",  True),
-                ("(-) Despesas Op.",    "desp_op",      False),
-                ("EBITDA",              "ebitda",       True),
-                ("Resultado Financeiro","res_fin",      False),
-                ("LAIR",                "lai",          False),
-                ("(-) IR/CSLL",         "ir",           False),
-                ("Lucro Líquido",       "lucro_liq",    True),
-            ]
-            _df_rows = {}
-            for _nome, _campo, _ in _linhas_dre:
-                _df_rows[_nome] = _dre_final.get(_campo, [0]*_N_final)
-            _df_dre_c = pd.DataFrame(_df_rows, index=_labels_all).T
-            _df_dre_c["TOTAL"] = _df_dre_c.sum(axis=1)
-
-            def _fmt_v(v):
-                try:
-                    fv = float(v)
-                    return f"R$ {fv:,.0f}" if fv >= 0 else f"(R$ {abs(fv):,.0f})"
-                except Exception:
-                    return str(v)
-
-            _totais_bold = [n for n, _, b in _linhas_dre if b]
-
-            def _hl_dre_c(row):
-                if row.name in _totais_bold:
-                    return [f"background-color:{BLIGHT};font-weight:700"]*len(row)
-                return [""]*len(row)
-
+        def _fmt_v(v):
             try:
-                st.dataframe(
-                    _df_dre_c.style.format(_fmt_v).apply(_hl_dre_c, axis=1),
-                    use_container_width=True,
-                    height=420
-                )
+                fv = float(v)
+                return f"R$ {fv:,.0f}" if fv >= 0 else f"(R$ {abs(fv):,.0f})"
             except Exception:
-                st.dataframe(_df_dre_c, use_container_width=True)
+                return str(v)
 
-            _buf_rf = io.BytesIO()
-            with pd.ExcelWriter(_buf_rf, engine="openpyxl") as _w:
-                _df_dre_c.to_excel(_w, sheet_name="Rolling Forecast")
-            st.download_button(
-                "📥 Exportar DRE Projetada",
-                data=_buf_rf.getvalue(),
-                file_name=f"RollingForecast_{_titulo_final.replace(' ','_')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                key="dl_rolling_caixa"
+        _totais_bold = [n for n, _, b in _linhas_dre if b]
+
+        def _hl_dre_c(row):
+            if row.name in _totais_bold:
+                return [f"background-color:{BLIGHT};font-weight:700"]*len(row)
+            return [""]*len(row)
+
+        try:
+            st.dataframe(
+                _df_dre_c.style.format(_fmt_v).apply(_hl_dre_c, axis=1),
+                use_container_width=True,
+                height=420
             )
+        except Exception:
+            st.dataframe(_df_dre_c, use_container_width=True)
+
+        _buf_rf = io.BytesIO()
+        with pd.ExcelWriter(_buf_rf, engine="openpyxl") as _w:
+            _df_dre_c.to_excel(_w, sheet_name="Rolling Forecast")
+        st.download_button(
+            "📥 Exportar DRE Projetada",
+            data=_buf_rf.getvalue(),
+            file_name=f"RollingForecast_{_titulo_final.replace(' ','_')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            key="dl_rolling_caixa"
+        )
 
     # ══════════════════════════════════════════════════════════════════
     # VISÃO COMPETÊNCIA E POC: layout original (DRE + Fluxo)
@@ -4037,59 +3987,60 @@ def render_rolling_forecast():
 
         st.divider()
 
-        with st.expander("📋 DRE Completa Mês a Mês", expanded=False):
-            _linhas_dre = [
-                ("Receita Bruta",       "rec_bruta",    False),
-                ("(-) Impostos s/ Rec", "imp_rec",      False),
-                ("Receita Líquida",     "rec_liq",      True),
-                ("(-) CPV",             "cpv",          False),
-                ("Lucro Bruto",         "lucro_bruto",  True),
-                ("(-) Despesas Op.",    "desp_op",      False),
-                ("EBITDA",              "ebitda",       True),
-                ("Resultado Financeiro","res_fin",      False),
-                ("LAIR",                "lai",          False),
-                ("(-) IR/CSLL",         "ir",           False),
-                ("Lucro Líquido",       "lucro_liq",    True),
-            ]
-            _df_rows = {}
-            for _nome, _campo, _ in _linhas_dre:
-                _df_rows[_nome] = _dre_final.get(_campo, [0]*_N_final)
-            _df_dre = pd.DataFrame(_df_rows, index=_labels_all).T
-            _df_dre["TOTAL"] = _df_dre.sum(axis=1)
+        st.markdown("### 📋 DRE Completa Mês a Mês")
+        st.divider()
+        _linhas_dre = [
+            ("Receita Bruta",       "rec_bruta",    False),
+            ("(-) Impostos s/ Rec", "imp_rec",      False),
+            ("Receita Líquida",     "rec_liq",      True),
+            ("(-) CPV",             "cpv",          False),
+            ("Lucro Bruto",         "lucro_bruto",  True),
+            ("(-) Despesas Op.",    "desp_op",      False),
+            ("EBITDA",              "ebitda",       True),
+            ("Resultado Financeiro","res_fin",      False),
+            ("LAIR",                "lai",          False),
+            ("(-) IR/CSLL",         "ir",           False),
+            ("Lucro Líquido",       "lucro_liq",    True),
+        ]
+        _df_rows = {}
+        for _nome, _campo, _ in _linhas_dre:
+            _df_rows[_nome] = _dre_final.get(_campo, [0]*_N_final)
+        _df_dre = pd.DataFrame(_df_rows, index=_labels_all).T
+        _df_dre["TOTAL"] = _df_dre.sum(axis=1)
 
-            def _fmt_v2(v):
-                try:
-                    fv = float(v)
-                    return f"R$ {fv:,.0f}" if fv >= 0 else f"(R$ {abs(fv):,.0f})"
-                except Exception:
-                    return str(v)
-
-            _totais_bold2 = [n for n, _, b in _linhas_dre if b]
-
-            def _hl_dre2(row):
-                if row.name in _totais_bold2:
-                    return [f"background-color:{BLIGHT};font-weight:700"]*len(row)
-                return [""]*len(row)
-
+        def _fmt_v2(v):
             try:
-                st.dataframe(
-                    _df_dre.style.format(_fmt_v2).apply(_hl_dre2, axis=1),
-                    use_container_width=True,
-                    height=420
-                )
+                fv = float(v)
+                return f"R$ {fv:,.0f}" if fv >= 0 else f"(R$ {abs(fv):,.0f})"
             except Exception:
-                st.dataframe(_df_dre, use_container_width=True)
+                return str(v)
 
-            _buf_rf2 = io.BytesIO()
-            with pd.ExcelWriter(_buf_rf2, engine="openpyxl") as _w:
-                _df_dre.to_excel(_w, sheet_name="Rolling Forecast")
-            st.download_button(
-                "📥 Exportar DRE Projetada",
-                data=_buf_rf2.getvalue(),
-                file_name=f"RollingForecast_{_titulo_final.replace(' ','_')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                key="dl_rolling_dre"
+        _totais_bold2 = [n for n, _, b in _linhas_dre if b]
+
+        def _hl_dre2(row):
+            if row.name in _totais_bold2:
+                return [f"background-color:{BLIGHT};font-weight:700"]*len(row)
+            return [""]*len(row)
+
+        try:
+            st.dataframe(
+                _df_dre.style.format(_fmt_v2).apply(_hl_dre2, axis=1),
+                use_container_width=True,
+                height=420
             )
+        except Exception:
+            st.dataframe(_df_dre, use_container_width=True)
+
+        _buf_rf2 = io.BytesIO()
+        with pd.ExcelWriter(_buf_rf2, engine="openpyxl") as _w:
+            _df_dre.to_excel(_w, sheet_name="Rolling Forecast")
+        st.download_button(
+            "📥 Exportar DRE Projetada",
+            data=_buf_rf2.getvalue(),
+            file_name=f"RollingForecast_{_titulo_final.replace(' ','_')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            key="dl_rolling_dre"
+        )
 
         # ── FLUXO DE CAIXA PROJETADO ──────────────────────────────────────
         st.divider()
@@ -4131,6 +4082,62 @@ def render_rolling_forecast():
             )
         else:
             st.success(f"✅ Caixa positivo ao longo de toda a projeção. Pico: {fmt(max(_saldo_acum))}")
+
+    # ── NOVO PAINEL: Necessidade de Caixa ─────────────────────────────────
+    import datetime
+    st.divider()
+    st.markdown("### 🎯 Necessidade de Caixa")
+    st.caption("Estimativa de caixa necessário para concluir a obra.")
+
+    _hoje_nc = datetime.datetime.today()
+    _cpv_restante_tot = 0.0
+    _rec_futuros_tot  = 0.0
+    _tem_cff = False
+    _tem_rec = False
+
+    for _k_nc in _ativas:
+        _emp_nc = st.session_state.clientes[cliente_sel]["empresas"][_k_nc]
+        _tit_nc = _emp_nc.get("nome", _k_nc)
+        _est_nc = get_rolling_state(_tit_nc)
+        
+        # CPV restante
+        _cron = _est_nc.get("cronograma", {})
+        if _cron:
+            _tem_cff = True
+            _custos_mes = _cron.get("custos_por_mes", {})
+            for _ym, _custo in _custos_mes.items():
+                try:
+                    _ano_c, _mes_c = int(_ym[:4]), int(_ym[5:7])
+                    if (_ano_c, _mes_c) > (_hoje_nc.year, _hoje_nc.month):
+                        _cpv_restante_tot += float(_custo)
+                except Exception:
+                    pass
+
+        # Recebíveis futuros
+        _rec_nc = _est_nc.get("recebiveis", {})
+        if _rec_nc:
+            _tem_rec = True
+            _rec_fut = _rec_nc.get("total_futuro", 0.0)
+            if _rec_fut == 0.0:
+                _rec_fut = _rec_nc.get("total_recebiveis", 0.0)
+            _rec_futuros_tot += _rec_fut
+
+    _necessidade = _cpv_restante_tot - _rec_futuros_tot
+
+    _nc1, _nc2, _nc3 = st.columns(3)
+    _nc1.metric("CPV Restante", fmt(_cpv_restante_tot), help="Custo de obra previsto nos meses futuros do CFF")
+    _nc2.metric("Recebíveis Futuros", fmt(_rec_futuros_tot), help="Parcelas + repasse bancário a receber (relatório SIENGE)")
+    _nc3.metric(
+        "Necessidade de Caixa",
+        fmt(abs(_necessidade)),
+        delta="✅ Recebíveis cobrem a obra" if _necessidade <= 0 else f"⚠️ Aporte necessário de {fmt(_necessidade)}",
+        delta_color="normal" if _necessidade <= 0 else "inverse"
+    )
+
+    if not _tem_cff:
+        st.warning("CFF não carregado — carregue o Cronograma nas ⚙️ Configurações.")
+    if not _tem_rec:
+        st.warning("Recebíveis não carregados — carregue o Relatório de Recebíveis nas ⚙️ Configurações.")
 
 
 # ── Roteamento ────────────────────────────────────────────────────────────────

@@ -84,6 +84,9 @@ def parse_recebiveis_sienge(data: bytes, arquivo_nome: str = "") -> dict:
     fi_por_mes   = defaultdict(float)
     resumo_tipos = defaultdict(lambda: {"parcelas":0,"valor":0.0,"unidades":set()})
     unidades_permuta = []
+    
+    hoje = datetime.today()
+    total_futuro = 0.0
 
     for row in rows[9:]:
         if not row[0]: continue
@@ -115,6 +118,9 @@ def parse_recebiveis_sienge(data: bytes, arquivo_nome: str = "") -> dict:
             pm_por_mes[chave] += val
         elif tc == "FI":
             fi_por_mes[chave] += val
+            
+        if (dt.year, dt.month) > (hoje.year, hoje.month):
+            total_futuro += val
 
     if not por_mes:
         return {"erro": (
@@ -147,6 +153,7 @@ def parse_recebiveis_sienge(data: bytes, arquivo_nome: str = "") -> dict:
         "fi_por_mes":        dict(fi_por_mes),
         "resumo_tipos":      resumo_final,
         "total_recebiveis":  total_recebiveis,
+        "total_futuro":      total_futuro,
         "total_pm":          total_pm,
         "total_fi":          total_fi,
         "unidades_permuta":  unidades_permuta,
