@@ -2706,7 +2706,6 @@ def render_configuracoes():
         _un_report = _estado_cfg.get("unidades_report")
 
         if _un_report:
-            # Mostra resumo automático
             _un_arq = _un_report.get("arquivo_nome","?")
             _un_dt  = ""
             try:
@@ -2718,22 +2717,9 @@ def render_configuracoes():
                 pass
 
             st.success(f"✅ **{_un_arq}** · {_un_dt}")
+            st.caption("Estoque de unidades carregado. Resumo disponível na aba 📅 Rolling Forecast.")
 
-            _uc1, _uc2, _uc3, _uc4 = st.columns(4)
-            _uc1.metric("Total",        _un_report["total_unidades"],
-                        help="Aptos + Salas (sem garagens)")
-            _uc2.metric("Vendidas",     _un_report["vendidas"])
-            _uc3.metric("Permuta",      _un_report["permuta"],
-                        help=", ".join(_un_report.get("unidades_permuta",[])))
-            _uc4.metric("Disponíveis",  _un_report["disponiveis"])
-
-            st.caption(
-                f"VGV vendido: **{fmt(_un_report['vgv_vendido'])}** · "
-                f"Preço médio: **{fmt(_un_report['preco_medio'])}** · "
-                f"Ainda a vender: **{_un_report['disponiveis']} unidades**"
-            )
-
-            # Atualiza total_unidades automaticamente
+            # Atualiza total_unidades automaticamente (lógica de negócio — manter)
             if _estado_cfg.get("total_unidades",0) != _un_report["total_unidades"]:
                 _estado_cfg["total_unidades"] = _un_report["total_unidades"]
                 mark_rolling_dirty(_titulo_cfg)
@@ -3576,6 +3562,49 @@ def render_rolling_forecast():
         f"{'Consolidado (' + str(len(_ativas)) + ' empresas)' if len(_ativas) > 1 else ''}"
     )
     st.divider()
+
+    # ── Painel de Estoque de Unidades ─────────────────────────────────
+    _un_rpt = None
+    if len(_ativas) == 1:
+        _k_un = _ativas[0]
+        _emp_un = st.session_state.clientes[cliente_sel]["empresas"][_k_un]
+        _tit_un = _emp_un.get("nome", _k_un)
+        _est_un = get_rolling_state(_tit_un)
+        _un_rpt = _est_un.get("unidades_report")
+    else:
+        # Consolidado: pega o primeiro com dados
+        for _k_un in _ativas:
+            _emp_un = st.session_state.clientes[cliente_sel]["empresas"][_k_un]
+            _tit_un = _emp_un.get("nome", _k_un)
+            _est_un = get_rolling_state(_tit_un)
+            if _est_un.get("unidades_report"):
+                _un_rpt = _est_un.get("unidades_report")
+                break
+
+    if _un_rpt:
+        with st.expander("🏢 Estoque de Unidades", expanded=False):
+            _uc1, _uc2, _uc3, _uc4 = st.columns(4)
+            _uc1.metric("Total",       _un_rpt["total_unidades"],
+                        help="Aptos + Salas (sem garagens)")
+            _uc2.metric("Vendidas",    _un_rpt["vendidas"])
+            _uc3.metric("Permuta",     _un_rpt["permuta"],
+                        help=", ".join(_un_rpt.get("unidades_permuta", [])))
+            _uc4.metric("Disponíveis", _un_rpt["disponiveis"])
+            st.caption(
+                f"VGV vendido: **{fmt(_un_rpt['vgv_vendido'])}** · "
+                f"Preço médio: **{fmt(_un_rpt['preco_medio'])}** · "
+                f"Ainda a vender: **{_un_rpt['disponiveis']} unidades**"
+            )
+            _un_dt2 = ""
+            try:
+                from datetime import datetime as _dtt2
+                _un_dt2 = _dtt2.fromisoformat(
+                    _un_rpt.get("data_upload","")
+                ).strftime("%d/%m/%Y %H:%M")
+            except Exception:
+                pass
+            if _un_dt2:
+                st.caption(f"📅 Atualizado em: {_un_dt2}")
 
     # ── Painel de Recebíveis (só visão Caixa) ────────────────────────
     if "Caixa" in visao:
