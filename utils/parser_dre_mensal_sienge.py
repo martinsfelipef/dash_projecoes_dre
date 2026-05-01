@@ -46,7 +46,7 @@ def _detectar_periodo(df) -> tuple:
 
 def _detectar_col_valor(df, header_row: int) -> int:
     """
-    Detecta dinamicamente a coluna que contém os valores numéricos.
+    Detecta dinamicamente a coluna que contém os values numéricos.
     Busca a coluna do cabeçalho que contém nome de mês (ex: 'Janeiro/2026').
     Fallback: coluna 2.
     """
@@ -62,6 +62,17 @@ def parse_dre_mensal_sienge(data: bytes, arquivo_nome: str = "") -> dict:
     Parseia DRE mensal do SIENGE — um mês por arquivo.
 
     Retorna dict com os valores do mês e metadados, ou {"erro": "..."}.
+
+    Campos retornados:
+        ano, mes, aaaa_mm          — identificação do período
+        rec_bruta                  — Receita Bruta (positivo)
+        imp_rec                    — Impostos s/ Receita (negativo)
+        cpv                        — Custo dos Imóveis Vendidos (negativo)
+        desp_op                    — Despesas Operacionais SEM BDI (negativo)
+        desp_bdi                   — Despesas com BDI / código 06.03 (negativo)
+        res_fin                    — Resultado Financeiro (pode ser + ou -)
+        ir                         — IR/CSLL / código 13 (negativo ou 0)
+        arquivo_nome, data_upload  — metadados
     """
     try:
         df = pd.read_excel(io.BytesIO(data), header=None)
@@ -84,7 +95,7 @@ def parse_dre_mensal_sienge(data: bytes, arquivo_nome: str = "") -> dict:
         col_valor = _detectar_col_valor(df, header_row)
 
         # ── 4. Processar linhas ───────────────────────────────────────────
-        resultado = {k: 0.0 for k in ["rec_bruta", "rec_bdi", "imp_rec", "cpv", "desp_op", "desp_bdi", "res_fin", "ir"]}
+        resultado = {k: 0.0 for k in ["rec_bruta", "imp_rec", "cpv", "desp_op", "desp_bdi", "res_fin", "ir"]}
 
         for i in range(header_row + 1, len(df)):
             row = df.iloc[i]
@@ -95,19 +106,11 @@ def parse_dre_mensal_sienge(data: bytes, arquivo_nome: str = "") -> dict:
                 continue
 
             try:
-                val_raw = row.iloc[col_valor]
-                if pd.isna(val_raw):
-                    val = 0.0
-                elif isinstance(val_raw, (int, float)):
-                    val = float(val_raw)
-                else:
-                    # Trata string "1.234,56"
-                    val_s = str(val_raw).strip()
-                    if not val_s or val_s.lower() == "nan":
-                        val = 0.0
-                    else:
-                        val_s = val_s.replace(".", "").replace(",", ".")
-                        val = float(val_s)
+                val = float(
+                    str(row.iloc[col_valor])
+                    .replace(",", ".")
+                    .replace("nan", "0")
+                )
             except (ValueError, IndexError):
                 val = 0.0
 
@@ -116,17 +119,12 @@ def parse_dre_mensal_sienge(data: bytes, arquivo_nome: str = "") -> dict:
 
             cod_norm = cod.strip()
 
-            # BDI Despesa (SPE): código 06.03
+            # BDI: sub-código 06.03 — extrair separadamente antes do totalizador 06
             if cod_norm.startswith("06.03"):
                 resultado["desp_bdi"] = val
                 continue
-            
-            # BDI Receita (Matriz): código 01.04 (ou 01.02/01.03)
-            if cod_norm.startswith("01.02") or cod_norm.startswith("01.03") or cod_norm.startswith("01.04"):
-                resultado["rec_bdi"] = val
-                continue
 
-            # Totalizadores de nível 1 (sem ponto no código)
+            # Só processar totalizadores de nível 1 (sem ponto no código)
             if "." not in cod_norm and cod_norm in _MAP_NIVEL1:
                 resultado[_MAP_NIVEL1[cod_norm]] = val
 
@@ -136,6 +134,8 @@ def parse_dre_mensal_sienge(data: bytes, arquivo_nome: str = "") -> dict:
                 resultado[campo] = -resultado[campo]
 
         # ── 6. Isolar desp_op: remover BDI do totalizador 06 ─────────────
+        # O código 06 (totalizador) já inclui o BDI (06.03).
+        # Para ter desp_op sem BDI, subtraímos.
         if resultado["desp_bdi"] != 0.0 and resultado["desp_op"] != 0.0:
             resultado["desp_op"] = resultado["desp_op"] - resultado["desp_bdi"]
 
@@ -144,7 +144,6 @@ def parse_dre_mensal_sienge(data: bytes, arquivo_nome: str = "") -> dict:
             "mes":          mes,
             "aaaa_mm":      f"{ano:04d}-{mes:02d}",
             "rec_bruta":    resultado["rec_bruta"],
-            "rec_bdi":      resultado["rec_bdi"],
             "imp_rec":      resultado["imp_rec"],
             "cpv":          resultado["cpv"],
             "desp_op":      resultado["desp_op"],
