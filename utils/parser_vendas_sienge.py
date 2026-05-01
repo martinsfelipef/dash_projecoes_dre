@@ -1,111 +1,144 @@
 """
 Parser do Relatório de Vendas — SIENGE
 Arquivo: Vendas_por_Empreendimento_Simplificado_*.xlsx
-
-Estrutura do arquivo:
-  L1-9:  cabeçalho (empresa, empreendimento, período)
-  L10:   header colunas
-  L11+:  uma linha por unidade vendida
-         Col 0  = unidade (ex: "MD APTO 703")
-         Col 2  = data do contrato (str "DD/MM/AAAA")
-         Col 14 = valor do contrato (int/float)
-  Últimas linhas: Total Empreendimento, Contratos, Propostas, Cancelados, Total
-
-Retorna dict com:
-  "obra_nome"      : str
-  "unidades_vendidas": int
-  "vgv_vendido"    : float  — soma dos contratos (sem propostas/cancelados)
-  "preco_medio"    : float
-  "vendas_por_mes" : dict   — {"AAAA-MM": {"unidades": int, "vgv": float}}
-  "data_ultima_venda": str  — "AAAA-MM-DD" da venda mais recente
-  "arquivo_nome"   : str
-  "data_upload"    : str    — ISO format
-  "erro"           : str    — só presente se falhar
 """
-
+import pandas as pd
 import io
 import re
 from datetime import datetime
 
+# Termos para excluir garagens/vagas do cálculo de vendas
+_EXCLUIR_VENDAS = {"garagem", "vaga", "pvg", "vgs", "box", "deposito", "depósito", "estacionamento"}
+
+def _e_unidade_vendas(nome: str) -> bool:
+    """Retorna True se for uma unidade principal (não garagem)."""
+    n = str(nome).lower().strip()
+    return not any(ex in n for ex in _EXCLUIR_VENDAS)
 
 def parse_vendas_sienge(data: bytes, arquivo_nome: str = "") -> dict:
+    """
+    Parseia relatório 'Vendas por Empreendimento — Simplificado' do SIENGE.
+    """
     try:
-        from openpyxl import load_workbook
-        wb = load_workbook(io.BytesIO(data), read_only=True)
-        ws = wb.active
-        rows = list(ws.iter_rows(values_only=True))
+        df = pd.read_excel(io.BytesIO(data), header=None)
+
+        # ── Localizar linha de cabeçalho ──────────────────────────────
+        header_row = None
+        for i in range(min(25, len(df))):
+            cell = str(df.iloc[i, 0]).strip().lower()
+            # O Sienge costuma ter 'N. do contrato' ou 'Unidade' na primeira coluna do cabeçalho
+            if "n. do contrato" in cell or "contrato" in cell or cell == "unidade":
+                header_row = i
+                break
+        
+        if header_row is None:
+            # Fallback: procurar em qualquer coluna por 'Data Contrato'
+            for i in range(min(25, len(df))):
+                row_str = " ".join(str(v).lower() for v in df.iloc[i])
+                if "data" in row_str and ("contrato" in row_str or "venda" in row_str):
+                    header_row = i
+                    break
+
+        if header_row is None:
+            return {"erro": "Cabeçalho não encontrado no relatório de vendas. Verifique se o arquivo é o 'Vendas por Empreendimento — Simplificado'."}
+
+        # ── Mapeamento de colunas ─────────────────────────────────────
+        # No formato padrão Simplificado da Brocks:
+        # Col 0: Unidade
+        # Col 2: Data do Contrato
+        # Col 14: Valor do Contrato
+        col_unidade = 0
+        col_data    = 2
+        col_valor   = 14
+        
+        # Tenta extrair nome da obra das primeiras linhas (acima do cabeçalho)
+        obra_nome = ""
+        for i in range(header_row):
+            row_vals = [str(v).lower().strip() for v in df.iloc[i] if pd.notna(v)]
+            if "empreendimento" in row_vals or "obra" in row_vals:
+                # O valor costuma estar na célula seguinte
+                for j, v in enumerate(df.iloc[i]):
+                    if pd.notna(v) and ("empreendimento" in str(v).lower() or "obra" in str(v).lower()):
+                        if j + 1 < len(df.iloc[i]) and pd.notna(df.iloc[i, j+1]):
+                            obra_nome = str(df.iloc[i, j+1]).strip()
+                            break
+                if obra_nome: break
+
+        # ── Processar vendas ──────────────────────────────────────────
+        vendas = []
+        for i in range(header_row + 1, len(df)):
+            row = df.iloc[i]
+            unidade = str(row.iloc[col_unidade]).strip()
+            
+            if not unidade or unidade.lower() in ("nan", "none", "total", "subtotal", ""):
+                continue
+            
+            # Filtro de garagens
+            if not _e_unidade_vendas(unidade):
+                continue
+                
+            # Data do contrato
+            dt_raw = row.iloc[col_data]
+            dt = None
+            if isinstance(dt_raw, datetime):
+                dt = dt_raw
+            else:
+                try:
+                    # Tenta converter string DD/MM/AAAA
+                    dt = pd.to_datetime(str(dt_raw), dayfirst=True)
+                except:
+                    continue
+            
+            if pd.isna(dt) or dt is None:
+                continue
+            
+            # Valor do contrato
+            valor = 0.0
+            try:
+                v_raw = row.iloc[col_valor]
+                if isinstance(v_raw, (int, float)):
+                    valor = float(v_raw)
+                else:
+                    # Trata "R$ 1.234,56"
+                    s_val = str(v_raw).replace("R$", "").replace(".", "").replace(",", ".").strip()
+                    valor = float(s_val)
+            except:
+                valor = 0.0
+                
+            mes_ano = dt.strftime("%Y-%m")
+            vendas.append({
+                "unidade":  unidade,
+                "data":     dt.strftime("%Y-%m-%d"),
+                "mes_ano":  mes_ano,
+                "valor":    valor,
+            })
+            
+        if not vendas:
+            return {"erro": "Nenhuma venda válida de unidade principal encontrada no arquivo."}
+            
+        # Agrupar por mês
+        vendas_por_mes = {}
+        for v in vendas:
+            m = v["mes_ano"]
+            if m not in vendas_por_mes:
+                vendas_por_mes[m] = {"unidades": 0, "vgv": 0.0}
+            vendas_por_mes[m]["unidades"] += 1
+            vendas_por_mes[m]["vgv"]      += v["valor"]
+
+        unidades_vendidas = len(vendas)
+        vgv_vendido       = sum(v["valor"] for v in vendas)
+        preco_medio       = vgv_vendido / unidades_vendidas if unidades_vendidas > 0 else 0.0
+        data_ultima_venda = max(v["data"] for v in vendas) if vendas else ""
+
+        return {
+            "obra_nome":          obra_nome,
+            "unidades_vendidas":  unidades_vendidas,
+            "vgv_vendido":        vgv_vendido,
+            "preco_medio":        preco_medio,
+            "vendas_por_mes":     vendas_por_mes,
+            "data_ultima_venda":  data_ultima_venda,
+            "arquivo_nome":       arquivo_nome,
+            "data_upload":        datetime.now().isoformat(),
+        }
     except Exception as e:
-        return {"erro": f"Não foi possível abrir o arquivo: {e}"}
-
-    if not rows:
-        return {"erro": "Arquivo vazio."}
-
-    # Detecta prefixo do empreendimento (MD, TC, etc.) da linha 11
-    prefixo = ""
-    obra_nome = ""
-    for row in rows[5:9]:
-        if row[0] == "Empreendimento" and row[1]:
-            obra_nome = str(row[1]).strip()
-            break
-
-    # Detecta prefixo da primeira linha de dados (col 0 = "MD APTO 703")
-    for row in rows[10:15]:
-        if row[0] and isinstance(row[0], str) and len(row[0]) >= 2:
-            prefixo = row[0][:2].upper()
-            break
-
-    def _parse_data(v):
-        if not v: return None
-        try:
-            return datetime.strptime(str(v).strip(), '%d/%m/%Y')
-        except Exception:
-            return None
-
-    vendas = []
-    for row in rows[10:]:
-        unidade = row[0]
-        if not unidade or not isinstance(unidade, str): continue
-        if prefixo and not str(unidade).upper().startswith(prefixo): continue
-        data_str = row[2]
-        valor    = row[14]
-        if not valor or not isinstance(valor, (int, float)): continue
-        dt = _parse_data(data_str)
-        if dt is None: continue
-        mes_ano = f"{dt.year}-{dt.month:02d}"
-        vendas.append({
-            "unidade":  str(unidade).strip(),
-            "data":     dt.strftime("%Y-%m-%d"),
-            "mes_ano":  mes_ano,
-            "valor":    float(valor),
-        })
-
-    if not vendas:
-        return {"erro": (
-            "Nenhuma venda encontrada no arquivo. "
-            "Verifique se é um relatório 'Vendas por Empreendimento — Simplificado' do SIENGE."
-        )}
-
-    # Agrupa por mês
-    vendas_por_mes = {}
-    for v in vendas:
-        m = v["mes_ano"]
-        if m not in vendas_por_mes:
-            vendas_por_mes[m] = {"unidades": 0, "vgv": 0.0}
-        vendas_por_mes[m]["unidades"] += 1
-        vendas_por_mes[m]["vgv"]      += v["valor"]
-
-    unidades_vendidas = len(vendas)
-    vgv_vendido       = sum(v["valor"] for v in vendas)
-    preco_medio       = vgv_vendido / unidades_vendidas if unidades_vendidas > 0 else 0.0
-    data_ultima_venda = max(v["data"] for v in vendas) if vendas else ""
-
-    return {
-        "obra_nome":          obra_nome,
-        "unidades_vendidas":  unidades_vendidas,
-        "vgv_vendido":        vgv_vendido,
-        "preco_medio":        preco_medio,
-        "vendas_por_mes":     vendas_por_mes,
-        "data_ultima_venda":  data_ultima_venda,
-        "arquivo_nome":       arquivo_nome,
-        "data_upload":        datetime.now().isoformat(),
-    }
+        return {"erro": f"Erro no processamento das vendas: {str(e)}"}
