@@ -14,6 +14,7 @@ _MAP_CODIGO = {
     "01 ":  "rec_bruta",   # (=) RECEITA BRUTA
     "01.02": "rec_bdi",     # Receita de BDI (para Matriz)
     "01.03": "rec_bdi",     # Alternativa para Receita de BDI
+    "01.04": "rec_bdi",     # SIENGE Matriz: Receita de BDI
     "02 ":  "imp_rec",     # (-) IMPOSTOS E DEDUÇÕES
     "04 ":  "cpv",         # (-) CUSTO DOS IMÓVEIS VENDIDOS
     "06 ":  "desp_op",     # (-) DESPESAS OPERACIONAIS (sem BDI)
@@ -111,11 +112,21 @@ def parse_dre_mensal_sienge(data: bytes, arquivo_nome: str = "") -> dict:
 
             # Extrair valor
             try:
-                val = float(
-                    str(row.iloc[col_valor])
-                    .replace(",", ".")
-                    .replace("nan", "0")
-                )
+                val_raw = row.iloc[col_valor]
+                if pd.isna(val_raw):
+                    val = 0.0
+                elif isinstance(val_raw, (int, float)):
+                    val = float(val_raw)
+                else:
+                    # Se for string, tratar "1.234,56"
+                    val_s = str(val_raw).strip()
+                    if not val_s or val_s.lower() == "nan":
+                        val = 0.0
+                    else:
+                        # Remove pontos de milhar e troca vírgula decimal
+                        # (Padrão brasileiro exportado do SIENGE)
+                        val_s = val_s.replace(".", "").replace(",", ".")
+                        val = float(val_s)
             except (ValueError, IndexError):
                 val = 0.0
 
@@ -129,7 +140,7 @@ def parse_dre_mensal_sienge(data: bytes, arquivo_nome: str = "") -> dict:
             if cod_norm.startswith("06.03"):
                 resultado["desp_bdi"] = val
                 continue
-            if cod_norm.startswith("01.02") or cod_norm.startswith("01.03"):
+            if cod_norm.startswith("01.02") or cod_norm.startswith("01.03") or cod_norm.startswith("01.04"):
                 resultado["rec_bdi"] = val
                 continue
 
