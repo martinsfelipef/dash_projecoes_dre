@@ -119,7 +119,7 @@
     0,
     0,
     0,
-    0,
+    51.4,
     0,
     0,
     0,
@@ -165,7 +165,145 @@
     "mes": 9,
     "ano": 2026
   },
-  "historico_cpl": [],
+  "historico_cpl": [
+    {
+      "obra_nome": "",
+      "periodo_final": "2026-02-28",
+      "orcado_total": 11304428.290000001,
+      "medido_acum": 5806214.9,
+      "realizado_acum": 4378490.45,
+      "comprometido": 4425785.94,
+      "verba_disponivel": 6878642.3500000015,
+      "saldo_ctp": 817564.2999999999,
+      "cpi": 1.3261,
+      "eac": 8524715.7,
+      "pct_medido": 51.36,
+      "pct_realizado": 38.73,
+      "custo_minimo": 5196054.75,
+      "tem_medicao": true,
+      "etapas_nivel2": [
+        {
+          "codigo": "00.000",
+          "descricao": "nan",
+          "orcado": 0.0,
+          "medido": 0.0,
+          "realizado": 0.0,
+          "cpi": 1.0,
+          "pct_medido": 0.0
+        },
+        {
+          "codigo": "01.001",
+          "descricao": "SERVIÇOS PRELIMINARES",
+          "orcado": 2079510.4000000001,
+          "medido": 1438618.8899999997,
+          "realizado": 1381325.03,
+          "cpi": 1.0414774645761684,
+          "pct_medido": 69.18065377311888
+        },
+        {
+          "codigo": "01.002",
+          "descricao": "INFRAESTRUTURA",
+          "orcado": 640541.4299999999,
+          "medido": 640541.4299999999,
+          "realizado": 128930.89,
+          "cpi": 4.968099033520981,
+          "pct_medido": 100.0
+        },
+        {
+          "codigo": "01.003",
+          "descricao": "SUPRAESTRUTURA",
+          "orcado": 1764622.98,
+          "medido": 1723504.08,
+          "realizado": 1330665.4400000002,
+          "cpi": 1.2952196909840838,
+          "pct_medido": 97.66981953278201
+        },
+        {
+          "codigo": "01.004",
+          "descricao": "PAREDES E PAINÉIS",
+          "orcado": 1632004.24,
+          "medido": 516149.80000000005,
+          "realizado": 329032.12,
+          "cpi": 1.5686912268625934,
+          "pct_medido": 31.62674381287147
+        },
+        {
+          "codigo": "01.005",
+          "descricao": "COBERTURAS E PROTEÇÕES",
+          "orcado": 89066.58999999998,
+          "medido": 27980.6,
+          "realizado": 82.0,
+          "cpi": 341.22682926829265,
+          "pct_medido": 31.41537135305169
+        },
+        {
+          "codigo": "01.006",
+          "descricao": "REVESTIMENTOS, ELEMENTOS DECORATIVOS E PINTURA",
+          "orcado": 1063713.57,
+          "medido": 196153.84,
+          "realizado": 216643.79,
+          "cpi": 0.9054210139141307,
+          "pct_medido": 18.440475474990883
+        },
+        {
+          "codigo": "01.007",
+          "descricao": "PAVIMENTAÇÃO",
+          "orcado": 633541.5499999999,
+          "medido": 0.0,
+          "realizado": 6522.03,
+          "cpi": 0.0,
+          "pct_medido": 0.0
+        },
+        {
+          "codigo": "01.008",
+          "descricao": "INSTALAÇÕES E APARELHOS",
+          "orcado": 1386261.0,
+          "medido": 251938.62000000002,
+          "realizado": 330055.71,
+          "cpi": 0.7633215010884072,
+          "pct_medido": 18.173967239935337
+        },
+        {
+          "codigo": "02.001",
+          "descricao": "ENERGIA/ILUMINAÇÃO",
+          "orcado": 39022.93,
+          "medido": 0.0,
+          "realizado": 0.0,
+          "cpi": 1.0,
+          "pct_medido": 0.0
+        },
+        {
+          "codigo": "02.002",
+          "descricao": "PAVIMENTAÇÃO EXTERNA",
+          "orcado": 4968.6,
+          "medido": 0.0,
+          "realizado": 0.0,
+          "cpi": 1.0,
+          "pct_medido": 0.0
+        },
+        {
+          "codigo": "02.003",
+          "descricao": "PAISAGISMO",
+          "orcado": 2175.0,
+          "medido": 0.0,
+          "realizado": 0.0,
+          "cpi": 1.0,
+          "pct_medido": 0.0
+        },
+        {
+          "codigo": "01.001",
+          "descricao": "CUSTOS INDIRETOS",
+          "orcado": 1969000.0,
+          "medido": 1011327.64,
+          "realizado": 655233.44,
+          "cpi": 1.543461579128196,
+          "pct_medido": 51.36250076180803
+        }
+      ],
+      "arquivo_nome": "emissao_custo_por_nivel-28-02-2026 - Marta Darela.xlsx",
+      "data_upload": "2026-05-01T22:38:58.518117"
+    }
+  ],
   "vendas": null,
   "recebiveis": null,
   "unidades_report": null,
