@@ -3,100 +3,152 @@
   "cron_orc": {},
   "vgv": {
     "1": {
-      "unidades": 0,
-      "preco": 350000.0
+      "unidades": 6,
+      "preco": 552101.5
     },
     "2": {
-      "unidades": 0,
-      "preco": 350000.0
+      "unidades": 4,
+      "preco": 508346.5
     },
     "3": {
-      "unidades": 0,
-      "preco": 350000.0
+      "unidades": 6,
+      "preco": 568856.1666666666
     },
     "4": {
-      "unidades": 0,
-      "preco": 350000.0
+      "unidades": 6,
+      "preco": 514068.3333333333
     },
     "5": {
-      "unidades": 0,
-      "preco": 350000.0
+      "unidades": 6,
+      "preco": 523673.5
     },
     "6": {
-      "unidades": 0,
-      "preco": 350000.0
+      "unidades": 2,
+      "preco": 505859.5
     },
     "7": {
-      "unidades": 0,
-      "preco": 350000.0
+      "unidades": 1,
+      "preco": 460000.0
     },
     "8": {
-      "unidades": 0,
-      "preco": 350000.0
+      "unidades": 1,
+      "preco": 553100.0
     },
     "9": {
       "unidades": 0,
-      "preco": 350000.0
+      "preco": 434571.92
     },
     "10": {
-      "unidades": 0,
-      "preco": 350000.0
+      "unidades": 1,
+      "preco": 4291397.72
     },
     "11": {
-      "unidades": 0,
-      "preco": 350000.0
+      "unidades": 1,
+      "preco": 4291397.72
     },
     "12": {
-      "unidades": 0,
-      "preco": 350000.0
+      "unidades": 1,
+      "preco": 4291397.72
     },
     "13": {
-      "unidades": 0,
-      "preco": 350000.0
+      "unidades": 1,
+      "preco": 4291397.72
     },
     "14": {
-      "unidades": 0,
-      "preco": 350000.0
+      "unidades": 1,
+      "preco": 4291397.72
     },
     "15": {
-      "unidades": 0,
-      "preco": 350000.0
+      "unidades": 1,
+      "preco": 4291397.72
     },
     "16": {
-      "unidades": 0,
-      "preco": 350000.0
+      "unidades": 1,
+      "preco": 4291397.72
     },
     "17": {
-      "unidades": 0,
-      "preco": 350000.0
+      "unidades": 1,
+      "preco": 4291397.72
     },
     "18": {
       "unidades": 0,
-      "preco": 350000.0
+      "preco": 434571.92
     },
     "19": {
       "unidades": 0,
-      "preco": 350000.0
+      "preco": 434571.92
     },
     "20": {
       "unidades": 0,
-      "preco": 350000.0
+      "preco": 434571.92
     },
     "21": {
       "unidades": 0,
-      "preco": 350000.0
+      "preco": 434571.92
     },
     "22": {
       "unidades": 0,
-      "preco": 350000.0
+      "preco": 434571.92
     },
     "23": {
       "unidades": 0,
-      "preco": 350000.0
+      "preco": 434571.92
     },
     "24": {
       "unidades": 0,
-      "preco": 350000.0
+      "preco": 434571.92
+    },
+    "25": {
+      "unidades": 0,
+      "preco": 434571.92
+    },
+    "26": {
+      "unidades": 0,
+      "preco": 434571.92
+    },
+    "27": {
+      "unidades": 0,
+      "preco": 434571.92
+    },
+    "28": {
+      "unidades": 0,
+      "preco": 434571.92
+    },
+    "29": {
+      "unidades": 0,
+      "preco": 434571.92
+    },
+    "30": {
+      "unidades": 0,
+      "preco": 434571.92
+    },
+    "31": {
+      "unidades": 0,
+      "preco": 434571.92
+    },
+    "32": {
+      "unidades": 0,
+      "preco": 434571.92
+    },
+    "33": {
+      "unidades": 0,
+      "preco": 434571.92
+    },
+    "34": {
+      "unidades": 0,
+      "preco": 434571.92
+    },
+    "35": {
+      "unidades": 0,
+      "preco": 434571.92
+    },
+    "36": {
+      "unidades": 0,
+      "preco": 434571.92
+    },
+    "37": {
+      "unidades": 0,
+      "preco": 434571.92
     }
   },
   "poc_acum": [
@@ -304,7 +356,61 @@
       "data_upload": "2026-05-01T22:48:32.072506"
     }
   ],
-  "vendas": null,
+  "vendas": {
+    "obra_nome": "",
+    "unidades_vendidas": 49,
+    "vgv_vendido": 24989547.0,
+    "preco_medio": 509990.7551020408,
+    "vendas_por_mes": {
+      "2025-09": {
+        "unidades": 4,
+        "vgv": 2033386.0
+      },
+      "2025-11": {
+        "unidades": 6,
+        "vgv": 3084410.0
+      },
+      "2025-10": {
+        "unidades": 6,
+        "vgv": 3413137.0
+      },
+      "2025-12": {
+        "unidades": 6,
+        "vgv": 3142041.0
+      },
+      "2025-08": {
+        "unidades": 6,
+        "vgv": 3312609.0
+      },
+      "2025-07": {
+        "unidades": 11,
+        "vgv": 5268132.0
+      },
+      "2026-01": {
+        "unidades": 2,
+        "vgv": 1011719.0
+      },
+      "2026-03": {
+        "unidades": 1,
+        "vgv": 553100.0
+      },
+      "2025-06": {
+        "unidades": 4,
+        "vgv": 2031013.0
+      },
+      "2025-04": {
+        "unidades": 2,
+        "vgv": 680000.0
+      },
+      "2026-02": {
+        "unidades": 1,
+        "vgv": 460000.0
+      }
+    },
+    "data_ultima_venda": "2026-03-11",
+    "arquivo_nome": "Relatório de vendas Tereza Cristina.xlsx",
+    "data_upload": "2026-05-01T22:48:55.028786"
+  },
   "recebiveis": null,
   "unidades_report": {
     "total_unidades": 187,
