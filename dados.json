@@ -1261,7 +1261,154 @@
               -208728.34
             ]
           }
-        ]
+        ],
+        "dre_mensal": {
+          "2025-01": {
+            "rec_bruta": 69164.3,
+            "imp_rec": -4680.64,
+            "cpv": -35242.48,
+            "desp_op": -67614.88,
+            "desp_bdi": -61408.57,
+            "res_fin": 511.5,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Marta Darela 2025.xlsx",
+            "data_upload": "2026-05-01T22:43:29.803703",
+            "tipo": "anual"
+          },
+          "2025-02": {
+            "rec_bruta": 107242.87,
+            "imp_rec": 0.0,
+            "cpv": -62173.34,
+            "desp_op": -100101.21,
+            "desp_bdi": -70099.48,
+            "res_fin": 209.79,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Marta Darela 2025.xlsx",
+            "data_upload": "2026-05-01T22:43:29.803718",
+            "tipo": "anual"
+          },
+          "2025-03": {
+            "rec_bruta": 147368.38,
+            "imp_rec": -10878.1,
+            "cpv": -130492.8,
+            "desp_op": -137690.35,
+            "desp_bdi": -96377.51,
+            "res_fin": 1382.6,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Marta Darela 2025.xlsx",
+            "data_upload": "2026-05-01T22:43:29.803723",
+            "tipo": "anual"
+          },
+          "2025-04": {
+            "rec_bruta": 80543.73,
+            "imp_rec": -3241.34,
+            "cpv": -142478.94,
+            "desp_op": -123961.68,
+            "desp_bdi": -96311.15,
+            "res_fin": -239.94,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Marta Darela 2025.xlsx",
+            "data_upload": "2026-05-01T22:43:29.803726",
+            "tipo": "anual"
+          },
+          "2025-05": {
+            "rec_bruta": 138847.29,
+            "imp_rec": -13836.29,
+            "cpv": -195308.39,
+            "desp_op": -264350.23,
+            "desp_bdi": -181596.78,
+            "res_fin": 169.53,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Marta Darela 2025.xlsx",
+            "data_upload": "2026-05-01T22:43:29.803730",
+            "tipo": "anual"
+          },
+          "2025-06": {
+            "rec_bruta": 145644.64,
+            "imp_rec": 0.0,
+            "cpv": -202581.58,
+            "desp_op": -239303.96,
+            "desp_bdi": -234116.37,
+            "res_fin": 427.97,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Marta Darela 2025.xlsx",
+            "data_upload": "2026-05-01T22:43:29.803733",
+            "tipo": "anual"
+          },
+          "2025-07": {
+            "rec_bruta": 58194.43,
+            "imp_rec": -20268.7,
+            "cpv": -251827.49,
+            "desp_op": -82828.68,
+            "desp_bdi": -75126.18,
+            "res_fin": -1974.66,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Marta Darela 2025.xlsx",
+            "data_upload": "2026-05-01T22:43:29.803737",
+            "tipo": "anual"
+          },
+          "2025-08": {
+            "rec_bruta": 129616.39,
+            "imp_rec": -2349.81,
+            "cpv": -319498.01,
+            "desp_op": -122849.33,
+            "desp_bdi": -95951.25,
+            "res_fin": 30.69,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Marta Darela 2025.xlsx",
+            "data_upload": "2026-05-01T22:43:29.803740",
+            "tipo": "anual"
+          },
+          "2025-09": {
+            "rec_bruta": 148668.08,
+            "imp_rec": -5030.53,
+            "cpv": -248773.61,
+            "desp_op": -103945.26,
+            "desp_bdi": -87577.43,
+            "res_fin": -134.25,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Marta Darela 2025.xlsx",
+            "data_upload": "2026-05-01T22:43:29.803743",
+            "tipo": "anual"
+          },
+          "2025-10": {
+            "rec_bruta": 67848.96,
+            "imp_rec": -4071.17,
+            "cpv": -269655.29,
+            "desp_op": -73488.46,
+            "desp_bdi": -45633.18,
+            "res_fin": 169.85,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Marta Darela 2025.xlsx",
+            "data_upload": "2026-05-01T22:43:29.803746",
+            "tipo": "anual"
+          },
+          "2025-11": {
+            "rec_bruta": 60469.06,
+            "imp_rec": -2732.57,
+            "cpv": -257401.17,
+            "desp_op": -116265.59,
+            "desp_bdi": -90931.6,
+            "res_fin": -236.92,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Marta Darela 2025.xlsx",
+            "data_upload": "2026-05-01T22:43:29.803749",
+            "tipo": "anual"
+          },
+          "2025-12": {
+            "rec_bruta": 160309.95,
+            "imp_rec": -2360.56,
+            "cpv": -244433.46,
+            "desp_op": -121778.41,
+            "desp_bdi": -48568.56,
+            "res_fin": -465.86,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Marta Darela 2025.xlsx",
+            "data_upload": "2026-05-01T22:43:29.803752",
+            "tipo": "anual"
+          }
+        },
+        "ano_dre": 2025
       },
       "Brocks Matriz": {
         "nome": "Brocks Matriz",
