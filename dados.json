@@ -1892,7 +1892,154 @@
               -16960.02
             ]
           }
-        ]
+        ],
+        "dre_mensal": {
+          "2025-01": {
+            "rec_bruta": 80722.43,
+            "imp_rec": 0.0,
+            "cpv": -46896.47,
+            "desp_op": -18417.88,
+            "desp_bdi": 0.0,
+            "res_fin": 888.03,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Matriz  - 2025.xlsx",
+            "data_upload": "2026-05-01T21:36:23.265685",
+            "tipo": "anual"
+          },
+          "2025-02": {
+            "rec_bruta": 72316.69,
+            "imp_rec": -12801.57,
+            "cpv": -12964.95,
+            "desp_op": -16897.1,
+            "desp_bdi": 0.0,
+            "res_fin": 898.59,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Matriz  - 2025.xlsx",
+            "data_upload": "2026-05-01T21:36:23.265706",
+            "tipo": "anual"
+          },
+          "2025-03": {
+            "rec_bruta": 106169.25,
+            "imp_rec": -110.0,
+            "cpv": -37923.72,
+            "desp_op": -18966.78,
+            "desp_bdi": 0.0,
+            "res_fin": 1688.75,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Matriz  - 2025.xlsx",
+            "data_upload": "2026-05-01T21:36:23.265714",
+            "tipo": "anual"
+          },
+          "2025-04": {
+            "rec_bruta": 112185.22,
+            "imp_rec": 0.0,
+            "cpv": -20184.77,
+            "desp_op": -37725.97,
+            "desp_bdi": 0.0,
+            "res_fin": 2690.05,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Matriz  - 2025.xlsx",
+            "data_upload": "2026-05-01T21:36:23.265720",
+            "tipo": "anual"
+          },
+          "2025-05": {
+            "rec_bruta": 186819.94,
+            "imp_rec": -3746.16,
+            "cpv": -18716.91,
+            "desp_op": -30958.67,
+            "desp_bdi": 0.0,
+            "res_fin": -50.17,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Matriz  - 2025.xlsx",
+            "data_upload": "2026-05-01T21:36:23.265726",
+            "tipo": "anual"
+          },
+          "2025-06": {
+            "rec_bruta": 274229.38,
+            "imp_rec": -20803.48,
+            "cpv": -11945.51,
+            "desp_op": -40860.56,
+            "desp_bdi": 0.0,
+            "res_fin": 246.01,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Matriz  - 2025.xlsx",
+            "data_upload": "2026-05-01T21:36:23.265732",
+            "tipo": "anual"
+          },
+          "2025-07": {
+            "rec_bruta": 79132.26,
+            "imp_rec": -246.0,
+            "cpv": -12610.03,
+            "desp_op": -48685.34,
+            "desp_bdi": 0.0,
+            "res_fin": -53.25,
+            "ir": -283.62,
+            "arquivo_nome": "DRE Matriz  - 2025.xlsx",
+            "data_upload": "2026-05-01T21:36:23.265738",
+            "tipo": "anual"
+          },
+          "2025-08": {
+            "rec_bruta": 114318.71,
+            "imp_rec": 0.0,
+            "cpv": -16308.16,
+            "desp_op": -41380.36,
+            "desp_bdi": 0.0,
+            "res_fin": 67.51,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Matriz  - 2025.xlsx",
+            "data_upload": "2026-05-01T21:36:23.265744",
+            "tipo": "anual"
+          },
+          "2025-09": {
+            "rec_bruta": 176226.35,
+            "imp_rec": 0.0,
+            "cpv": -8428.23,
+            "desp_op": -49897.99,
+            "desp_bdi": 0.0,
+            "res_fin": -76.02,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Matriz  - 2025.xlsx",
+            "data_upload": "2026-05-01T21:36:23.265750",
+            "tipo": "anual"
+          },
+          "2025-10": {
+            "rec_bruta": 116355.27,
+            "imp_rec": 0.0,
+            "cpv": -9503.88,
+            "desp_op": -57554.57,
+            "desp_bdi": 0.0,
+            "res_fin": 208.02,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Matriz  - 2025.xlsx",
+            "data_upload": "2026-05-01T21:36:23.265756",
+            "tipo": "anual"
+          },
+          "2025-11": {
+            "rec_bruta": 190152.09,
+            "imp_rec": 0.0,
+            "cpv": -17980.06,
+            "desp_op": -55151.69,
+            "desp_bdi": 0.0,
+            "res_fin": 109.74,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Matriz  - 2025.xlsx",
+            "data_upload": "2026-05-01T21:36:23.265762",
+            "tipo": "anual"
+          },
+          "2025-12": {
+            "rec_bruta": 89130.72,
+            "imp_rec": 0.0,
+            "cpv": -39258.48,
+            "desp_op": -67003.17,
+            "desp_bdi": 0.0,
+            "res_fin": 170.91,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Matriz  - 2025.xlsx",
+            "data_upload": "2026-05-01T21:36:23.265769",
+            "tipo": "anual"
+          }
+        },
+        "ano_dre": 2025
       }
     }
   }
