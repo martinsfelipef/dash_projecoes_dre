@@ -2049,6 +2049,18 @@
             "arquivo_nome": "DRE Matriz  - 2025.xlsx",
             "data_upload": "2026-05-01T21:59:18.715505",
             "tipo": "anual"
+          },
+          "2026-01": {
+            "rec_bruta": 105804.93,
+            "rec_bdi": 99954.93,
+            "imp_rec": -2268.06,
+            "cpv": -21070.89,
+            "desp_op": -40244.38,
+            "desp_bdi": 0.0,
+            "res_fin": -42.7,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Jan-2026 Brocks Matriz.xlsx",
+            "data_upload": "2026-05-01T22:15:32.102987"
           }
         },
         "ano_dre": 2025
