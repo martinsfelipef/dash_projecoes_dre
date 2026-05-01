@@ -1,0 +1,173 @@
+{
+  "meses_reais": {},
+  "cron_orc": {},
+  "vgv": {
+    "1": {
+      "unidades": 0,
+      "preco": 350000.0
+    },
+    "2": {
+      "unidades": 0,
+      "preco": 350000.0
+    },
+    "3": {
+      "unidades": 0,
+      "preco": 350000.0
+    },
+    "4": {
+      "unidades": 0,
+      "preco": 350000.0
+    },
+    "5": {
+      "unidades": 0,
+      "preco": 350000.0
+    },
+    "6": {
+      "unidades": 0,
+      "preco": 350000.0
+    },
+    "7": {
+      "unidades": 0,
+      "preco": 350000.0
+    },
+    "8": {
+      "unidades": 0,
+      "preco": 350000.0
+    },
+    "9": {
+      "unidades": 0,
+      "preco": 350000.0
+    },
+    "10": {
+      "unidades": 0,
+      "preco": 350000.0
+    },
+    "11": {
+      "unidades": 0,
+      "preco": 350000.0
+    },
+    "12": {
+      "unidades": 0,
+      "preco": 350000.0
+    },
+    "13": {
+      "unidades": 0,
+      "preco": 350000.0
+    },
+    "14": {
+      "unidades": 0,
+      "preco": 350000.0
+    },
+    "15": {
+      "unidades": 0,
+      "preco": 350000.0
+    },
+    "16": {
+      "unidades": 0,
+      "preco": 350000.0
+    },
+    "17": {
+      "unidades": 0,
+      "preco": 350000.0
+    },
+    "18": {
+      "unidades": 0,
+      "preco": 350000.0
+    },
+    "19": {
+      "unidades": 0,
+      "preco": 350000.0
+    },
+    "20": {
+      "unidades": 0,
+      "preco": 350000.0
+    },
+    "21": {
+      "unidades": 0,
+      "preco": 350000.0
+    },
+    "22": {
+      "unidades": 0,
+      "preco": 350000.0
+    },
+    "23": {
+      "unidades": 0,
+      "preco": 350000.0
+    },
+    "24": {
+      "unidades": 0,
+      "preco": 350000.0
+    }
+  },
+  "poc_acum": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "bdi_rate": 14.0,
+  "bdi_mensal": [
+    14.0,
+    14.0,
+    14.0,
+    14.0,
+    14.0,
+    14.0,
+    14.0,
+    14.0,
+    14.0,
+    14.0,
+    14.0,
+    14.0,
+    14.0,
+    14.0,
+    14.0,
+    14.0,
+    14.0,
+    14.0,
+    14.0,
+    14.0,
+    14.0,
+    14.0,
+    14.0,
+    14.0
+  ],
+  "cub_mensal": 0.5,
+  "pct_entrada": 7.0,
+  "parcela_un": 1500.0,
+  "mes_entrega": 12,
+  "g_custos": 10.0,
+  "data_inicio": {
+    "ano": 2025,
+    "mes": 1
+  },
+  "data_fim": {
+    "ano": 2027,
+    "mes": 12
+  },
+  "historico_cpl": [],
+  "vendas": null,
+  "recebiveis": null,
+  "unidades_report": null,
+  "total_unidades": 0
+}
