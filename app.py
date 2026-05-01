@@ -102,6 +102,50 @@ def _parse_sienge_full(data: bytes) -> list:
                     pass
     return [{"codigo": c, **itens[c]} for c in ordem]
 
+def _detecta_ano_dre(data: bytes) -> int:
+    """
+    Detecta o ano de referência de uma DRE exportada do SIENGE.
+    Estratégia em ordem de prioridade:
+    1. Linha de cabeçalho com nomes de meses (ex: "Janeiro/2025")
+    2. Linha de período (ex: "01/01/2025 a 31/12/2025")
+    3. Fallback: 2025
+    """
+    import pandas as pd, io, re
+    _MESES_PT = ["janeiro","fevereiro","março","marco","abril","maio","junho",
+                 "julho","agosto","setembro","outubro","novembro","dezembro"]
+    try:
+        df = pd.read_excel(io.BytesIO(data), header=None)
+
+        # Prioridade 1: linha com nome de mês + ano (ex: "Janeiro/2025")
+        for i in range(min(20, len(df))):
+            row_str = " ".join(str(v).lower() for v in df.iloc[i] if str(v) != "nan")
+            for mes in _MESES_PT:
+                if mes in row_str:
+                    # Busca "mes/AAAA" ou "mes AAAA"
+                    m = re.search(mes + r'[/\s]+(\d{4})', row_str)
+                    if m:
+                        return int(m.group(1))
+
+        # Prioridade 2: linha com padrão "DD/MM/AAAA a DD/MM/AAAA"
+        for i in range(min(15, len(df))):
+            row_str = " ".join(str(v) for v in df.iloc[i] if str(v) != "nan")
+            # Busca período "01/MM/AAAA a DD/MM/AAAA" — pega o segundo ano
+            # para evitar pegar data de exportação
+            matches = re.findall(r'\b(20\d{2})\b', row_str)
+            if len(matches) >= 2:
+                # Dois anos na mesma linha = provavelmente "início a fim"
+                # Retorna o mais frequente ou o primeiro se iguais
+                from collections import Counter
+                return int(Counter(matches).most_common(1)[0][0])
+            elif len(matches) == 1:
+                # Só um ano — verificar se a linha parece um período
+                if "período" in row_str.lower() or "a " in row_str:
+                    return int(matches[0])
+
+    except Exception:
+        pass
+    return 2025  # fallback
+
 
 from rolling_forecast import (calc_competencia,calc_caixa,calc_poc,
                                build_dre_rolling,bdi_matriz_mensal)
@@ -129,6 +173,12 @@ try:
 except ImportError:
     def parse_recebiveis_sienge(data, arquivo_nome=""):
         return {"erro": "Parser não encontrado. Verifique utils/parser_recebiveis_sienge.py"}
+
+try:
+    from parser_dre_mensal_sienge import parse_dre_mensal_sienge
+except ImportError:
+    def parse_dre_mensal_sienge(data, arquivo_nome=""):
+        return {"erro": "Parser não encontrado. Verifique utils/parser_dre_mensal_sienge.py"}
 
 st.set_page_config(page_title="Dashboard Financeiro | Brocks",
                    page_icon="🏗️", layout="wide",
@@ -526,8 +576,8 @@ def get_rolling_state(nome: str) -> dict:
                 "parcela_un":   1500.0,
                 "mes_entrega":  12,
                 "g_custos":     10.0,
-                "data_inicio":  {"ano": 2026, "mes": 1},
-                "data_fim":     {"ano": 2027, "mes": 12},
+                "data_inicio":  {"ano": 2024, "mes": 1},
+                "data_fim":     {"ano": 2028, "mes": 12},
                 "historico_cpl": [],
                 "vendas":          None,
                 "recebiveis":      None,
@@ -558,8 +608,8 @@ def get_rolling_state(nome: str) -> dict:
                 "parcela_un":   1500.0,
                 "mes_entrega":  12,
                 "g_custos":     10.0,
-                "data_inicio":  {"ano": 2026, "mes": 1},
-                "data_fim":     {"ano": 2027, "mes": 12},
+                "data_inicio":  {"ano": 2024, "mes": 1},
+                "data_fim":     {"ano": 2028, "mes": 12},
                 "historico_cpl": [],
                 "vendas":          None,
                 "recebiveis":      None,
@@ -716,199 +766,10 @@ with st.sidebar:
         ], key="visao_sel", label_visibility="collapsed")
 
     rec_override_map = {}  # Receita configurada na aba Configurações
-
     st.divider()
-    # ── DREs já no sistema ─────────────────────────────────────────────
-    st.markdown("**📋 DREs no sistema:**")
-    for _k, _emp in list(empresas_cliente.items()):
-        _fonte = _emp.get("fonte","Fixo")
-        _ic    = "☁️" if _fonte=="Upload" else "📊"
-        _cn1, _cn2 = st.columns([5,1])
-        _cn1.caption(f"{_ic} {_emp.get('nome',_k)}")
-        if _fonte=="Upload":
-            if _cn2.button("🗑️", key=f"rm_dre_{_k}",
-                           help="Remover esta DRE do sistema"):
-                del st.session_state.clientes[cliente_sel]["empresas"][_k]
-                save_state(); safe_toast(f"{_k} removida.", "🗑️"); st.rerun()
-        else:
-            _cn2.caption("🔒")  # DREs padrão, não removíveis
-    st.divider()
-    # ── Adicionar / atualizar DRE ──────────────────────────────────────
-    with st.expander("➕ Adicionar / atualizar DRE", expanded=False):
-        st.caption("Arquivo Excel exportado do SIENGE — Demonstrativo de Resultado.")
-        uploaded=st.file_uploader("",type=["xlsx","xls"],
-                                  label_visibility="collapsed",
-                                  key="uploader_dre")
-        if uploaded:
-            bdata=uploaded.read()
-            res = parse_sienge(bdata)
-            if "erro" in res:
-                safe_toast(res["erro"],"❌")
-            else:
-                nome_in=st.text_input("Nome no sistema:",
-                                      value=res["nome"][:40])
-                dest_op=list(st.session_state.clientes.keys())+\
-                        ["+ Novo cliente"]
-                dest = "Brocks Empreendimentos"  # destino fixo — sem selectbox
-
-                @st.dialog("👁️ Preview — DRE", width="large")
-                def _modal_preview(df):
-                    st.dataframe(df.style.format("R$ {:,.2f}"),
-                                 use_container_width=True,height=500)
-                if st.button("🔍 Ampliar Preview",
-                             use_container_width=True):
-                    _modal_preview(res["preview"])
-                st.info(
-                    "O **✕** ao lado do arquivo acima apenas limpa o "
-                    "seletor — não remove o que já foi **Aplicado**.\n\n"
-                    "Ao aplicar, a DRE fica salva na lista acima.",
-                    icon="ℹ️")
-                cc,cx=st.columns(2)
-                with cc:
-                    if st.button("✅ Aplicar",type="primary",
-                                 use_container_width=True):
-                        d=res["dados"]
-                        nova={"nome":nome_in,"fonte":"Upload",
-                              "rec_bruta":d["rec_bruta"],
-                              "imp_rec":d["imp_rec"],
-                              "cpv":d["cpv"],"desp_op":d["desp_op"],
-                              "res_fin":d["res_fin"],"ir":d["ir"],
-                              "rec_bdi": d.get("rec_bdi",  [0.0]*12),
-                              "desp_bdi":d.get("desp_bdi", [0.0]*12),
-                              "raw_lines": _parse_sienge_full(bdata)}
-                        if dest=="+ Novo cliente":
-                            st.session_state.clientes[nome_in]=\
-                                {"empresas":{nome_in:nova}}
-                        else:
-                            st.session_state.clientes[dest]\
-                                ["empresas"][nome_in]=nova
-                        save_state()
-                        safe_toast(
-                            f"✅ {nome_in} salva no sistema!","✅")
-                        st.rerun()
-                with cx:
-                    if st.button("❌ Cancelar",
-                                 use_container_width=True): st.rerun()
-
-    st.divider()
-    st.divider()
-    with st.expander("🏗️ Nova SPE"):
-        st.caption(
-            "Adicione um novo empreendimento ao sistema. "
-            "Após criar, acesse a aba ⚙️ Configurações para subir o CFF, CPL e DRE."
-        )
-        _novo_spe_nome = st.text_input(
-            "Nome da SPE:",
-            key="novo_spe_nome",
-            placeholder="Ex: SPE Residencial João XXIII"
-        )
-        _novo_spe_cnpj = st.text_input(
-            "CNPJ (opcional):",
-            key="novo_spe_cnpj",
-            placeholder="00.000.000/0001-00"
-        )
-        if st.button("➕ Criar SPE", use_container_width=True, type="primary"):
-            _nome = _novo_spe_nome.strip()
-            if _nome:
-                if _nome not in st.session_state.clientes[cliente_sel]["empresas"]:
-                    # Estrutura padrão de uma nova SPE
-                    st.session_state.clientes[cliente_sel]["empresas"][_nome] = {
-                        "nome":     _nome,
-                        "cnpj":     _novo_spe_cnpj.strip(),
-                        "fonte":    "Upload",
-                        "rec_bruta": [0.0]*12,
-                        "imp_rec":   [0.0]*12,
-                        "cpv":       [0.0]*12,
-                        "desp_op":   [0.0]*12,
-                        "res_fin":   [0.0]*12,
-                        "ir":        [0.0]*12,
-                        "rec_bdi":   [0.0]*12,
-                        "desp_bdi":  [0.0]*12,
-                        "raw_lines": [],
-                    }
-                    save_state()
-                    safe_toast(f"SPE '{_nome}' criada! Acesse ⚙️ Configurações para carregar os dados.", "✅")
-                    st.rerun()
-                else:
-                    safe_toast(f"Já existe uma SPE com o nome '{_nome}'.", "⚠️")
-            else:
-                safe_toast("Digite o nome da SPE.", "⚠️")
 
 
 
-
-    # ── Simulações ────────────────────────────────────────────────────────
-    st.markdown("**📋 Simulações**")
-    _MAX_SIMS = 5 if _IS_ADMIN else 3
-    _sims_atual = st.session_state.get("_sims", [])
-    _nomes_sims = [s["nome"] for s in _sims_atual]
-
-    if _sims_atual:
-        _sel_sim = st.selectbox("Selecionar simulação", _nomes_sims,
-                                key="_sel_sim", label_visibility="collapsed")
-        _c_load, _c_del = st.columns(2)
-        if _c_load.button("📂 Carregar", use_container_width=True, key="_btn_load_sim"):
-            _sim_data = next((s for s in _sims_atual if s["nome"] == _sel_sim), None)
-            if _sim_data:
-                _apply_sim_params(_sim_data.get("params", {}))
-                safe_toast(f"Simulação '{_sel_sim}' carregada!", "📂")
-                st.rerun()
-        if _c_del.button("🗑️ Deletar", use_container_width=True, key="_btn_del_sim"):
-            st.session_state["_sims"] = [s for s in _sims_atual if s["nome"] != _sel_sim]
-            _save_sims(_USERNAME, st.session_state["_sims"])
-            safe_toast(f"Simulação '{_sel_sim}' deletada.", "🗑️")
-            st.rerun()
-    else:
-        st.caption("Nenhuma simulação salva.")
-
-    _nome_nova = st.text_input("Nome da simulação:", key="_nome_sim",
-                                placeholder="Ex: Cenário Conservador",
-                                label_visibility="collapsed")
-    if st.button("💾 Salvar Simulação", use_container_width=True, key="_btn_save_sim"):
-        if not _nome_nova.strip():
-            st.warning("Digite um nome para a simulação.")
-        else:
-            _params_agora = _get_sim_params()
-            _nova_sim = {
-                "nome":   _nome_nova.strip(),
-                "data":   __import__("datetime").date.today().isoformat(),
-                "params": _params_agora,
-            }
-            _lista = list(st.session_state.get("_sims", []))
-            # Remove simulação com mesmo nome, se existir
-            _lista = [s for s in _lista if s["nome"] != _nova_sim["nome"]]
-            # Viewer: máx 3, substitui mais antiga ao exceder
-            if not _IS_ADMIN and len(_lista) >= _MAX_SIMS:
-                _lista = sorted(_lista, key=lambda s: s.get("data",""), reverse=True)
-                _lista = _lista[:_MAX_SIMS - 1]
-            # Admin: máx 5
-            if _IS_ADMIN and len(_lista) >= _MAX_SIMS:
-                st.warning(f"Limite de {_MAX_SIMS} simulações atingido. Delete uma antes de salvar.")
-            else:
-                _lista.append(_nova_sim)
-                st.session_state["_sims"] = _lista
-                _save_sims(_USERNAME, _lista)
-                safe_toast(f"Simulação '{_nova_sim['nome']}' salva!", "💾")
-                st.rerun()
-
-    # Admin: Salvar como Padrão
-    if _IS_ADMIN:
-        if st.button("💾 Salvar como Padrão", use_container_width=True, key="_btn_save_padrao",
-                     help="Salva a configuração atual como padrão para todos os Visualizadores"):
-            _save_config_padrao(_get_sim_params())
-            safe_toast("Configuração salva como padrão!", "✅")
-
-    # Viewer: Restaurar Padrão
-    if not _IS_ADMIN and _users_configured():
-        if st.button("🔄 Restaurar Padrão", use_container_width=True, key="_btn_restaurar",
-                     help="Volta para a configuração padrão definida pelo Admin"):
-            _cfg = _load_config_padrao() or _load_config_padrao_local()
-            if _cfg:
-                _apply_sim_params(_cfg)
-                safe_toast("Padrão restaurado!", "🔄")
-                st.rerun()
-            else:
-                st.info("Nenhum padrão definido pelo Admin ainda.")
 
     st.divider()
     st.caption("Brocks Empreendimentos Ltda © 2026")
@@ -974,11 +835,13 @@ def render_dre():
         _emp = empresas_cliente[k]
         _state = get_rolling_state(k)
         _di = _state.get("data_inicio", {"ano": 2024, "mes": 1})
-        _N_f = 60 # horizonte suficiente para cobrir os anos do seletor
+        # Horizonte: do início da SPE até dez/2028 (cobre todos os anos do seletor)
+        _N_f = max((2029 - _di["ano"]) * 12 - (_di["mes"] - 1), 60)
         _LABELS_f = gen_labels(_N_f, _di)
         _res_f = build_dre_projetada(_emp, _state, _visao_f, _N_f, _LABELS_f, _di)
 
         _start_idx = (ano_analise - _di["ano"]) * 12 + (1 - _di["mes"])
+        _start_idx = max(0, _start_idx)
         _end_idx = _start_idx + 12
 
         _out = {}
@@ -1112,9 +975,14 @@ def render_dre():
             ("(=) Lucro Líquido","lucro_liq",True)]
     tots={l for l,_,t in linhas if t}
     rows=[]
+    _MESES_ANO = [
+        f"{m}/{str(ano_analise)[2:]}"
+        for m in ["Jan","Fev","Mar","Abr","Mai","Jun",
+                  "Jul","Ago","Set","Out","Nov","Dez"]
+    ]
     for label,key,_ in linhas:
         row={"Linha DRE":label}
-        for i,m in enumerate(MESES): row[m]=final[key][i]
+        for i,m in enumerate(_MESES_ANO): row[m]=final[key][i]
         row["TOTAL"]=float(final[key].sum()); rows.append(row)
     df_t1=pd.DataFrame(rows).set_index("Linha DRE")
 
@@ -1145,7 +1013,7 @@ def render_resumo_obras():
         and "matriz" not in k.lower()
     ]
     if not _spes_ativas:
-        st.warning("Nenhuma SPE ativa. Ative ao menos uma empresa na sidebar.")
+        st.warning("Nenhuma empresa ativa. Ative ao menos uma empresa na sidebar.")
         return
 
     _roll_emp_key = "_rolling_empresa_sel"
@@ -2098,7 +1966,7 @@ def render_indicadores():
     _todas = list(st.session_state.clientes[cliente_sel]["empresas"].keys())
     _spes  = [k for k in _todas
               if st.session_state.get("empresas_ativas", {}).get(k, True)
-              and "matriz" not in k.lower()]
+              ]
 
     _spi_list   = []
     _cpi_list   = []
@@ -2623,13 +2491,61 @@ def render_configuracoes():
     st.caption("Central de configuração do sistema. Organize os dados antes de ver os resultados.")
     st.divider()
 
+    # ── Cadastrar novo empreendimento ─────────────────────────────────
+    with st.expander("➕ Novo Empreendimento", expanded=False):
+        st.caption(
+            "Cadastre uma nova SPE ou empresa. "
+            "Após criar, use os blocos abaixo para subir CFF, CPL, DRE e demais documentos."
+        )
+        _novo_nome = st.text_input(
+            "Nome do empreendimento:",
+            key="cfg_novo_spe_nome",
+            placeholder="Ex: SPE Residencial João XXIII"
+        )
+        _novo_cnpj = st.text_input(
+            "CNPJ (opcional):",
+            key="cfg_novo_spe_cnpj",
+            placeholder="00.000.000/0001-00"
+        )
+        if st.button("➕ Criar empreendimento", type="primary",
+                     key="cfg_btn_criar_spe"):
+            _nome_novo = _novo_nome.strip()
+            if _nome_novo:
+                if _nome_novo not in st.session_state.clientes[cliente_sel]["empresas"]:
+                    st.session_state.clientes[cliente_sel]["empresas"][_nome_novo] = {
+                        "nome":      _nome_novo,
+                        "cnpj":      _novo_cnpj.strip(),
+                        "fonte":     "Upload",
+                        "rec_bruta": [0.0]*12,
+                        "imp_rec":   [0.0]*12,
+                        "cpv":       [0.0]*12,
+                        "desp_op":   [0.0]*12,
+                        "res_fin":   [0.0]*12,
+                        "ir":        [0.0]*12,
+                        "rec_bdi":   [0.0]*12,
+                        "desp_bdi":  [0.0]*12,
+                        "raw_lines": [],
+                    }
+                    save_state()
+                    safe_toast(
+                        f"✅ '{_nome_novo}' criado! Selecione abaixo para carregar os dados.",
+                        "✅"
+                    )
+                    st.rerun()
+                else:
+                    safe_toast(f"⚠️ Já existe um empreendimento com o nome '{_nome_novo}'.", "⚠️")
+            else:
+                safe_toast("⚠️ Digite o nome do empreendimento.", "⚠️")
+
+    st.divider()
+
     # ── Seletor de SPE (mesmo padrão do Resumo de Obras) ──────────────
     _todas = list(st.session_state.clientes[cliente_sel]["empresas"].keys())
     _spes  = [k for k in _todas
               if st.session_state.get("empresas_ativas", {}).get(k, True)
-              and "matriz" not in k.lower()]
+              ]
     if not _spes:
-        st.warning("Nenhuma SPE ativa. Ative ao menos uma empresa na sidebar.")
+        st.warning("Nenhuma empresa ativa. Ative ao menos uma empresa na sidebar.")
         return
 
     _cfg_emp_key = "_cfg_empresa_sel"
@@ -2658,6 +2574,7 @@ def render_configuracoes():
                 st.rerun()
 
     _spe_sel   = st.session_state.get(_cfg_emp_key, _spes[0])
+    _is_matriz_cfg = "matriz" in _spe_sel.lower()
     _emp_cfg   = st.session_state.clientes[cliente_sel]["empresas"][_spe_sel]
     _titulo_cfg = _emp_cfg.get("nome", _spe_sel)
     _estado_cfg = get_rolling_state(_titulo_cfg)
@@ -2669,388 +2586,429 @@ def render_configuracoes():
     # ══════════════════════════════════════════════════════════════════
     # BLOCO 1 — DADOS DA OBRA (CFF + CPL)
     # ══════════════════════════════════════════════════════════════════
-    st.markdown("### 📁 Bloco 1 — Dados da Obra")
+    if not _is_matriz_cfg:
+        st.markdown("### 📁 Bloco 1 — Dados da Obra")
 
-    # CFF
-    with st.expander("📐 Cronograma Físico/Financeiro (CFF)", expanded=True):
-        st.caption("Suba o relatório CFF exportado do SIENGE. Re-exportar apenas em reprogramações.")
-        if "cronograma" in _estado_cfg:
-            _cr = _estado_cfg["cronograma"]
-            _arq_cff = _cr.get("arquivo_nome", "arquivo não identificado")
-            _data_upload_cff = _cr.get("data_upload", "")
-            _dt_fmt = ""
-            if _data_upload_cff:
+        # CFF
+        with st.expander("📐 Cronograma Físico/Financeiro (CFF)", expanded=True):
+            st.caption("Suba o relatório CFF exportado do SIENGE. Re-exportar apenas em reprogramações.")
+            if "cronograma" in _estado_cfg:
+                _cr = _estado_cfg["cronograma"]
+                _arq_cff = _cr.get("arquivo_nome", "arquivo não identificado")
+                _data_upload_cff = _cr.get("data_upload", "")
+                _dt_fmt = ""
+                if _data_upload_cff:
+                    try:
+                        import datetime as _dtu
+                        _dt_fmt = _dtu.datetime.fromisoformat(_data_upload_cff).strftime("%d/%m/%Y %H:%M")
+                    except Exception:
+                        pass
+                st.success(
+                    f"✅ **{_arq_cff}** · {_dt_fmt}\n\n"
+                    f"📅 {MESES[_cr['data_inicio']['mes']-1]}/{_cr['data_inicio']['ano']} → "
+                    f"{MESES[_cr['data_fim']['mes']-1]}/{_cr['data_fim']['ano']} · "
+                    f"{_cr['n_meses']} meses · Total: R$ {sum(_cr['custos_por_mes']):,.0f}"
+                )
+                if st.button("🔄 Substituir CFF", key=f"sub_cff_{_tkey_cfg}"):
+                    del _estado_cfg["cronograma"]
+                    save_rolling(_titulo_cfg, force=True)
+                    safe_toast("CFF removido. Suba a nova versão.", "🔄")
+                    st.rerun()
+            else:
+                _arq_cff_up = st.file_uploader(
+                    "Selecione o CFF (.xlsx)",
+                    type=["xlsx","xls"],
+                    key=f"up_cff_cfg_{_tkey_cfg}",
+                    label_visibility="collapsed"
+                )
+                if _arq_cff_up:
+                    _cron_raw = parse_cronograma_sienge(_arq_cff_up.read())
+                    if "erro" in _cron_raw:
+                        st.error(f"❌ {_cron_raw['erro']}")
+                    else:
+                        _estado_cfg["cronograma"] = _cron_raw
+                        _estado_cfg["cronograma"]["arquivo_nome"] = _arq_cff_up.name
+                        _estado_cfg["data_inicio"] = _cron_raw["data_inicio"]
+                        _estado_cfg["data_fim"]    = _cron_raw["data_fim"]
+                        save_rolling(_titulo_cfg, force=True)
+                        safe_toast(f"✅ CFF carregado: {_arq_cff_up.name}", "✅")
+                        st.rerun()
+
+        # CPL
+        with st.expander("📊 Custo por Nível (CPL) — Histórico mensal", expanded=True):
+            st.caption(
+                "Suba o CPL após cada boletim de medição (~dia 10 do mês seguinte). "
+                "Pode também subir versão diária a qualquer momento."
+            )
+            _hist = _estado_cfg.get("historico_cpl", [])
+            if _hist:
+                _cols_h = st.columns([3,1,1,1,1,1])
+                _cols_h[0].caption("Arquivo")
+                _cols_h[1].caption("Período")
+                _cols_h[2].caption("Medido")
+                _cols_h[3].caption("CPI")
+                _cols_h[4].caption("Realizado")
+                _cols_h[5].caption("Ação")
+                for _snap in reversed(_hist):
+                    _c0,_c1,_c2,_c3,_c4,_c5 = st.columns([3,1,1,1,1,1])
+                    _c0.caption(_snap.get("arquivo_nome","?")[:30])
+                    _c1.caption(_snap.get("periodo_final","?"))
+                    _c2.caption(f"{_snap.get('pct_medido',0):.1f}%")
+                    _c3.caption(f"{_snap.get('cpi',0):.3f}")
+                    _c4.caption(f"R$ {_snap.get('realizado_acum',0):,.0f}")
+                    if _c5.button("🗑️", key=f"del_cpl_cfg_{_snap.get('periodo_final','')}_{_tkey_cfg}"):
+                        _estado_cfg["historico_cpl"] = [
+                            s for s in _hist if s.get("periodo_final") != _snap.get("periodo_final")
+                        ]
+                        save_rolling(_titulo_cfg, force=True)
+                        safe_toast("Snapshot removido.", "🗑️")
+                        st.rerun()
+
+            _arq_cpl_up = st.file_uploader(
+                "Adicionar novo CPL (.xlsx)",
+                type=["xlsx","xls"],
+                key=f"up_cpl_cfg_{_tkey_cfg}",
+                label_visibility="collapsed"
+            )
+            if _arq_cpl_up:
+                _cpl_raw = parse_custo_nivel(_arq_cpl_up.read(), _arq_cpl_up.name)
+                if "erro" in _cpl_raw:
+                    st.error(f"❌ {_cpl_raw['erro']}")
+                else:
+                    _periodo = _cpl_raw.get("periodo_final","")
+                    _hist_upd = [s for s in _hist if s.get("periodo_final") != _periodo]
+                    _hist_upd.append(_cpl_raw)
+                    _hist_upd.sort(key=lambda s: s.get("periodo_final",""))
+                    _estado_cfg["historico_cpl"] = _hist_upd
+
+                    # Atualiza poc_acum automaticamente com pct_medido do CPL
+                    _pct_med_cpl = _cpl_raw.get("pct_medido", 0.0)
+                    _per_fin_cpl = _cpl_raw.get("periodo_final", "")
+                    if _pct_med_cpl > 0 and _per_fin_cpl:
+                        try:
+                            _ano_cpl2 = int(_per_fin_cpl[:4])
+                            _mes_cpl2 = int(_per_fin_cpl[5:7])
+                            _cr_poc2  = _estado_cfg.get("cronograma", {})
+                            _di_poc2  = _cr_poc2.get("data_inicio",
+                                            _estado_cfg.get("data_inicio", {"ano": 2024, "mes": 1}))
+                            _idx_poc2 = (_ano_cpl2 - _di_poc2["ano"]) * 12 + (_mes_cpl2 - _di_poc2["mes"])
+                            _poc_arr2 = list(_estado_cfg.get("poc_acum", [0] * 24))
+                            if 0 <= _idx_poc2 < len(_poc_arr2):
+                                _poc_arr2[_idx_poc2] = round(_pct_med_cpl, 1)
+                                _estado_cfg["poc_acum"] = _poc_arr2
+                                mark_rolling_dirty(_titulo_cfg)
+                        except Exception:
+                            pass  # Não bloquear o upload do CPL por erro no POC
+
+                    save_rolling(_titulo_cfg, force=True)
+                    safe_toast(
+                        f"✅ CPL carregado: {_cpl_raw.get('periodo_final','?')} · "
+                        f"Medido {_cpl_raw.get('pct_medido',0):.1f}% · "
+                        f"CPI {_cpl_raw.get('cpi',0):.3f}", "✅"
+                    )
+                    st.rerun()
+
+        # ── UNIDADES ──────────────────────────────────────────────────────
+        with st.expander("🏢 Relatório de Unidades (Estoque)", expanded=True):
+            st.caption(
+                "Suba o relatório 'Unidades por Empreendimento (Sintético)' "
+                "do SIENGE. Este relatório define o total de unidades e o VGV."
+            )
+
+            # ── Relatório de Unidades ─────────────────────────────────
+            _un_report = _estado_cfg.get("unidades_report")
+
+            if _un_report:
+                _un_arq = _un_report.get("arquivo_nome","?")
+                _un_dt  = ""
                 try:
-                    import datetime as _dtu
-                    _dt_fmt = _dtu.datetime.fromisoformat(_data_upload_cff).strftime("%d/%m/%Y %H:%M")
+                    from datetime import datetime as _dtt
+                    _un_dt = _dtt.fromisoformat(
+                        _un_report.get("data_upload","")
+                    ).strftime("%d/%m/%Y %H:%M")
                 except Exception:
                     pass
-            st.success(
-                f"✅ **{_arq_cff}** · {_dt_fmt}\n\n"
-                f"📅 {MESES[_cr['data_inicio']['mes']-1]}/{_cr['data_inicio']['ano']} → "
-                f"{MESES[_cr['data_fim']['mes']-1]}/{_cr['data_fim']['ano']} · "
-                f"{_cr['n_meses']} meses · Total: R$ {sum(_cr['custos_por_mes']):,.0f}"
-            )
-            if st.button("🔄 Substituir CFF", key=f"sub_cff_{_tkey_cfg}"):
-                del _estado_cfg["cronograma"]
-                save_rolling(_titulo_cfg, force=True)
-                safe_toast("CFF removido. Suba a nova versão.", "🔄")
-                st.rerun()
-        else:
-            _arq_cff_up = st.file_uploader(
-                "Selecione o CFF (.xlsx)",
-                type=["xlsx","xls"],
-                key=f"up_cff_cfg_{_tkey_cfg}",
-                label_visibility="collapsed"
-            )
-            if _arq_cff_up:
-                _cron_raw = parse_cronograma_sienge(_arq_cff_up.read())
-                if "erro" in _cron_raw:
-                    st.error(f"❌ {_cron_raw['erro']}")
-                else:
-                    _estado_cfg["cronograma"] = _cron_raw
-                    _estado_cfg["cronograma"]["arquivo_nome"] = _arq_cff_up.name
-                    _estado_cfg["data_inicio"] = _cron_raw["data_inicio"]
-                    _estado_cfg["data_fim"]    = _cron_raw["data_fim"]
-                    save_rolling(_titulo_cfg, force=True)
-                    safe_toast(f"✅ CFF carregado: {_arq_cff_up.name}", "✅")
-                    st.rerun()
 
-    # CPL
-    with st.expander("📊 Custo por Nível (CPL) — Histórico mensal", expanded=True):
-        st.caption(
-            "Suba o CPL após cada boletim de medição (~dia 10 do mês seguinte). "
-            "Pode também subir versão diária a qualquer momento."
-        )
-        _hist = _estado_cfg.get("historico_cpl", [])
-        if _hist:
-            _cols_h = st.columns([3,1,1,1,1,1])
-            _cols_h[0].caption("Arquivo")
-            _cols_h[1].caption("Período")
-            _cols_h[2].caption("Medido")
-            _cols_h[3].caption("CPI")
-            _cols_h[4].caption("Realizado")
-            _cols_h[5].caption("Ação")
-            for _snap in reversed(_hist):
-                _c0,_c1,_c2,_c3,_c4,_c5 = st.columns([3,1,1,1,1,1])
-                _c0.caption(_snap.get("arquivo_nome","?")[:30])
-                _c1.caption(_snap.get("periodo_final","?"))
-                _c2.caption(f"{_snap.get('pct_medido',0):.1f}%")
-                _c3.caption(f"{_snap.get('cpi',0):.3f}")
-                _c4.caption(f"R$ {_snap.get('realizado_acum',0):,.0f}")
-                if _c5.button("🗑️", key=f"del_cpl_cfg_{_snap.get('periodo_final','')}_{_tkey_cfg}"):
-                    _estado_cfg["historico_cpl"] = [
-                        s for s in _hist if s.get("periodo_final") != _snap.get("periodo_final")
-                    ]
-                    save_rolling(_titulo_cfg, force=True)
-                    safe_toast("Snapshot removido.", "🗑️")
-                    st.rerun()
+                st.success(f"✅ **{_un_arq}** · {_un_dt}")
+                st.caption("Estoque de unidades carregado. Resumo disponível na aba 📅 Rolling Forecast.")
 
-        _arq_cpl_up = st.file_uploader(
-            "Adicionar novo CPL (.xlsx)",
-            type=["xlsx","xls"],
-            key=f"up_cpl_cfg_{_tkey_cfg}",
-            label_visibility="collapsed"
-        )
-        if _arq_cpl_up:
-            _cpl_raw = parse_custo_nivel(_arq_cpl_up.read(), _arq_cpl_up.name)
-            if "erro" in _cpl_raw:
-                st.error(f"❌ {_cpl_raw['erro']}")
+                # Atualiza total_unidades automaticamente (lógica de negócio — manter)
+                if _estado_cfg.get("total_unidades",0) != _un_report["total_unidades"]:
+                    _estado_cfg["total_unidades"] = _un_report["total_unidades"]
+                    mark_rolling_dirty(_titulo_cfg)
+
+                if st.button("🔄 Substituir relatório de unidades",
+                             key=f"sub_un_{_tkey_cfg}"):
+                    _estado_cfg["unidades_report"] = None
+                    save_rolling(_titulo_cfg, force=True)
+                    safe_toast("Relatório removido. Suba a nova versão.", "🔄")
+                    st.rerun()
             else:
-                _periodo = _cpl_raw.get("periodo_final","")
-                _hist_upd = [s for s in _hist if s.get("periodo_final") != _periodo]
-                _hist_upd.append(_cpl_raw)
-                _hist_upd.sort(key=lambda s: s.get("periodo_final",""))
-                _estado_cfg["historico_cpl"] = _hist_upd
+                # Campo manual como fallback
+                _total_un = int(_estado_cfg.get("total_unidades", 0))
+                _vendas_st = _estado_cfg.get("vendas",{})
+                _min_un = _vendas_st.get("unidades_vendidas", 0) if _vendas_st else 0
 
-                # Atualiza poc_acum automaticamente com pct_medido do CPL
-                _pct_med_cpl = _cpl_raw.get("pct_medido", 0.0)
-                _per_fin_cpl = _cpl_raw.get("periodo_final", "")
-                if _pct_med_cpl > 0 and _per_fin_cpl:
-                    try:
-                        _ano_cpl2 = int(_per_fin_cpl[:4])
-                        _mes_cpl2 = int(_per_fin_cpl[5:7])
-                        _cr_poc2  = _estado_cfg.get("cronograma", {})
-                        _di_poc2  = _cr_poc2.get("data_inicio",
-                                        _estado_cfg.get("data_inicio", {"ano": 2024, "mes": 1}))
-                        _idx_poc2 = (_ano_cpl2 - _di_poc2["ano"]) * 12 + (_mes_cpl2 - _di_poc2["mes"])
-                        _poc_arr2 = list(_estado_cfg.get("poc_acum", [0] * 24))
-                        if 0 <= _idx_poc2 < len(_poc_arr2):
-                            _poc_arr2[_idx_poc2] = round(_pct_med_cpl, 1)
-                            _estado_cfg["poc_acum"] = _poc_arr2
-                            mark_rolling_dirty(_titulo_cfg)
-                    except Exception:
-                        pass  # Não bloquear o upload do CPL por erro no POC
-
-                save_rolling(_titulo_cfg, force=True)
-                safe_toast(
-                    f"✅ CPL carregado: {_cpl_raw.get('periodo_final','?')} · "
-                    f"Medido {_cpl_raw.get('pct_medido',0):.1f}% · "
-                    f"CPI {_cpl_raw.get('cpi',0):.3f}", "✅"
+                _total_un_input = st.number_input(
+                    "Total de unidades do empreendimento",
+                    min_value=0, step=1,
+                    value=_total_un,
+                    key=f"total_un_{_tkey_cfg}",
+                    help=(
+                        "Número total de apartamentos + salas (sem garagens). "
+                        f"Mínimo: {_min_un} (unidades já vendidas)."
+                        if _min_un else
+                        "Número total de apartamentos + salas (sem garagens)."
+                    )
                 )
-                st.rerun()
+                if _min_un > 0 and _total_un_input < _min_un:
+                    st.warning(
+                        f"⚠️ Total informado ({_total_un_input}) é menor que "
+                        f"as unidades já vendidas ({_min_un})."
+                    )
+                if _total_un_input != _total_un:
+                    _estado_cfg["total_unidades"] = _total_un_input
+                    save_rolling(_titulo_cfg, force=True)
 
-    # ── UNIDADES ──────────────────────────────────────────────────────
-    with st.expander("🏢 Relatório de Unidades (Estoque)", expanded=True):
-        st.caption(
-            "Suba o relatório 'Unidades por Empreendimento (Sintético)' "
-            "do SIENGE. Este relatório define o total de unidades e o VGV."
-        )
-
-        # ── Relatório de Unidades ─────────────────────────────────
-        _un_report = _estado_cfg.get("unidades_report")
-
-        if _un_report:
-            _un_arq = _un_report.get("arquivo_nome","?")
-            _un_dt  = ""
-            try:
-                from datetime import datetime as _dtt
-                _un_dt = _dtt.fromisoformat(
-                    _un_report.get("data_upload","")
-                ).strftime("%d/%m/%Y %H:%M")
-            except Exception:
-                pass
-
-            st.success(f"✅ **{_un_arq}** · {_un_dt}")
-            st.caption("Estoque de unidades carregado. Resumo disponível na aba 📅 Rolling Forecast.")
-
-            # Atualiza total_unidades automaticamente (lógica de negócio — manter)
-            if _estado_cfg.get("total_unidades",0) != _un_report["total_unidades"]:
-                _estado_cfg["total_unidades"] = _un_report["total_unidades"]
-                mark_rolling_dirty(_titulo_cfg)
-
-            if st.button("🔄 Substituir relatório de unidades",
-                         key=f"sub_un_{_tkey_cfg}"):
-                _estado_cfg["unidades_report"] = None
-                save_rolling(_titulo_cfg, force=True)
-                safe_toast("Relatório removido. Suba a nova versão.", "🔄")
-                st.rerun()
-        else:
-            # Campo manual como fallback
-            _total_un = int(_estado_cfg.get("total_unidades", 0))
-            _vendas_st = _estado_cfg.get("vendas",{})
-            _min_un = _vendas_st.get("unidades_vendidas", 0) if _vendas_st else 0
-
-            _total_un_input = st.number_input(
-                "Total de unidades do empreendimento",
-                min_value=0, step=1,
-                value=_total_un,
-                key=f"total_un_{_tkey_cfg}",
-                help=(
-                    "Número total de apartamentos + salas (sem garagens). "
-                    f"Mínimo: {_min_un} (unidades já vendidas)."
-                    if _min_un else
-                    "Número total de apartamentos + salas (sem garagens)."
+                # Uploader do relatório de unidades
+                st.caption("Ou suba o Relatório de Unidades para preenchimento automático:")
+                _arq_un_up = st.file_uploader(
+                    "Relatório de Unidades (.xlsx)",
+                    type=["xlsx","xls"],
+                    key=f"up_un_{_tkey_cfg}",
+                    label_visibility="collapsed"
                 )
-            )
-            if _min_un > 0 and _total_un_input < _min_un:
-                st.warning(
-                    f"⚠️ Total informado ({_total_un_input}) é menor que "
-                    f"as unidades já vendidas ({_min_un})."
-                )
-            if _total_un_input != _total_un:
-                _estado_cfg["total_unidades"] = _total_un_input
-                save_rolling(_titulo_cfg, force=True)
-
-            # Uploader do relatório de unidades
-            st.caption("Ou suba o Relatório de Unidades para preenchimento automático:")
-            _arq_un_up = st.file_uploader(
-                "Relatório de Unidades (.xlsx)",
-                type=["xlsx","xls"],
-                key=f"up_un_{_tkey_cfg}",
-                label_visibility="collapsed"
-            )
-            if _arq_un_up:
-                _un_raw = parse_unidades_sienge(_arq_un_up.read(), _arq_un_up.name)
-                if "erro" in _un_raw:
-                    st.error(f"❌ {_un_raw['erro']}")
-                else:
-                    _estado_cfg["unidades_report"] = _un_raw
-                    _estado_cfg["total_unidades"]  = _un_raw["total_unidades"]
-                    # Recalcula VGV automaticamente com dados do relatório de unidades
-                    _vendas_atual = _estado_cfg.get("vendas")
-                    if _vendas_atual:
-                        _vgv_recalc = _calcula_vgv_projetado(
-                            _vendas_atual,
-                            _un_raw["total_unidades"],
-                            _estado_cfg.get("cronograma", {}),
-                            _estado_cfg.get("data_inicio", {"ano": 2024, "mes": 1}),
-                            _un_raw,
+                if _arq_un_up:
+                    _un_raw = parse_unidades_sienge(_arq_un_up.read(), _arq_un_up.name)
+                    if "erro" in _un_raw:
+                        st.error(f"❌ {_un_raw['erro']}")
+                    else:
+                        _estado_cfg["unidades_report"] = _un_raw
+                        _estado_cfg["total_unidades"]  = _un_raw["total_unidades"]
+                        # Recalcula VGV automaticamente com dados do relatório de unidades
+                        _vendas_atual = _estado_cfg.get("vendas")
+                        if _vendas_atual:
+                            _vgv_recalc = _calcula_vgv_projetado(
+                                _vendas_atual,
+                                _un_raw["total_unidades"],
+                                _estado_cfg.get("cronograma", {}),
+                                _estado_cfg.get("data_inicio", {"ano": 2024, "mes": 1}),
+                                _un_raw,
+                            )
+                            _estado_cfg["vgv"] = _vgv_recalc
+                        save_rolling(_titulo_cfg, force=True)
+                        safe_toast(
+                            f"✅ {_un_raw['total_unidades']} unidades · "
+                            f"{_un_raw['vendidas']} vendidas · "
+                            f"{_un_raw['disponiveis']} disponíveis · "
+                            f"{_un_raw['permuta']} permuta(s)",
+                            "✅"
                         )
-                        _estado_cfg["vgv"] = _vgv_recalc
-                    save_rolling(_titulo_cfg, force=True)
-                    safe_toast(
-                        f"✅ {_un_raw['total_unidades']} unidades · "
-                        f"{_un_raw['vendidas']} vendidas · "
-                        f"{_un_raw['disponiveis']} disponíveis · "
-                        f"{_un_raw['permuta']} permuta(s)",
-                        "✅"
+                        st.rerun()
+
+        # ── VENDAS ────────────────────────────────────────────────────────
+        with st.expander("🏠 Relatório de Vendas", expanded=True):
+            st.caption(
+                "Suba o relatório 'Vendas por Empreendimento — Simplificado' "
+                "exportado do SIENGE. Atualizar mensalmente."
+            )
+
+            # Mostra resumo se já tem vendas carregadas
+            _vendas = _estado_cfg.get("vendas")
+            if _vendas:
+                _v_un  = _vendas.get("unidades_vendidas", 0)
+                _v_vgv = _vendas.get("vgv_vendido", 0.0)
+                _v_pm  = _vendas.get("preco_medio", 0.0)
+                _v_arq = _vendas.get("arquivo_nome", "?")
+                _v_dt  = ""
+                try:
+                    from datetime import datetime as _dtt
+                    _v_dt = _dtt.fromisoformat(
+                        _vendas.get("data_upload","")
+                    ).strftime("%d/%m/%Y %H:%M")
+                except Exception:
+                    pass
+
+                st.success(
+                    f"✅ **{_v_arq}** · {_v_dt}\n\n"
+                    f"🏠 **{_v_un}** unidades vendidas · "
+                    f"VGV: **R$ {_v_vgv:,.0f}** · "
+                    f"Preço médio: **R$ {_v_pm:,.0f}**"
+                )
+
+                _tot = _estado_cfg.get("total_unidades", 0)
+                if _tot > 0:
+                    _rest = max(_tot - _v_un, 0)
+                    _vgv_rest = _rest * _v_pm
+                    st.info(
+                        f"📊 Restam **{_rest} unidades** a vender · "
+                        f"VGV estimado: **R$ {_vgv_rest:,.0f}** "
+                        f"(@ R$ {_v_pm:,.0f}/un)"
                     )
-                    st.rerun()
 
-    # ── VENDAS ────────────────────────────────────────────────────────
-    with st.expander("🏠 Relatório de Vendas", expanded=True):
-        st.caption(
-            "Suba o relatório 'Vendas por Empreendimento — Simplificado' "
-            "exportado do SIENGE. Atualizar mensalmente."
-        )
-
-        # Mostra resumo se já tem vendas carregadas
-        _vendas = _estado_cfg.get("vendas")
-        if _vendas:
-            _v_un  = _vendas.get("unidades_vendidas", 0)
-            _v_vgv = _vendas.get("vgv_vendido", 0.0)
-            _v_pm  = _vendas.get("preco_medio", 0.0)
-            _v_arq = _vendas.get("arquivo_nome", "?")
-            _v_dt  = ""
-            try:
-                from datetime import datetime as _dtt
-                _v_dt = _dtt.fromisoformat(
-                    _vendas.get("data_upload","")
-                ).strftime("%d/%m/%Y %H:%M")
-            except Exception:
-                pass
-
-            st.success(
-                f"✅ **{_v_arq}** · {_v_dt}\n\n"
-                f"🏠 **{_v_un}** unidades vendidas · "
-                f"VGV: **R$ {_v_vgv:,.0f}** · "
-                f"Preço médio: **R$ {_v_pm:,.0f}**"
-            )
-
-            _tot = _estado_cfg.get("total_unidades", 0)
-            if _tot > 0:
-                _rest = max(_tot - _v_un, 0)
-                _vgv_rest = _rest * _v_pm
-                st.info(
-                    f"📊 Restam **{_rest} unidades** a vender · "
-                    f"VGV estimado: **R$ {_vgv_rest:,.0f}** "
-                    f"(@ R$ {_v_pm:,.0f}/un)"
-                )
-
-        # Uploader
-        _arq_vendas = st.file_uploader(
-            "Selecione o relatório de vendas (.xlsx)",
-            type=["xlsx", "xls"],
-            key=f"up_vendas_{_tkey_cfg}",
-            label_visibility="collapsed"
-        )
-        if _arq_vendas:
-            _v_raw = parse_vendas_sienge(_arq_vendas.read(), _arq_vendas.name)
-            if "erro" in _v_raw:
-                st.error(f"❌ {_v_raw['erro']}")
-            else:
-                _estado_cfg["vendas"] = _v_raw
-                # Atualiza VGV automaticamente
-                _vgv_auto = _calcula_vgv_projetado(
-                    _v_raw,
-                    _estado_cfg.get("total_unidades", 0),
-                    _estado_cfg.get("cronograma", {}),
-                    _estado_cfg.get("data_inicio", {"ano": 2024, "mes": 1}),
-                    _estado_cfg.get("unidades_report"),
-                )
-                _estado_cfg["vgv"] = _vgv_auto
-                save_rolling(_titulo_cfg, force=True)
-                safe_toast(
-                    f"✅ Vendas carregadas: {_v_raw['unidades_vendidas']} un · "
-                    f"VGV R$ {_v_raw['vgv_vendido']:,.0f} · "
-                    f"Preço médio R$ {_v_raw['preco_medio']:,.0f}",
-                    "✅"
-                )
-                st.rerun()
-
-        # Botão para recalcular projeção
-        if _vendas and _estado_cfg.get("total_unidades", 0) > 0:
-            if st.button(
-                "🔄 Recalcular projeção de vendas",
-                key=f"recalc_vgv_{_tkey_cfg}",
-                help="Redistribui o VGV restante nos próximos meses"
-            ):
-                _vgv_auto = _calcula_vgv_projetado(
-                    _vendas,
-                    _estado_cfg.get("total_unidades", 0),
-                    _estado_cfg.get("cronograma", {}),
-                    _estado_cfg.get("data_inicio", {"ano": 2024, "mes": 1}),
-                    _estado_cfg.get("unidades_report"),
-                )
-                _estado_cfg["vgv"] = _vgv_auto
-                save_rolling(_titulo_cfg, force=True)
-                safe_toast("VGV recalculado!", "🔄")
-                st.rerun()
-
-    with st.expander("💰 Recebíveis — Contas a Receber", expanded=True):
-        st.caption(
-            "Suba o relatório 'Contas a Receber — Recebíveis' exportado do SIENGE. "
-            "Exporte sempre com data inicial = hoje para ter apenas recebimentos futuros. "
-            "O painel detalhado aparece na aba 📅 Rolling Forecast → visão Caixa."
-        )
-
-        _rec = _estado_cfg.get("recebiveis")
-        if _rec:
-            _arq_rec_nome = _rec.get("arquivo_nome","?")
-            _dt_rec = ""
-            try:
-                from datetime import datetime as _dtt
-                _dt_rec = _dtt.fromisoformat(
-                    _rec.get("data_upload","")
-                ).strftime("%d/%m/%Y %H:%M")
-            except Exception:
-                pass
-            _n_pe = len(_rec.get("unidades_permuta",[]))
-            st.success(
-                f"✅ **{_arq_rec_nome}** · {_dt_rec}\n\n"
-                f"Total recebível: **{fmt(_rec.get('total_recebiveis',0))}** · "
-                f"FI: **{fmt(_rec.get('total_fi',0))}** · "
-                f"PM: **{fmt(_rec.get('total_pm',0))}**"
-                + (f" · ⚠️ {_n_pe} permuta(s) excluída(s)" if _n_pe else "")
-            )
-            if st.button("🔄 Substituir recebíveis",
-                         key=f"sub_rec_{_tkey_cfg}"):
-                _estado_cfg["recebiveis"] = None
-                save_rolling(_titulo_cfg, force=True)
-                safe_toast("Recebíveis removidos. Suba a nova versão.", "🔄")
-                st.rerun()
-        else:
-            _arq_rec_up = st.file_uploader(
-                "Selecione o relatório de recebíveis (.xlsx)",
-                type=["xlsx","xls"],
-                key=f"up_rec_{_tkey_cfg}",
+            # Uploader
+            _arq_vendas = st.file_uploader(
+                "Selecione o relatório de vendas (.xlsx)",
+                type=["xlsx", "xls"],
+                key=f"up_vendas_{_tkey_cfg}",
                 label_visibility="collapsed"
             )
-            if _arq_rec_up:
-                _rec_raw = parse_recebiveis_sienge(
-                    _arq_rec_up.read(), _arq_rec_up.name
-                )
-                if "erro" in _rec_raw:
-                    st.error(f"❌ {_rec_raw['erro']}")
+            if _arq_vendas:
+                _v_raw = parse_vendas_sienge(_arq_vendas.read(), _arq_vendas.name)
+                if "erro" in _v_raw:
+                    st.error(f"❌ {_v_raw['erro']}")
                 else:
-                    _estado_cfg["recebiveis"] = _rec_raw
+                    _estado_cfg["vendas"] = _v_raw
+                    # Atualiza VGV automaticamente
+                    _vgv_auto = _calcula_vgv_projetado(
+                        _v_raw,
+                        _estado_cfg.get("total_unidades", 0),
+                        _estado_cfg.get("cronograma", {}),
+                        _estado_cfg.get("data_inicio", {"ano": 2024, "mes": 1}),
+                        _estado_cfg.get("unidades_report"),
+                    )
+                    _estado_cfg["vgv"] = _vgv_auto
                     save_rolling(_titulo_cfg, force=True)
                     safe_toast(
-                        f"✅ Recebíveis carregados: "
-                        f"R$ {_rec_raw['total_recebiveis']:,.0f} · "
-                        f"FI R$ {_rec_raw['total_fi']:,.0f} · "
-                        f"{len(_rec_raw.get('unidades_permuta',[]))} permuta(s) excluída(s)",
+                        f"✅ Vendas carregadas: {_v_raw['unidades_vendidas']} un · "
+                        f"VGV R$ {_v_raw['vgv_vendido']:,.0f} · "
+                        f"Preço médio R$ {_v_raw['preco_medio']:,.0f}",
                         "✅"
                     )
                     st.rerun()
 
-    # DRE mensal
+            # Botão para recalcular projeção
+            if _vendas and _estado_cfg.get("total_unidades", 0) > 0:
+                if st.button(
+                    "🔄 Recalcular projeção de vendas",
+                    key=f"recalc_vgv_{_tkey_cfg}",
+                    help="Redistribui o VGV restante nos próximos meses"
+                ):
+                    _vgv_auto = _calcula_vgv_projetado(
+                        _vendas,
+                        _estado_cfg.get("total_unidades", 0),
+                        _estado_cfg.get("cronograma", {}),
+                        _estado_cfg.get("data_inicio", {"ano": 2024, "mes": 1}),
+                        _estado_cfg.get("unidades_report"),
+                    )
+                    _estado_cfg["vgv"] = _vgv_auto
+                    save_rolling(_titulo_cfg, force=True)
+                    safe_toast("VGV recalculado!", "🔄")
+                    st.rerun()
+
+        with st.expander("💰 Recebíveis — Contas a Receber", expanded=True):
+            st.caption(
+                "Suba o relatório 'Contas a Receber — Recebíveis' exportado do SIENGE. "
+                "Exporte sempre com data inicial = hoje para ter apenas recebimentos futuros. "
+                "O painel detalhado aparece na aba 📅 Rolling Forecast → visão Caixa."
+            )
+
+            _rec = _estado_cfg.get("recebiveis")
+            if _rec:
+                _arq_rec_nome = _rec.get("arquivo_nome","?")
+                _dt_rec = ""
+                try:
+                    from datetime import datetime as _dtt
+                    _dt_rec = _dtt.fromisoformat(
+                        _rec.get("data_upload","")
+                    ).strftime("%d/%m/%Y %H:%M")
+                except Exception:
+                    pass
+                _n_pe = len(_rec.get("unidades_permuta",[]))
+                st.success(
+                    f"✅ **{_arq_rec_nome}** · {_dt_rec}\n\n"
+                    f"Total recebível: **{fmt(_rec.get('total_recebiveis',0))}** · "
+                    f"FI: **{fmt(_rec.get('total_fi',0))}** · "
+                    f"PM: **{fmt(_rec.get('total_pm',0))}**"
+                    + (f" · ⚠️ {_n_pe} permuta(s) excluída(s)" if _n_pe else "")
+                )
+                if st.button("🔄 Substituir recebíveis",
+                             key=f"sub_rec_{_tkey_cfg}"):
+                    _estado_cfg["recebiveis"] = None
+                    save_rolling(_titulo_cfg, force=True)
+                    safe_toast("Recebíveis removidos. Suba a nova versão.", "🔄")
+                    st.rerun()
+            else:
+                _arq_rec_up = st.file_uploader(
+                    "Selecione o relatório de recebíveis (.xlsx)",
+                    type=["xlsx","xls"],
+                    key=f"up_rec_{_tkey_cfg}",
+                    label_visibility="collapsed"
+                )
+                if _arq_rec_up:
+                    _rec_raw = parse_recebiveis_sienge(
+                        _arq_rec_up.read(), _arq_rec_up.name
+                    )
+                    if "erro" in _rec_raw:
+                        st.error(f"❌ {_rec_raw['erro']}")
+                    else:
+                        _estado_cfg["recebiveis"] = _rec_raw
+                        save_rolling(_titulo_cfg, force=True)
+                        safe_toast(
+                            f"✅ Recebíveis carregados: "
+                            f"R$ {_rec_raw['total_recebiveis']:,.0f} · "
+                            f"FI R$ {_rec_raw['total_fi']:,.0f} · "
+                            f"{len(_rec_raw.get('unidades_permuta',[]))} permuta(s) excluída(s)",
+                            "✅"
+                        )
+                        st.rerun()
+
+    # ══════════════════════════════════════════════════════════════════
+    # BLOCO DRE — para TODAS as empresas (Matriz e SPEs)
+    # ══════════════════════════════════════════════════════════════════
+    st.markdown("### 📊 Dados Financeiros")
+
     with st.expander("📋 DRE Mensal (histórico real)", expanded=False):
         st.caption(
-            "Suba a DRE exportada do SIENGE mês a mês a partir de 2026. "
-            "A DRE anual de 2025 já está carregada na aba DRE Analítica."
+            "Suba a DRE mensal exportada do SIENGE — um arquivo por mês. "
+            "Cada upload adiciona o mês sem apagar os anteriores."
         )
-        # Mostra o que já está carregado
+
         _emp_data_dre = st.session_state.clientes[cliente_sel]["empresas"].get(_spe_sel, {})
-        _fonte_dre = _emp_data_dre.get("fonte", "Fixo")
-        _nome_dre  = _emp_data_dre.get("nome", _spe_sel)
-        st.caption(
-            f"DRE atual: **{_nome_dre}** · "
-            f"Fonte: {'Upload' if _fonte_dre == 'Upload' else 'Dados padrão'}"
-        )
+        _dre_mensal = _emp_data_dre.get("dre_mensal", {})
+
+        if _dre_mensal:
+            _meses_ok = sorted(_dre_mensal.keys())
+            st.markdown(f"**{len(_meses_ok)} {'mês carregado' if len(_meses_ok)==1 else 'meses carregados'}:**")
+        
+            for _ym in _meses_ok:
+                _vals_m = _dre_mensal[_ym]
+                try:
+                    _a, _m = int(_ym[:4]), int(_ym[5:7])
+                    _nome_m = ["Jan","Fev","Mar","Abr","Mai","Jun",
+                               "Jul","Ago","Set","Out","Nov","Dez"][_m-1]
+                    _label = f"{_nome_m}/{_a}"
+                except Exception:
+                    _label = _ym
+        
+                _tipo = "📅 Mensal" if _vals_m.get("tipo") != "anual" else "📋 Anual"
+                _arq  = _vals_m.get("arquivo_nome", "—")
+                _dt   = ""
+                try:
+                    from datetime import datetime as _dtt
+                    _dt = _dtt.fromisoformat(_vals_m.get("data_upload","")).strftime("%d/%m/%Y")
+                except Exception:
+                    pass
+        
+                _col_info, _col_del = st.columns([5, 1])
+                with _col_info:
+                    st.markdown(
+                        f"✅ **{_label}** · {_tipo} · `{_arq}`"
+                        + (f" · {_dt}" if _dt else "")
+                        + f" · Rec: R$ {_vals_m.get('rec_bruta',0):,.0f}"
+                        + f" · CPV: R$ {abs(_vals_m.get('cpv',0)):,.0f}"
+                    )
+                with _col_del:
+                    if st.button("🗑️", key=f"del_dre_{_ym}_{_tkey_cfg}",
+                                 help=f"Remover {_label}"):
+                        del _emp_dict["dre_mensal"][_ym]
+                        save_state()
+                        safe_toast(f"🗑️ DRE {_label} removida.", "🗑️")
+                        st.rerun()
+        else:
+            st.info("Nenhuma DRE carregada ainda. Suba abaixo.")
+
         # Uploader para nova DRE mensal
-        _tipo_up = "SIENGE"
         st.caption("Arquivo Excel exportado do SIENGE — Demonstrativo de Resultado.")
         _arq_dre_up = st.file_uploader(
             "Selecione o arquivo DRE (.xlsx)",
@@ -3060,25 +3018,197 @@ def render_configuracoes():
         )
         if _arq_dre_up:
             _bdata = _arq_dre_up.read()
-            _res_dre = parse_sienge(_bdata)
+            _res_dre = parse_dre_mensal_sienge(_bdata, _arq_dre_up.name)
             if "erro" in _res_dre:
                 st.error(f"❌ {_res_dre['erro']}")
             else:
-                st.success(f"✅ Arquivo lido: {_arq_dre_up.name}")
-                if st.button("✅ Aplicar DRE", type="primary", key=f"apply_dre_cfg_{_tkey_cfg}"):
-                    _d = _res_dre["dados"]
-                    _nova = {
-                        "nome": _spe_sel, "fonte": "Upload",
-                        "rec_bruta": _d["rec_bruta"], "imp_rec": _d["imp_rec"],
-                        "cpv": _d["cpv"], "desp_op": _d["desp_op"],
-                        "res_fin": _d["res_fin"], "ir": _d["ir"],
-                        "rec_bdi":  _d.get("rec_bdi",  [0.0]*12),
-                        "desp_bdi": _d.get("desp_bdi", [0.0]*12),
-                        "raw_lines": _parse_sienge_full(_bdata)
+                _aaaa_mm = _res_dre["aaaa_mm"]
+                _ano_dre = _res_dre["ano"]
+                _mes_dre = _res_dre["mes"]
+                _mes_nome = ["Jan","Fev","Mar","Abr","Mai","Jun",
+                             "Jul","Ago","Set","Out","Nov","Dez"][_mes_dre - 1]
+
+                st.success(
+                    f"✅ **{_arq_dre_up.name}** · "
+                    f"{_mes_nome}/{_ano_dre} · "
+                    f"Rec. Bruta: R$ {_res_dre['rec_bruta']:,.0f} · "
+                    f"CPV: R$ {_res_dre['cpv']:,.0f} · "
+                    f"BDI: R$ {_res_dre['desp_bdi']:,.0f}"
+                )
+
+                if st.button("✅ Aplicar DRE", type="primary",
+                             key=f"apply_dre_cfg_{_tkey_cfg}"):
+
+                    _emp_dict = st.session_state.clientes[cliente_sel]["empresas"][_spe_sel]
+
+                    # Atualizar data_inicio do rolling state se necessário
+                    _state_dm = get_rolling_state(_spe_sel)
+                    _di_atual_m = _state_dm.get("data_inicio", {"ano": 2024, "mes": 1})
+                    _di_novo_m  = {"ano": _ano_dre, "mes": _mes_dre}
+                    if (_di_atual_m["ano"], _di_atual_m["mes"]) > (_di_novo_m["ano"], _di_novo_m["mes"]):
+                        _state_dm["data_inicio"] = _di_novo_m
+                        mark_rolling_dirty(_spe_sel)
+
+                    # Inicializar dre_mensal se não existir
+                    if "dre_mensal" not in _emp_dict:
+                        _emp_dict["dre_mensal"] = {}
+
+                    # Salvar o mês sem sobrescrever os demais
+                    _emp_dict["dre_mensal"][_aaaa_mm] = {
+                        "rec_bruta":    _res_dre["rec_bruta"],
+                        "imp_rec":      _res_dre["imp_rec"],
+                        "cpv":          _res_dre["cpv"],
+                        "desp_op":      _res_dre["desp_op"],
+                        "desp_bdi":     _res_dre["desp_bdi"],
+                        "res_fin":      _res_dre["res_fin"],
+                        "ir":           _res_dre["ir"],
+                        "arquivo_nome": _res_dre["arquivo_nome"],
+                        "data_upload":  _res_dre["data_upload"],
                     }
-                    st.session_state.clientes[cliente_sel]["empresas"][_spe_sel] = _nova
+
                     save_state()
-                    safe_toast(f"✅ DRE atualizada!", "✅")
+                    safe_toast(f"✅ DRE {_mes_nome}/{_ano_dre} salva!", "✅")
+                    st.rerun()
+
+    # DRE Anual (2024, 2025 — anos fechados)
+    with st.expander("📋 DRE Anual (ano fechado)", expanded=False):
+        st.caption(
+            "Suba a DRE anual completa (Jan–Dez) exportada do SIENGE. "
+            "Use para anos já encerrados como 2024 e 2025."
+        )
+
+        # Mostrar DREs anuais já carregadas
+        _emp_data_anual = st.session_state.clientes[cliente_sel]["empresas"].get(_spe_sel, {})
+        _dre_mensal_anual = _emp_data_anual.get("dre_mensal", {})
+        _anos_carregados = sorted(set(
+            int(_ym[:4]) for _ym in _dre_mensal_anual.keys()
+            if _dre_mensal_anual[_ym].get("tipo") == "anual"
+        ))
+
+        if _anos_carregados:
+            for _ano_c in _anos_carregados:
+                _meses_ano = [_ym for _ym in _dre_mensal_anual
+                              if _ym.startswith(str(_ano_c))
+                              and _dre_mensal_anual[_ym].get("tipo") == "anual"]
+                _arq_anual = _dre_mensal_anual[_meses_ano[0]].get("arquivo_nome", "—") if _meses_ano else "—"
+                _dt_anual  = ""
+                if _meses_ano:
+                    try:
+                        from datetime import datetime as _dtt
+                        _dt_anual = _dtt.fromisoformat(
+                            _dre_mensal_anual[_meses_ano[0]].get("data_upload","")
+                        ).strftime("%d/%m/%Y")
+                    except Exception:
+                        pass
+
+                _ca1, _ca2 = st.columns([5, 1])
+                _ca1.success(
+                    f"✅ **{_ano_c}** · {len(_meses_ano)} meses · `{_arq_anual}`"
+                    + (f" · {_dt_anual}" if _dt_anual else "")
+                )
+                if _ca2.button("🗑️", key=f"del_dre_anual_{_ano_c}_{_tkey_cfg}",
+                               help=f"Remover DRE {_ano_c}"):
+                    for _ym_del in _meses_ano:
+                        del _emp_data_anual["dre_mensal"][_ym_del]
+                    save_state()
+                    safe_toast(f"🗑️ DRE {_ano_c} removida.", "🗑️")
+                    st.rerun()
+        else:
+            st.info("Nenhuma DRE anual carregada.")
+
+        st.caption("Arquivo Excel exportado do SIENGE — Demonstrativo de Resultado (ano completo).")
+        _arq_dre_anual = st.file_uploader(
+            "Selecione o arquivo DRE anual (.xlsx)",
+            type=["xlsx","xls"],
+            key=f"up_dre_anual_cfg_{_tkey_cfg}",
+            label_visibility="collapsed"
+        )
+        if _arq_dre_up_anual := _arq_dre_anual:
+            _bdata_anual = _arq_dre_up_anual.read()
+            _res_anual   = parse_sienge(_bdata_anual)
+            if "erro" in _res_anual:
+                st.error(f"❌ {_res_anual['erro']}")
+            else:
+                # Detectar ano
+                _ano_det = _detecta_ano_dre(_bdata_anual)
+                # Contar meses com dados não-zero
+                _meses_com_dados = sum(
+                    1 for v in _res_anual["dados"]["rec_bruta"]
+                    if v != 0.0
+                ) or 12  # se tudo zero, assumir 12
+                st.success(
+                    f"✅ **{_arq_dre_up_anual.name}** · "
+                    f"Ano detectado: **{_ano_det}** · "
+                    f"{_meses_com_dados} {'mês' if _meses_com_dados == 1 else 'meses'} com dados"
+                )
+                _col_ano, _ = st.columns([2, 3])
+                _ano_conf = _col_ano.number_input(
+                    "Confirmar ano:",
+                    value=_ano_det,
+                    min_value=2020, max_value=2030,
+                    step=1,
+                    key=f"ano_conf_anual_{_tkey_cfg}"
+                )
+
+                if st.button("✅ Aplicar DRE Anual", type="primary",
+                             key=f"apply_dre_anual_{_tkey_cfg}"):
+                    from datetime import datetime
+                    _d_anual = _res_anual["dados"]
+                    _emp_dict_anual = st.session_state.clientes[cliente_sel]["empresas"][_spe_sel]
+
+                    # Atualizar data_inicio do estado rolling se ele estiver
+                    # apontando para um período posterior à DRE carregada
+                    _state_dre = get_rolling_state(_spe_sel)
+                    _di_atual = _state_dre.get("data_inicio", {"ano": 2024, "mes": 1})
+                    _di_novo  = {"ano": int(_ano_conf), "mes": 1}
+                    if (_di_atual["ano"], _di_atual["mes"]) > (_di_novo["ano"], _di_novo["mes"]):
+                        _state_dre["data_inicio"] = _di_novo
+                        mark_rolling_dirty(_spe_sel)
+
+                    if "dre_mensal" not in _emp_dict_anual:
+                        _emp_dict_anual["dre_mensal"] = {}
+
+                    # Remover meses do mesmo ano se já existirem
+                    _remover = [_ym for _ym in _emp_dict_anual["dre_mensal"]
+                                if _ym.startswith(str(_ano_conf))]
+                    for _ym_r in _remover:
+                        del _emp_dict_anual["dre_mensal"][_ym_r]
+
+                    # Salvar 12 meses em dre_mensal
+                    _campos_anual = ["rec_bruta","imp_rec","cpv","desp_op","res_fin","ir"]
+                    for _mi in range(12):
+                        _aaaa_mm_a = f"{_ano_conf}-{_mi+1:02d}"
+                        _emp_dict_anual["dre_mensal"][_aaaa_mm_a] = {
+                            "rec_bruta":    float(_d_anual["rec_bruta"][_mi]) if _mi < len(_d_anual["rec_bruta"]) else 0.0,
+                            "imp_rec":      float(_d_anual["imp_rec"][_mi])   if _mi < len(_d_anual["imp_rec"])   else 0.0,
+                            "cpv":          float(_d_anual["cpv"][_mi])       if _mi < len(_d_anual["cpv"])       else 0.0,
+                            "desp_op":      float(_d_anual["desp_op"][_mi])   if _mi < len(_d_anual["desp_op"])   else 0.0,
+                            "desp_bdi":     float(_d_anual.get("desp_bdi",[0.0]*12)[_mi]),
+                            "res_fin":      float(_d_anual["res_fin"][_mi])   if _mi < len(_d_anual["res_fin"])   else 0.0,
+                            "ir":           float(_d_anual["ir"][_mi])        if _mi < len(_d_anual["ir"])        else 0.0,
+                            "arquivo_nome": _arq_dre_up_anual.name,
+                            "data_upload":  datetime.now().isoformat(),
+                            "tipo":         "anual",
+                        }
+
+                    # Manter emp_base por compatibilidade com função dre() legada
+                    _emp_dict_anual.update({
+                        "nome":      _spe_sel,
+                        "fonte":     "Upload",
+                        "ano_dre":   int(_ano_conf),
+                        "rec_bruta": _d_anual["rec_bruta"],
+                        "imp_rec":   _d_anual["imp_rec"],
+                        "cpv":       _d_anual["cpv"],
+                        "desp_op":   _d_anual["desp_op"],
+                        "res_fin":   _d_anual["res_fin"],
+                        "ir":        _d_anual["ir"],
+                        "rec_bdi":   _d_anual.get("rec_bdi",  [0.0]*12),
+                        "desp_bdi":  _d_anual.get("desp_bdi", [0.0]*12),
+                        "raw_lines": _parse_sienge_full(_bdata_anual),
+                    })
+
+                    save_state()
+                    safe_toast(f"✅ DRE {_ano_conf} salva ({12} meses)!", "✅")
                     st.rerun()
 
     st.divider()
@@ -3086,22 +3216,23 @@ def render_configuracoes():
     # ══════════════════════════════════════════════════════════════════
     # BLOCO 2 — PARÂMETROS DE RECEITA (para Rolling Forecast)
     # ══════════════════════════════════════════════════════════════════
-    st.markdown("### 💰 Bloco 2 — Parâmetros de Receita")
-    st.caption("Usados na aba Rolling Forecast para projetar receita futura.")
+    if not _is_matriz_cfg:
+        st.markdown("### 💰 Bloco 2 — Parâmetros de Receita")
+        st.caption("Usados na aba Rolling Forecast para projetar receita futura.")
 
-    # Deriva horizonte da SPE selecionada (necessário para POC e BDI mensal)
-    _cr_cfg     = _estado_cfg.get("cronograma", {})
-    _di_cfg     = _cr_cfg.get("data_inicio", _estado_cfg.get("data_inicio", {"ano": 2024, "mes": 1}))
-    _df_cfg     = _cr_cfg.get("data_fim",    _estado_cfg.get("data_fim",    {"ano": 2026, "mes": 12}))
-    _N_cfg      = max(1, min((_df_cfg["ano"] - _di_cfg["ano"]) * 12 + (_df_cfg["mes"] - _di_cfg["mes"]) + 1, 120))
-    _LABELS_cfg = gen_labels(_N_cfg, _di_cfg)
+        # Deriva horizonte da SPE selecionada (necessário para POC e BDI mensal)
+        _cr_cfg     = _estado_cfg.get("cronograma", {})
+        _di_cfg     = _cr_cfg.get("data_inicio", _estado_cfg.get("data_inicio", {"ano": 2024, "mes": 1}))
+        _df_cfg     = _cr_cfg.get("data_fim",    _estado_cfg.get("data_fim",    {"ano": 2026, "mes": 12}))
+        _N_cfg      = max(1, min((_df_cfg["ano"] - _di_cfg["ano"]) * 12 + (_df_cfg["mes"] - _di_cfg["mes"]) + 1, 120))
+        _LABELS_cfg = gen_labels(_N_cfg, _di_cfg)
 
 
-    st.divider()
+        st.divider()
 
-    # ══════════════════════════════════════════════════════════════════
-    # BLOCO 3 — PARÂMETROS GERAIS
-    # ══════════════════════════════════════════════════════════════════
+        # ══════════════════════════════════════════════════════════════════
+        # BLOCO 3 — PARÂMETROS GERAIS
+        # ══════════════════════════════════════════════════════════════════
     st.markdown("### ⚙️ Bloco 3 — Parâmetros Gerais")
 
     with st.expander("📐 BDI e CUB", expanded=False):
@@ -3175,24 +3306,41 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
     dop_hist  = list(emp_base.get("desp_op",   [0.0]*12))
     rf_hist   = list(emp_base.get("res_fin",   [0.0]*12))
     ir_hist   = list(emp_base.get("ir",        [0.0]*12))
+    bdi_hist  = list(emp_base.get("desp_bdi",  [0.0]*12))
+    rbdi_hist = list(emp_base.get("rec_bdi",   [0.0]*12))
 
-    # n_hist_len = quantos meses tem a DRE histórica (normalmente 12)
+    # ── dre_mensal: dict indexado por índice absoluto do horizonte ──────
+    # Chave: índice absoluto i (0 = data_inicio)
+    # Valor: dict com rec_bruta, imp_rec, cpv, desp_op, desp_bdi, res_fin, ir
+    _dre_mensal = emp_base.get("dre_mensal", {})
+    _dm_idx = {}  # {idx_absoluto: valores_do_mes}
+    for _ym, _vals in _dre_mensal.items():
+        try:
+            _ano_m = int(_ym[:4])
+            _mes_m = int(_ym[5:7])
+            _idx_m = (_ano_m - data_inicio["ano"]) * 12 + (_mes_m - data_inicio["mes"])
+            if 0 <= _idx_m < N:
+                _dm_idx[_idx_m] = _vals
+        except Exception:
+            pass
+
+    # n_hist_len = quantos meses tem a DRE histórica de 2025 (normalmente 12)
     n_hist_len = len(rb_hist)
 
-    # Descobre em qual índice do horizonte (0-based) começa a DRE histórica.
-    # A DRE histórica representa o ano de 2025 (jan a dez).
-    # O horizonte pode começar antes (ex: abr/2023).
-    import datetime as _dt_mod
-    _inicio_dre_hist = {"ano": 2025, "mes": 1}  # jan/2025 — início fixo da DRE anual
+    # Detectar início e fim da DRE histórica dinamicamente
+    if _dm_idx:
+        _idx_inicio_dre = min(_dm_idx.keys())
+        _idx_fim_dre    = max(_dm_idx.keys()) + 1
+    else:
+        # Fallback: sem dados reais, usar ano_dre do emp_base se disponível
+        _ano_dre_base = emp_base.get("ano_dre", 2025)
+        _inicio_dre_hist = {"ano": _ano_dre_base, "mes": 1}
+        _idx_inicio_dre = max(0,
+            (_inicio_dre_hist["ano"] - data_inicio["ano"]) * 12 +
+            (_inicio_dre_hist["mes"] - data_inicio["mes"])
+        )
+        _idx_fim_dre = _idx_inicio_dre + n_hist_len
 
-    _idx_inicio_dre = (
-        (_inicio_dre_hist["ano"] - data_inicio["ano"]) * 12 +
-        (_inicio_dre_hist["mes"] - data_inicio["mes"])
-    )
-    _idx_inicio_dre = max(0, _idx_inicio_dre)
-    _idx_fim_dre    = _idx_inicio_dre + n_hist_len  # exclusive
-
-    # n_hist = índice até onde temos dados históricos (fim da DRE)
     n_hist = _idx_fim_dre
 
     # Offset: quantos meses o horizonte completo começa ANTES da obra
@@ -3381,6 +3529,8 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
     imp_rec    = []
     cpv        = []
     desp_op    = []
+    desp_bdi   = []
+    rec_bdi    = []
     res_fin    = []
     ir         = []
 
@@ -3389,14 +3539,33 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
     for i in range(N):
         _drift = (1 + 0.005) ** i  # 0,5%/mês ≈ 6%/ano
 
-        # Índice relativo dentro da DRE histórica (pode ser negativo se i < _idx_inicio_dre)
+        # Índice relativo dentro da DRE histórica de 2025
         _i_dre = i - _idx_inicio_dre
 
-        if 0 <= _i_dre < n_hist_len:
-            # ── Mês coberto pela DRE histórica ──────────────────────
-            # CPV e custos: sempre da DRE histórica real
+        # ── Prioridade 1: mês com dado real de dre_mensal (ex: jan-abr/2026) ──
+        if i in _dm_idx:
+            _dm = _dm_idx[i]
+            cpv.append(float(_dm.get("cpv",      0.0)))
+            _dop_dm = float(_dm.get("desp_op", 0.0)) + float(_dm.get("desp_bdi", 0.0))
+            desp_op.append(_dop_dm)
+            desp_bdi.append(float(_dm.get("desp_bdi", 0.0)))
+            rec_bdi.append(0.0)
+            res_fin.append(float(_dm.get("res_fin",  0.0)))
+            ir.append(float(_dm.get("ir",      0.0)))
+            if "Caixa" in visao:
+                rec_bruta.append(float(_dm.get("rec_bruta", 0.0)))
+                imp_rec.append(float(_dm.get("imp_rec",   0.0)))
+            else:
+                _rec_h = _receita_mes(i)
+                rec_bruta.append(_rec_h)
+                imp_rec.append(float(_dm.get("imp_rec", 0.0)))
+
+        elif 0 <= _i_dre < n_hist_len:
+            # ── Mês coberto pela DRE histórica de 2025 ──────────────
             cpv.append(float(cpv_hist[_i_dre]))
             desp_op.append(float(dop_hist[_i_dre]))
+            desp_bdi.append(float(bdi_hist[_i_dre]))
+            rec_bdi.append(float(rbdi_hist[_i_dre]))
             res_fin.append(float(rf_hist[_i_dre]))
             ir.append(float(ir_hist[_i_dre]))
 
@@ -3423,11 +3592,15 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
             if i < _offset_obra:
                 cpv.append(0.0)
                 desp_op.append(0.0)
+                desp_bdi.append(0.0)
+                rec_bdi.append(0.0)
                 res_fin.append(0.0)
                 ir.append(0.0)
             else:
                 cpv.append(_cpv_cff(i) if not is_matriz else 0.0)
                 desp_op.append(dop_media * _drift if dop_media != 0 else 0.0)
+                desp_bdi.append(0.0)
+                rec_bdi.append(0.0)
                 res_fin.append(rf_media  * _drift if rf_media  != 0 else 0.0)
                 ir.append(ir_media       * _drift if ir_media  != 0 else 0.0)
 
@@ -3447,6 +3620,8 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
             imp_rec.append(_imp)
             cpv.append(_cpv_fut)
             desp_op.append(_dop)
+            desp_bdi.append(0.0)
+            rec_bdi.append(0.0)
             res_fin.append(_rf)
             ir.append(_ir_v)
 
@@ -3465,6 +3640,8 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
         "cpv":           cpv,
         "lucro_bruto":   lucro_bruto,
         "desp_op":       desp_op,
+        "desp_bdi":      desp_bdi,
+        "rec_bdi":       rec_bdi,
         "ebitda":        ebitda,
         "res_fin":       res_fin,
         "lai":           lai,
@@ -3559,7 +3736,8 @@ def render_rolling_forecast():
         _dre_final = {
             campo: _soma_campo(campo)
             for campo in ["rec_bruta","imp_rec","rec_liq","cpv",
-                          "lucro_bruto","desp_op","ebitda","res_fin","lai","ir","lucro_liq"]
+                          "lucro_bruto","desp_op","desp_bdi","rec_bdi",
+                          "ebitda","res_fin","lai","ir","lucro_liq"]
         }
         _dre_final["labels"] = _LABELS_final
         _dre_final["n_hist"] = min(
