@@ -3216,23 +3216,25 @@ def render_configuracoes():
     # ══════════════════════════════════════════════════════════════════
     # BLOCO 2 — PARÂMETROS DE RECEITA (para Rolling Forecast)
     # ══════════════════════════════════════════════════════════════════
+    # Deriva horizonte da SPE selecionada (necessário para POC e BDI mensal)
+    _cr_cfg     = _estado_cfg.get("cronograma", {})
+    _di_cfg     = _cr_cfg.get("data_inicio", _estado_cfg.get("data_inicio", {"ano": 2024, "mes": 1}))
+    _df_cfg     = _cr_cfg.get("data_fim",    _estado_cfg.get("data_fim",    {"ano": 2026, "mes": 12}))
+    _N_cfg      = max(1, min((_df_cfg["ano"] - _di_cfg["ano"]) * 12 + (_df_cfg["mes"] - _di_cfg["mes"]) + 1, 120))
+    _LABELS_cfg = gen_labels(_N_cfg, _di_cfg)
+
+    # ══════════════════════════════════════════════════════════════════
+    # BLOCO 2 — PARÂMETROS DE RECEITA (para Rolling Forecast)
+    # ══════════════════════════════════════════════════════════════════
     if not _is_matriz_cfg:
         st.markdown("### 💰 Bloco 2 — Parâmetros de Receita")
         st.caption("Usados na aba Rolling Forecast para projetar receita futura.")
 
-        # Deriva horizonte da SPE selecionada (necessário para POC e BDI mensal)
-        _cr_cfg     = _estado_cfg.get("cronograma", {})
-        _di_cfg     = _cr_cfg.get("data_inicio", _estado_cfg.get("data_inicio", {"ano": 2024, "mes": 1}))
-        _df_cfg     = _cr_cfg.get("data_fim",    _estado_cfg.get("data_fim",    {"ano": 2026, "mes": 12}))
-        _N_cfg      = max(1, min((_df_cfg["ano"] - _di_cfg["ano"]) * 12 + (_df_cfg["mes"] - _di_cfg["mes"]) + 1, 120))
-        _LABELS_cfg = gen_labels(_N_cfg, _di_cfg)
-
-
         st.divider()
 
-        # ══════════════════════════════════════════════════════════════════
-        # BLOCO 3 — PARÂMETROS GERAIS
-        # ══════════════════════════════════════════════════════════════════
+    # ══════════════════════════════════════════════════════════════════
+    # BLOCO 3 — PARÂMETROS GERAIS
+    # ══════════════════════════════════════════════════════════════════
     st.markdown("### ⚙️ Bloco 3 — Parâmetros Gerais")
 
     with st.expander("📐 BDI e CUB", expanded=False):
