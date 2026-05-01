@@ -1442,6 +1442,18 @@
             "ir": 0.0,
             "arquivo_nome": "DRE Mar-2026 Marta Darela.xlsx",
             "data_upload": "2026-05-01T22:44:02.921397"
+          },
+          "2026-04": {
+            "rec_bruta": 96449.72,
+            "rec_bdi": 0.0,
+            "imp_rec": -15272.01,
+            "cpv": -551120.72,
+            "desp_op": -18631.33,
+            "desp_bdi": -91717.51,
+            "res_fin": -213.99,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Abr-2026 Marta Darela.xlsx",
+            "data_upload": "2026-05-01T22:44:18.797756"
           }
         },
         "ano_dre": 2025
