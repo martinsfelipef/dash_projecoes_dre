@@ -3015,7 +3015,7 @@ def render_configuracoes():
                 with _col_del:
                     if st.button("🗑️", key=f"del_dre_{_ym}_{_tkey_cfg}",
                                  help=f"Remover {_label}"):
-                        del _emp_dict["dre_mensal"][_ym]
+                        del _emp_data_dre["dre_mensal"][_ym]
                         save_state()
                         safe_toast(f"🗑️ DRE {_label} removida.", "🗑️")
                         st.rerun()
