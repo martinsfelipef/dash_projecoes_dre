@@ -668,7 +668,154 @@
               -46173.53
             ]
           }
-        ]
+        ],
+        "dre_mensal": {
+          "2025-01": {
+            "rec_bruta": 0.0,
+            "imp_rec": -240.62,
+            "cpv": -23330.12,
+            "desp_op": -27253.6,
+            "desp_bdi": -19313.86,
+            "res_fin": 640.2,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Tereza Cristina 2025.xlsx",
+            "data_upload": "2026-05-01T22:50:30.579904",
+            "tipo": "anual"
+          },
+          "2025-02": {
+            "rec_bruta": 0.0,
+            "imp_rec": 0.0,
+            "cpv": -3933.26,
+            "desp_op": -5439.27,
+            "desp_bdi": -2217.21,
+            "res_fin": -0.01,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Tereza Cristina 2025.xlsx",
+            "data_upload": "2026-05-01T22:50:30.579922",
+            "tipo": "anual"
+          },
+          "2025-03": {
+            "rec_bruta": 0.0,
+            "imp_rec": -239.85,
+            "cpv": -12216.97,
+            "desp_op": -8911.88,
+            "desp_bdi": -7644.88,
+            "res_fin": 0.0,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Tereza Cristina 2025.xlsx",
+            "data_upload": "2026-05-01T22:50:30.579927",
+            "tipo": "anual"
+          },
+          "2025-04": {
+            "rec_bruta": 0.0,
+            "imp_rec": 0.0,
+            "cpv": -38241.82,
+            "desp_op": -24706.79,
+            "desp_bdi": -15873.43,
+            "res_fin": 155.7,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Tereza Cristina 2025.xlsx",
+            "data_upload": "2026-05-01T22:50:30.579931",
+            "tipo": "anual"
+          },
+          "2025-05": {
+            "rec_bruta": 116502.27,
+            "imp_rec": 0.0,
+            "cpv": -9032.1,
+            "desp_op": -23180.72,
+            "desp_bdi": -5223.16,
+            "res_fin": 20.24,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Tereza Cristina 2025.xlsx",
+            "data_upload": "2026-05-01T22:50:30.579935",
+            "tipo": "anual"
+          },
+          "2025-06": {
+            "rec_bruta": 177669.37,
+            "imp_rec": -1264.39,
+            "cpv": -33687.04,
+            "desp_op": -147004.82,
+            "desp_bdi": -40113.01,
+            "res_fin": 0.87,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Tereza Cristina 2025.xlsx",
+            "data_upload": "2026-05-01T22:50:30.579938",
+            "tipo": "anual"
+          },
+          "2025-07": {
+            "rec_bruta": 229361.72,
+            "imp_rec": -3173.65,
+            "cpv": -16785.65,
+            "desp_op": -107053.18,
+            "desp_bdi": -4006.08,
+            "res_fin": 55.31,
+            "ir": -1301.37,
+            "arquivo_nome": "DRE Tereza Cristina 2025.xlsx",
+            "data_upload": "2026-05-01T22:50:30.579941",
+            "tipo": "anual"
+          },
+          "2025-08": {
+            "rec_bruta": 287888.54,
+            "imp_rec": -8310.19,
+            "cpv": -56428.19,
+            "desp_op": -207436.95,
+            "desp_bdi": -18367.47,
+            "res_fin": 6500.8,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Tereza Cristina 2025.xlsx",
+            "data_upload": "2026-05-01T22:50:30.579945",
+            "tipo": "anual"
+          },
+          "2025-09": {
+            "rec_bruta": 183157.74,
+            "imp_rec": 0.0,
+            "cpv": -237231.3,
+            "desp_op": -180304.97,
+            "desp_bdi": -82798.92,
+            "res_fin": -87.6,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Tereza Cristina 2025.xlsx",
+            "data_upload": "2026-05-01T22:50:30.579948",
+            "tipo": "anual"
+          },
+          "2025-10": {
+            "rec_bruta": 197793.34,
+            "imp_rec": -8972.49,
+            "cpv": -388351.72,
+            "desp_op": -189491.75,
+            "desp_bdi": -58078.05,
+            "res_fin": -59.41,
+            "ir": -11327.4,
+            "arquivo_nome": "DRE Tereza Cristina 2025.xlsx",
+            "data_upload": "2026-05-01T22:50:30.579951",
+            "tipo": "anual"
+          },
+          "2025-11": {
+            "rec_bruta": 170247.63,
+            "imp_rec": -33994.01,
+            "cpv": -168196.8,
+            "desp_op": -174681.44,
+            "desp_bdi": -64881.42,
+            "res_fin": 33.59,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Tereza Cristina 2025.xlsx",
+            "data_upload": "2026-05-01T22:50:30.579956",
+            "tipo": "anual"
+          },
+          "2025-12": {
+            "rec_bruta": 287516.11,
+            "imp_rec": -11461.68,
+            "cpv": -170975.55,
+            "desp_op": -151491.55,
+            "desp_bdi": -29909.31,
+            "res_fin": 239.14,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Tereza Cristina 2025.xlsx",
+            "data_upload": "2026-05-01T22:50:30.579962",
+            "tipo": "anual"
+          }
+        },
+        "ano_dre": 2025
       },
       "Marta Darela": {
         "nome": "Marta Darela",
