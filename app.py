@@ -835,7 +835,21 @@ def render_dre():
         _emp = empresas_cliente[k]
         _state = get_rolling_state(k)
         _di = _state.get("data_inicio", {"ano": 2024, "mes": 1})
-        # Horizonte: do início da SPE até dez/2028 (cobre todos os anos do seletor)
+
+        # Ajustar _di para o menor mês de dre_mensal se aplicável
+        # (mesma lógica de build_dre_projetada — garante consistência)
+        _dre_m = _emp.get("dre_mensal", {})
+        if _dre_m:
+            _meses_em = sorted(_dre_m.keys())
+            try:
+                _ano_em = int(_meses_em[0][:4])
+                _mes_em = int(_meses_em[0][5:7])
+                if (_ano_em, _mes_em) < (_di["ano"], _di["mes"]):
+                    _di = {"ano": _ano_em, "mes": _mes_em}
+            except Exception:
+                pass
+
+        # Horizonte: do início efetivo até dez/2028 (cobre todos os anos do seletor)
         _N_f = max((2029 - _di["ano"]) * 12 - (_di["mes"] - 1), 60)
         _LABELS_f = gen_labels(_N_f, _di)
         _res_f = build_dre_projetada(_emp, _state, _visao_f, _N_f, _LABELS_f, _di)
@@ -3315,6 +3329,25 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
     # Chave: índice absoluto i (0 = data_inicio)
     # Valor: dict com rec_bruta, imp_rec, cpv, desp_op, desp_bdi, res_fin, ir
     _dre_mensal = emp_base.get("dre_mensal", {})
+
+    # ── Ajusta data_inicio dinamicamente para o menor mês de dre_mensal ──
+    # Isso garante que TODOS os meses carregados estejam dentro do horizonte,
+    # independentemente do data_inicio persistido (que pode estar legado).
+    if _dre_mensal:
+        _meses_dm = sorted(_dre_mensal.keys())
+        try:
+            _ano_min = int(_meses_dm[0][:4])
+            _mes_min = int(_meses_dm[0][5:7])
+            _di_dm = {"ano": _ano_min, "mes": _mes_min}
+            # Se o menor mês de dre_mensal é ANTERIOR ao data_inicio atual,
+            # usar o menor mês como novo data_inicio para esta execução
+            if (_ano_min, _mes_min) < (data_inicio["ano"], data_inicio["mes"]):
+                data_inicio = _di_dm
+                # Recalcular LABELS para o novo data_inicio
+                LABELS = gen_labels(N, data_inicio)
+        except Exception:
+            pass
+
     _dm_idx = {}  # {idx_absoluto: valores_do_mes}
     for _ym, _vals in _dre_mensal.items():
         try:
