@@ -210,8 +210,8 @@
   "mes_entrega": 12,
   "g_custos": 10.0,
   "data_inicio": {
-    "mes": 8,
-    "ano": 2025
+    "ano": 2025,
+    "mes": 1
   },
   "data_fim": {
     "mes": 8,
