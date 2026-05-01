@@ -12,9 +12,13 @@ from datetime import datetime
 # Chave: prefixo do código SIENGE | Valor: campo no dict de retorno
 _MAP_CODIGO = {
     "01 ":  "rec_bruta",   # (=) RECEITA BRUTA
+    "01.02": "rec_bdi",     # Receita de BDI (para Matriz)
+    "01.03": "rec_bdi",     # Alternativa para Receita de BDI
     "02 ":  "imp_rec",     # (-) IMPOSTOS E DEDUÇÕES
     "04 ":  "cpv",         # (-) CUSTO DOS IMÓVEIS VENDIDOS
     "06 ":  "desp_op",     # (-) DESPESAS OPERACIONAIS (sem BDI)
+    "03 ":  "desp_op",     # Alternativa para DESPESAS OPERACIONAIS
+    "3 ":   "desp_op",     # Alternativa para DESPESAS OPERACIONAIS
     "06.03": "desp_bdi",   # Despesas com BDI (extraído separadamente)
     "11 ":  "res_fin",     # (+/-) RECEITAS E DESPESAS FINANCEIRAS
     "14 ":  "ir",          # será zero se não houver IR — código 13 ou 14
@@ -87,6 +91,7 @@ def parse_dre_mensal_sienge(data: bytes, arquivo_nome: str = "") -> dict:
         # ── Inicializar resultado ─────────────────────────────────────
         resultado = {
             "rec_bruta": 0.0,
+            "rec_bdi":   0.0,
             "imp_rec":   0.0,
             "cpv":       0.0,
             "desp_op":   0.0,
@@ -118,24 +123,22 @@ def parse_dre_mensal_sienge(data: bytes, arquivo_nome: str = "") -> dict:
                 continue
 
             # ── Mapear código para campo ──────────────────────────────
-            # BDI: código exato 06.03
             cod_norm = cod.strip()
+            
+            # Prioridade 1: Códigos específicos (BDI)
             if cod_norm.startswith("06.03"):
                 resultado["desp_bdi"] = val
-                # Subtrair do desp_op para não duplicar
-                # (06.03 já foi somado em desp_op se o código 06 veio antes)
+                continue
+            if cod_norm.startswith("01.02") or cod_norm.startswith("01.03"):
+                resultado["rec_bdi"] = val
                 continue
 
-            # Códigos de nível 1 (ex: "01 ", "04 ", "06 ", "11 ", "14 ")
-            # Usar apenas os totalizadores (sem ponto no código, ex: "01", "04")
+            # Prioridade 2: Totalizadores de nível 0
             nivel = cod_norm.count(".")
             if nivel == 0:
-                # É um totalizador — mapear diretamente
-                cod_key = cod_norm + " " if not cod_norm.endswith(" ") else cod_norm
+                # Mapear totalizadores nível 0 (01, 02, 04, 06, 11, 14)
                 for prefixo, campo in _MAP_CODIGO.items():
-                    if campo == "desp_bdi":
-                        continue  # já tratado acima
-                    if cod_norm == prefixo.strip():
+                    if prefixo.strip() == cod_norm:
                         resultado[campo] = val
                         break
 
@@ -160,6 +163,7 @@ def parse_dre_mensal_sienge(data: bytes, arquivo_nome: str = "") -> dict:
             "mes":          mes,
             "aaaa_mm":      aaaa_mm,
             "rec_bruta":    resultado["rec_bruta"],
+            "rec_bdi":      resultado["rec_bdi"],
             "imp_rec":      resultado["imp_rec"],
             "cpv":          resultado["cpv"],
             "desp_op":      resultado["desp_op"],

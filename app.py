@@ -3070,6 +3070,7 @@ def render_configuracoes():
                     # Salvar o mês sem sobrescrever os demais
                     _emp_dict["dre_mensal"][_aaaa_mm] = {
                         "rec_bruta":    _res_dre["rec_bruta"],
+                        "rec_bdi":      _res_dre.get("rec_bdi", 0.0),
                         "imp_rec":      _res_dre["imp_rec"],
                         "cpv":          _res_dre["cpv"],
                         "desp_op":      _res_dre["desp_op"],
@@ -3200,6 +3201,7 @@ def render_configuracoes():
                             "desp_bdi":     float(_d_anual.get("desp_bdi",[0.0]*12)[_mi]),
                             "res_fin":      float(_d_anual["res_fin"][_mi])   if _mi < len(_d_anual["res_fin"])   else 0.0,
                             "ir":           float(_d_anual["ir"][_mi])        if _mi < len(_d_anual["ir"])        else 0.0,
+                            "rec_bdi":      float(_d_anual.get("rec_bdi",[0.0]*12)[_mi]),
                             "arquivo_nome": _arq_dre_up_anual.name,
                             "data_upload":  datetime.now().isoformat(),
                             "tipo":         "anual",
@@ -3584,7 +3586,7 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
             _dop_dm = float(_dm.get("desp_op", 0.0)) + float(_dm.get("desp_bdi", 0.0))
             desp_op.append(_dop_dm)
             desp_bdi.append(float(_dm.get("desp_bdi", 0.0)))
-            rec_bdi.append(0.0)
+            rec_bdi.append(float(_dm.get("rec_bdi", 0.0)))
             res_fin.append(float(_dm.get("res_fin",  0.0)))
             ir.append(float(_dm.get("ir",      0.0)))
             if "Caixa" in visao:
