@@ -636,8 +636,8 @@
         "nome": "SPE Tereza Cristina",
         "fonte": "Upload",
         "rec_bruta": [
+          202659.77,
           0.0,
-          140141.58,
           0.0,
           0.0,
           0.0,
@@ -650,8 +650,8 @@
           0.0
         ],
         "imp_rec": [
+          -4521.24,
           0.0,
-          -23563.86,
           0.0,
           0.0,
           0.0,
@@ -664,8 +664,8 @@
           0.0
         ],
         "cpv": [
+          -90071.87,
           0.0,
-          -106989.22,
           0.0,
           0.0,
           0.0,
@@ -678,8 +678,8 @@
           0.0
         ],
         "desp_op": [
+          -135664.35,
           0.0,
-          -106803.77,
           0.0,
           0.0,
           0.0,
@@ -692,8 +692,8 @@
           0.0
         ],
         "res_fin": [
+          0.66,
           0.0,
-          314.5,
           0.0,
           0.0,
           0.0,
@@ -734,8 +734,8 @@
           0.0
         ],
         "desp_bdi": [
+          -17337.98,
           0.0,
-          -32366.42,
           0.0,
           0.0,
           0.0,
@@ -753,8 +753,8 @@
             "conta": "(=) RECEITA BRUTA",
             "nivel": 1,
             "valores": [
+              202659.77,
               0.0,
-              140141.58,
               0.0,
               0.0,
               0.0,
@@ -772,8 +772,8 @@
             "conta": "Receita com Venda de Imóveis",
             "nivel": 2,
             "valores": [
+              202659.77,
               0.0,
-              140141.58,
               0.0,
               0.0,
               0.0,
@@ -791,27 +791,8 @@
             "conta": "(-) IMPOSTOS E DEDUÇÕES SOBRE A RECEITA",
             "nivel": 1,
             "valores": [
+              -4521.24,
               0.0,
-              -23563.86,
-              0.0,
-              0.0,
-              0.0,
-              0.0,
-              0.0,
-              0.0,
-              0.0,
-              0.0,
-              0.0,
-              0.0
-            ]
-          },
-          {
-            "codigo": "02.01",
-            "conta": "Impostos sobre a Receita (PIS, COFINS, ISS, RET)",
-            "nivel": 2,
-            "valores": [
-              0.0,
-              -19042.62,
               0.0,
               0.0,
               0.0,
@@ -829,8 +810,8 @@
             "conta": "Devoluções",
             "nivel": 2,
             "valores": [
-              0.0,
               -4521.24,
+              0.0,
               0.0,
               0.0,
               0.0,
@@ -848,8 +829,8 @@
             "conta": "(=) RECEITA LÍQUIDA",
             "nivel": 1,
             "valores": [
+              198138.53,
               0.0,
-              116577.72,
               0.0,
               0.0,
               0.0,
@@ -867,8 +848,8 @@
             "conta": "(-) CUSTO DOS IMÓVEIS VENDIDOS (CPV/CSP)",
             "nivel": 1,
             "valores": [
+              -90071.87,
               0.0,
-              -106989.22,
               0.0,
               0.0,
               0.0,
@@ -886,8 +867,8 @@
             "conta": "Custos com Pessoal",
             "nivel": 2,
             "valores": [
+              -55161.55,
               0.0,
-              -39571.96,
               0.0,
               0.0,
               0.0,
@@ -905,8 +886,8 @@
             "conta": "Serviços de Terceiros",
             "nivel": 2,
             "valores": [
+              -4431.48,
               0.0,
-              -21879.0,
               0.0,
               0.0,
               0.0,
@@ -924,8 +905,8 @@
             "conta": "Materiais Aplicados",
             "nivel": 2,
             "valores": [
+              -28168.84,
               0.0,
-              -42538.26,
               0.0,
               0.0,
               0.0,
@@ -943,8 +924,8 @@
             "conta": "Custos Gerais da Obra",
             "nivel": 2,
             "valores": [
+              -2310.0,
               0.0,
-              -3000.0,
               0.0,
               0.0,
               0.0,
@@ -962,8 +943,8 @@
             "conta": "(=) LUCRO BRUTO",
             "nivel": 1,
             "valores": [
+              112587.9,
               0.0,
-              33152.36,
               0.0,
               0.0,
               0.0,
@@ -981,8 +962,8 @@
             "conta": "(-) DESPESAS OPERACIONAIS",
             "nivel": 1,
             "valores": [
+              -135664.35,
               0.0,
-              -106803.77,
               0.0,
               0.0,
               0.0,
@@ -1000,8 +981,8 @@
             "conta": "Despesas Gerais e Administrativas",
             "nivel": 2,
             "valores": [
+              -11730.06,
               0.0,
-              -11544.17,
               0.0,
               0.0,
               0.0,
@@ -1019,8 +1000,8 @@
             "conta": "Despesas com Vendas (Comerciais)",
             "nivel": 2,
             "valores": [
+              -106596.31,
               0.0,
-              -54537.62,
               0.0,
               0.0,
               0.0,
@@ -1038,27 +1019,8 @@
             "conta": "Despesas com BDI",
             "nivel": 2,
             "valores": [
+              -17337.98,
               0.0,
-              -32366.42,
-              0.0,
-              0.0,
-              0.0,
-              0.0,
-              0.0,
-              0.0,
-              0.0,
-              0.0,
-              0.0,
-              0.0
-            ]
-          },
-          {
-            "codigo": "06.04",
-            "conta": "Outras despesas/receitas operacionais",
-            "nivel": 2,
-            "valores": [
-              0.0,
-              -8355.56,
               0.0,
               0.0,
               0.0,
@@ -1076,8 +1038,8 @@
             "conta": "(=) EBITDA",
             "nivel": 1,
             "valores": [
+              -27597.69,
               0.0,
-              -97215.27,
               0.0,
               0.0,
               0.0,
@@ -1095,8 +1057,8 @@
             "conta": "(+/-) RECEITAS E DESPESAS FINANCEIRAS",
             "nivel": 1,
             "valores": [
+              0.66,
               0.0,
-              314.5,
               0.0,
               0.0,
               0.0,
@@ -1114,8 +1076,8 @@
             "conta": "Receita de Aplicações Financeiras e Juros",
             "nivel": 2,
             "valores": [
+              139.21,
               0.0,
-              389.26,
               0.0,
               0.0,
               0.0,
@@ -1133,8 +1095,8 @@
             "conta": "Descontos Obtidos",
             "nivel": 2,
             "valores": [
+              9.53,
               0.0,
-              98.2,
               0.0,
               0.0,
               0.0,
@@ -1152,8 +1114,8 @@
             "conta": "Despesas Bancárias",
             "nivel": 2,
             "valores": [
+              -143.6,
               0.0,
-              -171.94,
               0.0,
               0.0,
               0.0,
@@ -1171,8 +1133,8 @@
             "conta": "Juros sobre Empréstimos",
             "nivel": 2,
             "valores": [
+              -4.48,
               0.0,
-              -1.02,
               0.0,
               0.0,
               0.0,
@@ -1190,8 +1152,8 @@
             "conta": "(=) LUCRO ANTES DO IRPJ/CSLL",
             "nivel": 1,
             "valores": [
+              -27597.03,
               0.0,
-              -96900.77,
               0.0,
               0.0,
               0.0,
@@ -1209,8 +1171,8 @@
             "conta": "(=) LUCRO LÍQUIDO",
             "nivel": 1,
             "valores": [
+              -27597.03,
               0.0,
-              -96900.77,
               0.0,
               0.0,
               0.0,
