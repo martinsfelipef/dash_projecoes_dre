@@ -825,6 +825,18 @@
             "ir": 0.0,
             "arquivo_nome": "DRE Jan-2026 Tereza Cristina.xlsx",
             "data_upload": "2026-05-01T22:50:56.696138"
+          },
+          "2026-02": {
+            "rec_bruta": 140141.58,
+            "rec_bdi": 0.0,
+            "imp_rec": -23563.86,
+            "cpv": -106989.22,
+            "desp_op": -74437.35,
+            "desp_bdi": -32366.42,
+            "res_fin": 314.5,
+            "ir": 0.0,
+            "arquivo_nome": "DRE Fev-2026 Tereza Cristina.xlsx",
+            "data_upload": "2026-05-01T22:51:05.630209"
           }
         },
         "ano_dre": 2025
