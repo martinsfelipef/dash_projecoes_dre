@@ -25,12 +25,21 @@ _STATUS_DISPONIVEL = {"disponível", "disponivel"}
 _STATUS_PERMUTA    = {"permuta"}
 
 # Palavras que identificam garagens/depósitos (excluir do total)
-_EXCLUIR_NOME = {"garagem", "depos", "estacion", "vaga", "box"}
+_EXCLUIR_NOME = {
+    "garagem", "garage",
+    "vaga", "vagas",
+    "depos", "depósito", "deposito",
+    "estacion",
+    "pvg",      # padrão comum no SIENGE: PVG = Parking Vaga Garagem
+    "vgs",      # variação
+    "box",
+    "cobert",   # cobertura de garagem
+}
 
 
 def _e_unidade_principal(nome: str) -> bool:
     """Retorna True se a unidade deve ser contabilizada (não é garagem/depósito)."""
-    nome_lower = str(nome).lower()
+    nome_lower = str(nome).lower().strip()
     return not any(p in nome_lower for p in _EXCLUIR_NOME)
 
 
@@ -46,7 +55,7 @@ def parse_unidades_sienge(data: bytes, arquivo_nome: str = "") -> dict:
         header_row = None
         _HEADER_KEYWORDS = {"unidade", "código", "codigo", "status", "situação", "situacao", "nome", "estoque"}
         
-        for i, row in df.head(15).iterrows():
+        for i, row in df.head(20).iterrows():
             vals = [str(v).lower().strip() for v in row if pd.notna(v)]
             matches = sum(1 for v in vals if any(kw in v for kw in _HEADER_KEYWORDS))
             if matches >= 2:
@@ -86,10 +95,16 @@ def parse_unidades_sienge(data: bytes, arquivo_nome: str = "") -> dict:
             nome   = str(row.get(col_nome, "")).strip()
             status = str(row.get(col_status, "")).strip().lower()
 
-            if not nome or nome.lower() in ("nan", "none", "total"):
+            # Pular linhas vazias ou de total
+            if not nome or nome.lower() in ("nan", "none", "total", "subtotal"):
                 continue
+            
+            # Filtro de garagens/depósitos
             if not _e_unidade_principal(nome):
-                continue  # garagem/depósito — ignora
+                continue
+
+            # Se chegou aqui, é uma unidade principal
+            total += 1
 
             # Parse monetário seguro
             valor = 0.0
@@ -110,8 +125,6 @@ def parse_unidades_sienge(data: bytes, arquivo_nome: str = "") -> dict:
                             valor = float(v_str)
                     except (ValueError, TypeError):
                         valor = 0.0
-
-            total += 1
 
             if any(s in status for s in _STATUS_VENDIDA):
                 vendidas += 1
