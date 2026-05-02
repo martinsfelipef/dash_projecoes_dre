@@ -681,41 +681,7 @@
     "arquivo_nome": "Relatório de Vendas Marta Darela_02_05_2026.xlsx",
     "data_upload": "2026-05-02T11:35:34.362397"
   },
-  "recebiveis": {
-    "obra_nome": "",
-    "data_exportacao": "",
-    "por_mes": {},
-    "pm_por_mes": {},
-    "fi_por_mes": {},
-    "resumo_tipos": {
-      "ÁREA COMUM DNP": {
-        "parcelas": 1,
-        "valor": 0.0,
-        "unidades": 1,
-        "lista_unidades": [
-          "Área do terreno"
-        ]
-      },
-      "0.0005": {
-        "parcelas": 1,
-        "valor": 140.7808,
-        "unidades": 1,
-        "lista_unidades": [
-          "911.25"
-        ]
-      }
-    },
-    "parcelas": [],
-    "total_recebiveis": 0,
-    "total_futuro": 0.0,
-    "total_pm": 0,
-    "total_fi": 0,
-    "unidades_permuta": [],
-    "n_unidades_pm": 0,
-    "n_unidades_fi": 0,
-    "arquivo_nome": "Relatório de unidades - Marta Darela_02_05_2026.xlsx",
-    "data_upload": "2026-05-02T21:03:18.806241"
-  },
+  "recebiveis": null,
   "unidades_report": {
     "total_unidades": 41,
     "vendidas": 33,
