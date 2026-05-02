@@ -2784,6 +2784,29 @@ def render_configuracoes():
                     _estado_cfg["total_unidades"] = _total_un_input
                     save_rolling(_titulo_cfg, force=True)
 
+                # Reset dados de unidades (admin only — corrige dados legados)
+                if _IS_ADMIN:
+                    _un_atual = _estado_cfg.get("unidades_report")
+                    if _un_atual and _un_atual.get("total_unidades", 0) > 50:
+                        st.warning(
+                            f"⚠️ Total atual: **{_un_atual['total_unidades']} unidades** "
+                            f"(pode incluir garagens). "
+                            f"Limpe os dados abaixo e suba o relatório novamente para corrigir."
+                        )
+                        if st.button("🔄 Limpar dados de unidades",
+                                     key=f"reset_un_{_tkey_cfg}"):
+                            _estado_cfg["unidades_report"] = None
+                            _estado_cfg["total_unidades"]  = 0
+                            # Limpar também preços corrompidos no VGV se houver
+                            if "vgv" in _estado_cfg:
+                                for _vk in _estado_cfg["vgv"]:
+                                    if _estado_cfg["vgv"][_vk].get("preco", 0) > 10_000_000:
+                                        _estado_cfg["vgv"][_vk]["preco"] = 0.0
+                            
+                            save_rolling(_titulo_cfg, force=True)
+                            safe_toast("Dados de unidades limpos. Suba o arquivo novamente.", "🔄")
+                            st.rerun()
+
                 # Uploader do relatório de unidades
                 st.caption("Ou suba o Relatório de Unidades para preenchimento automático:")
                 _arq_un_up = st.file_uploader(
