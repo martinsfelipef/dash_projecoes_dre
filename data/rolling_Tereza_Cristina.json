@@ -411,57 +411,7 @@
     "arquivo_nome": "Relatório de Vendas Tereza Cristina_02_05_2026.xlsx",
     "data_upload": "2026-05-02T13:14:06.153908"
   },
-  "recebiveis": {
-    "obra_nome": "",
-    "data_exportacao": "",
-    "por_mes": {},
-    "pm_por_mes": {},
-    "fi_por_mes": {},
-    "resumo_tipos": {
-      "ÁREA COMUM DNP": {
-        "parcelas": 1,
-        "valor": 0.0,
-        "unidades": 1,
-        "lista_unidades": [
-          "Área do terreno"
-        ]
-      },
-      "12.2011": {
-        "parcelas": 65,
-        "valor": 10096.5218,
-        "unidades": 1,
-        "lista_unidades": [
-          "911.25"
-        ]
-      },
-      "0.0117": {
-        "parcelas": 1,
-        "valor": 142.67,
-        "unidades": 1,
-        "lista_unidades": [
-          "911.25"
-        ]
-      },
-      "13.3233": {
-        "parcelas": 66,
-        "valor": 0.0,
-        "unidades": 1,
-        "lista_unidades": [
-          "977.95"
-        ]
-      }
-    },
-    "parcelas": [],
-    "total_recebiveis": 0,
-    "total_futuro": 0.0,
-    "total_pm": 0,
-    "total_fi": 0,
-    "unidades_permuta": [],
-    "n_unidades_pm": 0,
-    "n_unidades_fi": 0,
-    "arquivo_nome": "Relatório de unidades - Tereza Cristina_02_05_2026.xlsx",
-    "data_upload": "2026-05-02T21:03:42.571177"
-  },
+  "recebiveis": null,
   "unidades_report": {
     "total_unidades": 66,
     "vendidas": 50,
