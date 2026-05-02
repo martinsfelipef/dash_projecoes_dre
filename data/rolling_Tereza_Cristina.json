@@ -829,17 +829,7 @@
     "arquivo_nome": "Contas a receber - recebíveis Tereza.xlsx",
     "data_upload": "2026-05-01T22:50:14.484791"
   },
-  "unidades_report": {
-    "total_unidades": 187,
-    "vendidas": 55,
-    "disponiveis": 79,
-    "permuta": 0,
-    "vgv_vendido": 23901455.630000006,
-    "preco_medio": 434571.92054545466,
-    "unidades_permuta": [],
-    "arquivo_nome": "Relatório de unidades Tereza Cristina.xlsx",
-    "data_upload": "2026-05-01T23:41:17.144272"
-  },
+  "unidades_report": null,
   "total_unidades": 187,
   "cronograma": {
     "obra_nome": "85 - Residencial Tereza Cristina",
