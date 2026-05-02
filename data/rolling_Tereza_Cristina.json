@@ -40,35 +40,35 @@
     },
     "10": {
       "unidades": 1,
-      "preco": 1075565.5
+      "preco": 956058.23
     },
     "11": {
       "unidades": 1,
-      "preco": 1075565.5
+      "preco": 956058.23
     },
     "12": {
       "unidades": 1,
-      "preco": 1075565.5
+      "preco": 956058.23
     },
     "13": {
       "unidades": 1,
-      "preco": 1075565.5
+      "preco": 956058.23
     },
     "14": {
       "unidades": 1,
-      "preco": 1075565.5
+      "preco": 956058.23
     },
     "15": {
       "unidades": 1,
-      "preco": 1075565.5
+      "preco": 956058.23
     },
     "16": {
       "unidades": 1,
-      "preco": 1075565.5
+      "preco": 956058.23
     },
     "17": {
       "unidades": 1,
-      "preco": 1075565.5
+      "preco": 956058.23
     },
     "18": {
       "unidades": 0,
@@ -745,8 +745,19 @@
     "arquivo_nome": "Contas a receber - recebíveis Tereza - 02-05-2026.xlsx",
     "data_upload": "2026-05-02T11:36:15.625957"
   },
-  "unidades_report": null,
-  "total_unidades": 69,
+  "unidades_report": {
+    "total_unidades": 66,
+    "vendidas": 50,
+    "disponiveis": 16,
+    "permuta": 0,
+    "terceiros": 0,
+    "vgv_vendido": 23901455.63,
+    "preco_medio": 478029.11,
+    "unidades_permuta": [],
+    "arquivo_nome": "Relatório de unidades - Tereza Cristina_02_05_2026.xlsx",
+    "data_upload": "2026-05-02T13:18:34.657710"
+  },
+  "total_unidades": 66,
   "cronograma": {
     "obra_nome": "85 - Residencial Tereza Cristina",
     "data_inicio": {
