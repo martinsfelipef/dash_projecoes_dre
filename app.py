@@ -932,6 +932,7 @@ def render_gestao():
                 warn = v >= 0.85 if not inv else v <= 1.15
                 return "🟢" if ok else ("🟡" if warn else "🔴")
 
+            # Linha 1: SPI | CPI
             _k1, _k2 = st.columns(2)
             _k1.metric("SPI " + _semaforo(_spi_val),
                        f"{_spi_val:.3f}",
@@ -939,14 +940,43 @@ def render_gestao():
             _k2.metric("CPI " + _semaforo(_cpi),
                        f"{_cpi:.3f}",
                        help="Cost Performance Index — medido ÷ realizado")
+
+            # Linha 2: % Avanço | Verba Disponível
             _k3, _k4 = st.columns(2)
-            _k3.metric("% Avanço Físico", f"{_pct_med:.1f}%")
-            _k4.metric("Verba Disponível", fmt(_verb))
+            _k3.metric("% Avanço Físico", f"{_pct_med:.1f}%",
+                       help="Medido acumulado ÷ Orçado total")
+            _k4.metric("Verba Disponível", fmt(_verb),
+                       help="Orçado − Realizado − Comprometido")
+
+            # Linha 3: Orçado Total | EAC
             _k5, _k6 = st.columns(2)
-            _k5.metric("EAC", fmt(_eac),
-                       help="Estimate at Completion — orçado ÷ CPI")
-            _k6.metric("Saldo CTP", fmt(_ctp),
-                       help="Saldo de Contratos e Pedidos")
+            _k5.metric("Orçado Total", fmt(_orc),
+                       help="Custo total previsto na planilha orçamentária")
+            _k6.metric("EAC", fmt(_eac),
+                       help="Estimate at Completion — projeção do custo final (Orçado ÷ CPI)")
+
+            # Linha 4: EAC vs Orçado | Saldo CTP
+            _variacao_eac  = _eac - _orc
+            _variacao_pct  = (_variacao_eac / _orc * 100) if _orc > 0 else 0
+            _delta_eac_str = f"{'+' if _variacao_pct >= 0 else ''}{_variacao_pct:.1f}% vs orçado"
+            # Se EAC > Orçado → vai estourar → delta_color inverse (vermelho)
+            # Se EAC < Orçado → vai economizar → delta_color normal (verde)
+            _eac_color = "inverse" if _variacao_eac > 0 else "normal"
+
+            _k7, _k8 = st.columns(2)
+            _k7.metric(
+                "EAC vs Orçado",
+                fmt(abs(_variacao_eac)),
+                delta=("▲ Estouro projetado" if _variacao_eac > 0
+                       else "▼ Economia projetada") + f" ({_delta_eac_str})",
+                delta_color=_eac_color,
+                help=(
+                    "Diferença entre o custo final projetado (EAC) e o orçamento original. "
+                    "Verde = obra abaixo do orçado. Vermelho = risco de estouro."
+                )
+            )
+            _k8.metric("Saldo CTP", fmt(_ctp),
+                       help="Saldo de Contratos e Pedidos em aberto")
         else:
             st.info("Carregue o CPL nas ⚙️ Configurações.")
 
