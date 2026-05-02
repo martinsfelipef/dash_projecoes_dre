@@ -3252,7 +3252,7 @@ def render_configuracoes():
     st.divider()
 
     # ══════════════════════════════════════════════════════════════════
-    # BLOCO 2 — PARÂMETROS DE RECEITA (para Rolling Forecast)
+    # CÁLCULOS DE HORIZONTE (para BDI/CUB mensal)
     # ══════════════════════════════════════════════════════════════════
     # Deriva horizonte da SPE selecionada (necessário para POC e BDI mensal)
     _cr_cfg     = _estado_cfg.get("cronograma", {})
@@ -3261,14 +3261,6 @@ def render_configuracoes():
     _N_cfg      = max(1, min((_df_cfg["ano"] - _di_cfg["ano"]) * 12 + (_df_cfg["mes"] - _di_cfg["mes"]) + 1, 120))
     _LABELS_cfg = gen_labels(_N_cfg, _di_cfg)
 
-    # ══════════════════════════════════════════════════════════════════
-    # BLOCO 2 — PARÂMETROS DE RECEITA (para Rolling Forecast)
-    # ══════════════════════════════════════════════════════════════════
-    if not _is_matriz_cfg:
-        st.markdown("### 💰 Bloco 2 — Parâmetros de Receita")
-        st.caption("Usados na aba Rolling Forecast para projetar receita futura.")
-
-        st.divider()
 
     # ══════════════════════════════════════════════════════════════════
     # BLOCO 3 — PARÂMETROS GERAIS
