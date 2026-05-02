@@ -79,84 +79,98 @@ def parse_recebiveis_sienge(data: bytes, arquivo_nome: str = "") -> dict:
             return None
 
     # Processa linhas de dados
-    por_mes      = defaultdict(float)
-    pm_por_mes   = defaultdict(float)
-    fi_por_mes   = defaultdict(float)
-    resumo_tipos = defaultdict(lambda: {"parcelas":0,"valor":0.0,"unidades":set()})
+    por_mes          = defaultdict(float)
+    pm_por_mes       = defaultdict(float)
+    fi_por_mes       = defaultdict(float)
+    _resumo_tipos    = {} # {tc: {"unidades": set(), "parcelas": 0, "valor": 0.0}}
     unidades_permuta = []
-    parcelas_lista = []
+    _parcelas_lista  = []
     
     hoje = datetime.today()
     total_futuro = 0.0
 
-    for row in rows[7:]: # Inicia em L8 (index 7)
+    for row in rows[7:]: # L8 (index 7) onwards
         if not row[0]: continue
         
-        # Extração básica
+        _dt_raw  = str(row[0]).strip()
+        _tc_raw  = str(row[10]).strip().upper() if len(row) > 10 and row[10] else ""
+        _val_raw = str(row[13]).strip() if len(row) > 13 and row[13] else "0"
+        _unid_r  = str(row[11]).strip() if len(row) > 11 and row[11] else ""
+
+        # Ignorar linhas sem data válida (rodapé)
+        if not any(c.isdigit() for c in _dt_raw):
+            continue
+            
+        # PE (permuta): exclui do financeiro, mas registra unidade
+        if _tc_raw == "PE":
+            if _unid_r and _unid_r not in unidades_permuta:
+                unidades_permuta.append(_unid_r)
+            continue
+            
+        if _tc_raw in ("", "NAN", "A VENCER NO PERÍODO", "TOTAL DE CLIENTES", "VALOR MÉDIO"):
+            continue
+
+        try:
+            _val_r = float(_val_raw.replace(',', '.'))
+        except (ValueError, TypeError):
+            continue
+            
+        if _val_r == 0:
+            continue
+
         _dt_obj = _parse_data(row[0])
-        tc  = str(row[10]).strip().upper() if len(row) > 10 and row[10] else ""
-        val = float(row[13]) if len(row) > 13 and row[13] and isinstance(row[13], (int,float)) else 0.0
-        un  = str(row[11]).strip() if len(row) > 11 and row[11] else ""
-
-        # Ignorar linhas de rodapé ou sem TC válido
-        if not tc or tc in ["A VENCER NO PERÍODO", "TOTAL DE CLIENTES", "VALOR MÉDIO", "TOTAL DO DIA", "TOTAL DA EMPRESA", "NAN"]:
-            continue
-        
-        # Registra no resumo (mesmo que seja PE, registramos a existência)
-        resumo_tipos[tc]["parcelas"] += 1
-        resumo_tipos[tc]["valor"]    += val
-        if un: resumo_tipos[tc]["unidades"].add(un)
-
-        # PE: apenas registra unidade, não soma ao fluxo financeiro
-        if tc == "PE":
-            if un and un not in unidades_permuta:
-                unidades_permuta.append(un)
+        if not _dt_obj:
             continue
 
-        if val == 0 or _dt_obj is None:
-            continue
+        # Acumular resumo_tipos
+        if _tc_raw not in _resumo_tipos:
+            _resumo_tipos[_tc_raw] = {"unidades": set(), "parcelas": 0, "valor": 0.0}
+        _resumo_tipos[_tc_raw]["parcelas"] += 1
+        _resumo_tipos[_tc_raw]["valor"]    += _val_r
+        if _unid_r and _unid_r != 'nan':
+            _resumo_tipos[_tc_raw]["unidades"].add(_unid_r)
 
-        # Lista detalhada para cálculos de caixa (exclui PE e valores zerados)
-        parcelas_lista.append({
-            "tc":        tc,
-            "valor":     val,
+        # Acumular parcelas individuais
+        _parcelas_lista.append({
+            "tc":        _tc_raw,
+            "valor":     _val_r,
             "data_venc": _dt_obj.strftime("%Y-%m-%d"),
-            "unidade":   un
+            "unidade":   _unid_r if _unid_r != 'nan' else "",
         })
 
-        # Agregações por mês
+        # Agregações mensais
         chave = f"{_dt_obj.year}-{_dt_obj.month:02d}"
-        por_mes[chave]   += val
-        if tc == "PM":
-            pm_por_mes[chave] += val
-        elif tc == "FI":
-            fi_por_mes[chave] += val
+        por_mes[chave]   += _val_r
+        if _tc_raw == "PM":
+            pm_por_mes[chave] += _val_r
+        elif _tc_raw == "FI":
+            fi_por_mes[chave] += _val_r
             
         if (_dt_obj.year, _dt_obj.month) > (hoje.year, hoje.month):
-            total_futuro += val
+            total_futuro += _val_r
 
-    if not por_mes and not resumo_tipos:
+    if not por_mes and not _resumo_tipos:
         return {"erro": (
             "Nenhum recebível encontrado. "
             "Verifique se é o relatório 'Contas a Receber — Recebíveis' do SIENGE."
         )}
 
-    # Converte sets para contagens
-    resumo_final = {}
-    for tc, d in resumo_tipos.items():
-        resumo_final[tc] = {
-            "parcelas":  d["parcelas"],
-            "valor":     d["valor"],
-            "unidades":  len(d["unidades"]),
-            "lista_unidades": sorted(d["unidades"]),
+    # Serializar resumo_tipos (sets -> int)
+    resumo_final = {
+        tc: {
+            "unidades": len(d["unidades"]),
+            "parcelas": d["parcelas"],
+            "valor":    round(d["valor"], 2),
         }
+        for tc, d in _resumo_tipos.items()
+    }
 
     total_recebiveis = sum(por_mes.values())
     total_pm = sum(pm_por_mes.values())
     total_fi = sum(fi_por_mes.values())
 
-    n_unidades_pm = len(resumo_tipos.get("PM",{}).get("unidades",set()))
-    n_unidades_fi = len(resumo_tipos.get("FI",{}).get("unidades",set()))
+    n_unidades_pm = len(_resumo_tipos.get("PM",{}).get("unidades",set()))
+    n_unidades_fi = len(_resumo_tipos.get("FI",{}).get("unidades",set()))
 
     return {
         "obra_nome":         obra_nome,
@@ -165,7 +179,7 @@ def parse_recebiveis_sienge(data: bytes, arquivo_nome: str = "") -> dict:
         "pm_por_mes":        dict(pm_por_mes),
         "fi_por_mes":        dict(fi_por_mes),
         "resumo_tipos":      resumo_final,
-        "parcelas":          parcelas_lista,
+        "parcelas":          _parcelas_lista,
         "total_recebiveis":  total_recebiveis,
         "total_futuro":      total_futuro,
         "total_pm":          total_pm,
