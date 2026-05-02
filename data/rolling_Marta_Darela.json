@@ -11,8 +11,8 @@
       "preco": 475156.05
     },
     "3": {
-      "unidades": 1,
-      "preco": 443207.0
+      "unidades": 0,
+      "preco": 475156.05
     },
     "4": {
       "unidades": 2,
@@ -592,9 +592,9 @@
   ],
   "vendas": {
     "obra_nome": "",
-    "unidades_vendidas": 34,
-    "vgv_vendido": 15206245.0,
-    "preco_medio": 447242.5,
+    "unidades_vendidas": 33,
+    "vgv_vendido": 14763038.0,
+    "preco_medio": 447364.7878787879,
     "vendas_por_mes": {
       "2024-05": {
         "unidades": 4,
@@ -627,10 +627,6 @@
       "2024-03": {
         "unidades": 1,
         "vgv": 529286.0
-      },
-      "2024-09": {
-        "unidades": 1,
-        "vgv": 443207.0
       },
       "2025-11": {
         "unidades": 1,
@@ -682,8 +678,8 @@
       }
     },
     "data_ultima_venda": "2025-12-16",
-    "arquivo_nome": "Relatório de Vendas Marta Darela.xlsx",
-    "data_upload": "2026-05-01T22:41:26.296797"
+    "arquivo_nome": "Relatório de Vendas Marta Darela_02_05_2026.xlsx",
+    "data_upload": "2026-05-02T11:16:32.131130"
   },
   "recebiveis": {
     "obra_nome": "",
