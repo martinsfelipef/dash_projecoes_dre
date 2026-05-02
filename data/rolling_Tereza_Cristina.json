@@ -358,9 +358,9 @@
   ],
   "vendas": {
     "obra_nome": "",
-    "unidades_vendidas": 49,
-    "vgv_vendido": 24989547.0,
-    "preco_medio": 509990.7551020408,
+    "unidades_vendidas": 50,
+    "vgv_vendido": 25555854.0,
+    "preco_medio": 511117.08,
     "vendas_por_mes": {
       "2025-09": {
         "unidades": 4,
@@ -383,8 +383,8 @@
         "vgv": 3312609.0
       },
       "2025-07": {
-        "unidades": 11,
-        "vgv": 5268132.0
+        "unidades": 12,
+        "vgv": 5834439.0
       },
       "2026-01": {
         "unidades": 2,
@@ -408,8 +408,8 @@
       }
     },
     "data_ultima_venda": "2026-03-11",
-    "arquivo_nome": "Relatório de vendas Tereza Cristina.xlsx",
-    "data_upload": "2026-05-01T22:49:52.611673"
+    "arquivo_nome": "Relatório de Vendas Tereza Cristina_02_05_2026.xlsx",
+    "data_upload": "2026-05-02T13:13:54.036996"
   },
   "recebiveis": {
     "obra_nome": "",
