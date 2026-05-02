@@ -8,7 +8,7 @@
     },
     "2": {
       "unidades": 0,
-      "preco": 450960.0
+      "preco": 475156.05
     },
     "3": {
       "unidades": 1,
@@ -20,7 +20,7 @@
     },
     "5": {
       "unidades": 0,
-      "preco": 450960.0
+      "preco": 475156.05
     },
     "6": {
       "unidades": 2,
@@ -28,7 +28,7 @@
     },
     "7": {
       "unidades": 0,
-      "preco": 450960.0
+      "preco": 475156.05
     },
     "8": {
       "unidades": 1,
@@ -48,11 +48,11 @@
     },
     "12": {
       "unidades": 0,
-      "preco": 450960.0
+      "preco": 475156.05
     },
     "13": {
       "unidades": 0,
-      "preco": 450960.0
+      "preco": 475156.05
     },
     "14": {
       "unidades": 1,
@@ -60,11 +60,11 @@
     },
     "15": {
       "unidades": 0,
-      "preco": 450960.0
+      "preco": 475156.05
     },
     "16": {
       "unidades": 0,
-      "preco": 450960.0
+      "preco": 475156.05
     },
     "17": {
       "unidades": 1,
@@ -76,39 +76,39 @@
     },
     "19": {
       "unidades": 0,
-      "preco": 450960.0
+      "preco": 475156.05
     },
     "20": {
       "unidades": 0,
-      "preco": 450960.0
+      "preco": 475156.05
     },
     "21": {
       "unidades": 0,
-      "preco": 450960.0
+      "preco": 475156.05
     },
     "22": {
       "unidades": 0,
-      "preco": 450960.0
+      "preco": 475156.05
     },
     "23": {
       "unidades": 1,
-      "preco": 360768.0
+      "preco": 475156.05
     },
     "24": {
       "unidades": 1,
-      "preco": 360768.0
+      "preco": 475156.05
     },
     "25": {
       "unidades": 1,
-      "preco": 360768.0
+      "preco": 475156.05
     },
     "26": {
       "unidades": 1,
-      "preco": 360768.0
+      "preco": 475156.05
     },
     "27": {
       "unidades": 1,
-      "preco": 360768.0
+      "preco": 475156.05
     }
   },
   "poc_acum": [
@@ -928,7 +928,22 @@
     "arquivo_nome": "Contas a receber - recebíveis Marta Darela.xlsx",
     "data_upload": "2026-05-01T22:42:59.613290"
   },
-  "unidades_report": null,
+  "unidades_report": {
+    "total_unidades": 41,
+    "vendidas": 33,
+    "disponiveis": 5,
+    "permuta": 3,
+    "terceiros": 0,
+    "vgv_vendido": 15680149.58,
+    "preco_medio": 475156.05,
+    "unidades_permuta": [
+      "APTO 503",
+      "APTO 505",
+      "APTO 603"
+    ],
+    "arquivo_nome": "Relatório de unidades - Marta Darela_02_05_2026.xlsx",
+    "data_upload": "2026-05-02T11:12:06.890305"
+  },
   "total_unidades": 41,
   "cronograma": {
     "obra_nome": "89 - BROCKS - RESIDENCIAL MARTA DARELA",
