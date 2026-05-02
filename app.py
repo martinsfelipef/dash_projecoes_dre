@@ -798,9 +798,540 @@ mg_b=(lb_t/rl_t*100) if rl_t!=0 else 0
 mg_e=(ebt_t/rb_t*100) if rb_t!=0 else 0
 mg_l=(ll_t/rb_t*100)  if rb_t!=0 else 0
 
+# ══════════════════════════════════════════════════════════════════════ GESTÃO
+@st.fragment
+def render_gestao():
+    import datetime
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # CABEÇALHO
+    # ─────────────────────────────────────────────────────────────────────────
+    st.markdown("## 📋 Gestão Financeira e Planejamento de Obras")
+    st.caption("Visão consolidada — selecione a SPE na sidebar para detalhar.")
+    st.divider()
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # SELETOR DE SPE (reutilizado em ambos os blocos)
+    # ─────────────────────────────────────────────────────────────────────────
+    _todas_g = list(st.session_state.clientes[cliente_sel]["empresas"].keys())
+    _spes_g  = [k for k in _todas_g
+                if st.session_state.get("empresas_ativas", {}).get(k, True)
+                and "matriz" not in k.lower()]
+
+    if not _spes_g:
+        st.warning("Nenhuma SPE ativa. Ative ao menos uma empresa na sidebar.")
+        return
+
+    _spe_key_g = "_gestao_spe_sel"
+    if empresa_sel in _spes_g:
+        st.session_state[_spe_key_g] = empresa_sel
+    elif st.session_state.get(_spe_key_g) not in _spes_g:
+        st.session_state[_spe_key_g] = _spes_g[0]
+
+    _spe_g = st.session_state.get(_spe_key_g, _spes_g[0])
+
+    # Botões de seleção de SPE
+    _cols_spe_g = st.columns(min(len(_spes_g), 4))
+    for _i, _sk in enumerate(_spes_g):
+        with _cols_spe_g[_i % 4]:
+            if st.button(
+                _sk,
+                key=f"_gest_spe_{_sk}",
+                type="primary" if _sk == _spe_g else "secondary",
+                use_container_width=True
+            ):
+                st.session_state[_spe_key_g] = _sk
+                st.rerun()
+
+    # Dados da SPE selecionada
+    _emp_g   = st.session_state.clientes[cliente_sel]["empresas"][_spe_g]
+    _tit_g   = _emp_g.get("nome", _spe_g)
+    _est_g   = get_rolling_state(_tit_g)
+    _cr_g    = _est_g.get("cronograma", {})
+    _cpl_g   = _est_g.get("historico_cpl", [])
+    _snap_g  = _cpl_g[-1] if _cpl_g else {}
+
+    st.divider()
+
+    # ═════════════════════════════════════════════════════════════════════════
+    # BLOCO 1 — PLANEJAMENTO DE OBRAS
+    # ═════════════════════════════════════════════════════════════════════════
+    st.markdown("## 🏗️ Planejamento de Obras")
+
+    # ── Informações Iniciais ─────────────────────────────────────────────────
+    if _cr_g:
+        _di_g  = _cr_g.get("data_inicio", {"ano": 2024, "mes": 1})
+        _df_g  = _cr_g.get("data_fim",    {"ano": 2026, "mes": 12})
+        _nome_g = _cr_g.get("obra_nome", _spe_g)
+        _hoje_g = datetime.date.today()
+        _ini_dt = datetime.date(_di_g["ano"], _di_g["mes"], 1)
+        _fim_dt = datetime.date(_df_g["ano"], _df_g["mes"], 1)
+        _N_g    = (_df_g["ano"] - _di_g["ano"]) * 12 + (_df_g["mes"] - _di_g["mes"]) + 1
+        _pass_g = max((_hoje_g.year - _ini_dt.year) * 12 + (_hoje_g.month - _ini_dt.month) + 1, 0)
+        _rest_g = max(_N_g - _pass_g, 0)
+        _pct_g  = min(_pass_g / _N_g * 100, 100) if _N_g > 0 else 0
+
+        _ci1, _ci2, _ci3, _ci4 = st.columns(4)
+        _ci1.metric("📅 Início", f"{MESES[_di_g['mes']-1]}/{_di_g['ano']}")
+        _ci2.metric("🏁 Término", f"{MESES[_df_g['mes']-1]}/{_df_g['ano']}")
+        _ci3.metric("⏱️ Prazo decorrido", f"{_pct_g:.0f}%",
+                    help=f"{_pass_g} meses passados · {_rest_g} restantes")
+        _ci4.metric("📋 CPL", _snap_g.get("periodo_final", "—")[:7] if _snap_g else "—",
+                    help="Última medição carregada")
+
+        # Barra de progresso
+        st.progress(int(_pct_g), text=f"{_pass_g} meses decorridos · {_rest_g} restantes")
+
+        # Alerta de prazo
+        _pct_fis = _snap_g.get("pct_medido", 0) if _snap_g else 0
+        _diff_pp = _pct_g - _pct_fis
+        if _diff_pp > 15:
+            st.warning(
+                f"⚠️ **Atenção ao prazo:** {_pct_g:.0f}% do tempo decorrido "
+                f"vs {_pct_fis:.1f}% de avanço físico — diferença de **{_diff_pp:.0f} pp**."
+            )
+    else:
+        st.info("Carregue o CFF nas ⚙️ Configurações para ver as informações da obra.")
+
+    st.divider()
+
+    # ── KPIs da Obra  |  Top 5 Etapas ───────────────────────────────────────
+    _col_kpi, _col_top5 = st.columns(2, gap="large")
+
+    with _col_kpi:
+        st.markdown("#### 📊 KPIs da Obra")
+        if _snap_g:
+            _orc  = _snap_g.get("orcado_total", 0)
+            _med  = _snap_g.get("medido_acum", 0)
+            _rea  = _snap_g.get("realizado_acum", 0)
+            _verb = _snap_g.get("verba_disponivel", 0)
+            _ctp  = _snap_g.get("saldo_ctp", 0)
+            _cpi  = _snap_g.get("cpi", 0)
+            _eac  = _snap_g.get("eac", 0)
+            _pct_med = _snap_g.get("pct_medido", 0)
+
+            # SPI
+            _spi_val = 1.0
+            if _cr_g and _snap_g.get("periodo_final"):
+                try:
+                    _pf = _snap_g["periodo_final"]
+                    _mes_pf, _ano_pf = int(_pf[5:7]), int(_pf[:4])
+                    _acum_plan = 0.0
+                    _tot_obra  = _cr_g.get("total_obra", 1)
+                    for _mi, _mv in zip(_cr_g.get("meses", []), _cr_g.get("custos_por_mes", [])):
+                        _acum_plan += _mv
+                        if _mi["mes"] == _mes_pf and _mi["ano"] == _ano_pf:
+                            break
+                    _pct_plan = (_acum_plan / _tot_obra * 100) if _tot_obra > 0 else 0
+                    _spi_val  = (_pct_med / _pct_plan) if _pct_plan > 0 else 1.0
+                except Exception:
+                    _spi_val = 1.0
+
+            def _semaforo(v, inv=False):
+                ok = v >= 0.95 if not inv else v <= 1.05
+                warn = v >= 0.85 if not inv else v <= 1.15
+                return "🟢" if ok else ("🟡" if warn else "🔴")
+
+            _k1, _k2 = st.columns(2)
+            _k1.metric("SPI " + _semaforo(_spi_val),
+                       f"{_spi_val:.3f}",
+                       help="Schedule Performance Index — progresso físico ÷ planejado")
+            _k2.metric("CPI " + _semaforo(_cpi),
+                       f"{_cpi:.3f}",
+                       help="Cost Performance Index — medido ÷ realizado")
+            _k3, _k4 = st.columns(2)
+            _k3.metric("% Avanço Físico", f"{_pct_med:.1f}%")
+            _k4.metric("Verba Disponível", fmt(_verb))
+            _k5, _k6 = st.columns(2)
+            _k5.metric("EAC", fmt(_eac),
+                       help="Estimate at Completion — orçado ÷ CPI")
+            _k6.metric("Saldo CTP", fmt(_ctp),
+                       help="Saldo de Contratos e Pedidos")
+        else:
+            st.info("Carregue o CPL nas ⚙️ Configurações.")
+
+    with _col_top5:
+        st.markdown("#### 🔍 Top 5 Etapas — Eficiência de Custo")
+        if _snap_g and _snap_g.get("etapas_nivel2"):
+            _etapas = [e for e in _snap_g["etapas_nivel2"]
+                       if e.get("realizado", 0) > 0]
+            _etapas_sorted = sorted(
+                _etapas,
+                key=lambda e: e.get("cpi", 1.0)
+            )[:5]
+            if _etapas_sorted:
+                import pandas as _pd_top5
+                _rows_t5 = []
+                for _e in _etapas_sorted:
+                    _cpi_e = _e.get("cpi", 1.0)
+                    _sem   = "🟢" if _cpi_e >= 0.95 else ("🟡" if _cpi_e >= 0.85 else "🔴")
+                    _rows_t5.append({
+                        "Etapa":      _e.get("descricao", _e.get("codigo",""))[:35],
+                        "CPI":        f"{_sem} {_cpi_e:.3f}",
+                        "Medido":     fmt(_e.get("medido", 0)),
+                        "Realizado":  fmt(_e.get("realizado", 0)),
+                    })
+                st.dataframe(
+                    _pd_top5.DataFrame(_rows_t5),
+                    use_container_width=True,
+                    hide_index=True,
+                    height=220,
+                )
+            else:
+                st.info("Sem etapas com custo realizado.")
+        else:
+            st.info("Carregue o CPL nas ⚙️ Configurações.")
+
+    st.divider()
+
+    # ── Gestão de Unidades  |  Curva S ──────────────────────────────────────
+    _col_un, _col_cs = st.columns(2, gap="large")
+
+    with _col_un:
+        st.markdown("#### 🏢 Gestão de Unidades")
+        _un_rpt_g = _est_g.get("unidades_report")
+        if _un_rpt_g:
+            _gu1, _gu2 = st.columns(2)
+            _gu1.metric("Total",     _un_rpt_g["total_unidades"],
+                        help="Aptos + Salas (sem garagens)")
+            _gu2.metric("Vendidas",  _un_rpt_g["vendidas"])
+            _gu3, _gu4 = st.columns(2)
+            _gu3.metric("Permuta",   _un_rpt_g["permuta"],
+                        help=", ".join(_un_rpt_g.get("unidades_permuta", [])) or "Nenhuma")
+            _gu4.metric("Disponíveis", _un_rpt_g["disponiveis"])
+            st.caption(
+                f"VGV vendido: **{fmt(_un_rpt_g['vgv_vendido'])}** · "
+                f"Preço médio: **{fmt(_un_rpt_g['preco_medio'])}** · "
+                f"A vender: **{_un_rpt_g['disponiveis']} un**"
+            )
+        else:
+            st.info("Carregue o Relatório de Unidades nas ⚙️ Configurações.")
+
+    with _col_cs:
+        st.markdown("#### 📈 Curva S — Progresso da Obra")
+        if _cr_g and _snap_g:
+            # Monta Curva S com os dados já disponíveis
+            _meses_cff   = _cr_g.get("meses", [])
+            _custos_cff  = _cr_g.get("custos_por_mes", [])
+            _total_obra  = _cr_g.get("total_obra", 1)
+            _labels_cs   = [f"{MESES[m['mes']-1]}/{str(m['ano'])[2:]}" for m in _meses_cff]
+
+            # Planejado acumulado (%)
+            _plan_acum = []
+            _acc = 0.0
+            for _v in _custos_cff:
+                _acc += _v
+                _plan_acum.append(_acc / _total_obra * 100 if _total_obra > 0 else 0)
+
+            _pct_med_g = _snap_g.get("pct_medido", 0)
+
+            _fig_cs = go.Figure()
+            _fig_cs.add_scatter(
+                x=_labels_cs, y=_plan_acum,
+                name="Planejado", mode="lines",
+                line=dict(color=CHART_BLUE, width=2, dash="dash")
+            )
+            _fig_cs.add_scatter(
+                x=_labels_cs[:_snap_g.get("n_meses_decorridos", len(_labels_cs))],
+                y=[_pct_med_g] * min(len(_labels_cs), 30),
+                name="Medido", mode="lines",
+                line=dict(color="#22C55E", width=2.5)
+            )
+            _fig_cs.update_layout(
+                title="Curva S — Planejado × Medido",
+                yaxis_title="%",
+                **PL(320)
+            )
+            _fig_cs.update_yaxes(ticksuffix="%", range=[0, 105])
+            _fig_cs.update_xaxes(showgrid=False)
+            st.plotly_chart(_fig_cs, use_container_width=True)
+        else:
+            st.info("Carregue CFF e CPL nas ⚙️ Configurações.")
+
+    st.divider()
+
+    # ═════════════════════════════════════════════════════════════════════════
+    # BLOCO 2 — GESTÃO FINANCEIRA
+    # ═════════════════════════════════════════════════════════════════════════
+    st.markdown("## 💰 Gestão Financeira")
+
+    # Preparar dados financeiros (DRE projetada)
+    _di_fin = _est_g.get("data_inicio", {"ano": 2024, "mes": 1})
+    _df_fin = _est_g.get("data_fim",    {"ano": 2026, "mes": 12})
+    if _cr_g:
+        _di_fin = _cr_g.get("data_inicio", _di_fin)
+        _df_fin = _cr_g.get("data_fim",    _df_fin)
+
+    _dre_fin_g = None
+    try:
+        _vendas_fin = _est_g.get("vendas", {})
+        if _vendas_fin and _vendas_fin.get("vendas_por_mes"):
+            _meses_v = sorted(_vendas_fin["vendas_por_mes"].keys())
+            if _meses_v:
+                _pv_ano = int(_meses_v[0][:4]); _pv_mes = int(_meses_v[0][5:7])
+                _di_dt2 = (_di_fin["ano"] - 2000) * 12 + _di_fin["mes"]
+                _pv_dt2 = (_pv_ano - 2000) * 12 + _pv_mes
+                if _pv_dt2 < _di_dt2:
+                    _di_fin = {"ano": _pv_ano, "mes": _pv_mes}
+
+        _N_fin = max(
+            (_df_fin["ano"] - _di_fin["ano"]) * 12 +
+            (_df_fin["mes"] - _di_fin["mes"]) + 1, 1
+        )
+        _N_fin = min(_N_fin, 120)
+        _LABELS_fin = gen_labels(_N_fin, _di_fin)
+        _dre_fin_g  = build_dre_projetada(_emp_g, _est_g, visao, _N_fin, _LABELS_fin, _di_fin)
+    except Exception:
+        pass
+
+    # ── Posição de Caixa + Necessidade  |  Recebíveis ───────────────────────
+    _col_cx, _col_rec = st.columns(2, gap="large")
+
+    with _col_cx:
+        st.markdown("#### 💵 Posição de Caixa e Necessidade")
+        _rec_fin = _est_g.get("recebiveis")
+        if _dre_fin_g:
+            # CPV Restante (meses futuros do CFF)
+            _hoje_fin = datetime.date.today()
+            _cpv_rest = 0.0
+            if _cr_g:
+                for _mi_f, _mv_f in zip(_cr_g.get("meses", []), _cr_g.get("custos_por_mes", [])):
+                    if (_mi_f["ano"], _mi_f["mes"]) > (_hoje_fin.year, _hoje_fin.month):
+                        _cpv_rest += _mv_f
+
+            _rec_fut = (_rec_fin.get("total_recebivel", 0) if _rec_fin else 0)
+            _nec_cx  = _cpv_rest - _rec_fut
+
+            _pcx1, _pcx2 = st.columns(2)
+            _pcx1.metric("CPV Restante", fmt(_cpv_rest),
+                         help="Custo de obra nos meses futuros do CFF")
+            _pcx2.metric("Recebíveis Futuros", fmt(_rec_fut),
+                         help="Total a receber — relatório SIENGE")
+            _nec_label = "✅ Coberto" if _nec_cx <= 0 else f"⚠️ Aporte necessário"
+            st.metric("🎯 Necessidade de Caixa", fmt(abs(_nec_cx)),
+                      delta=_nec_label,
+                      delta_color="normal" if _nec_cx <= 0 else "inverse")
+        else:
+            st.info("Carregue CFF e Recebíveis nas ⚙️ Configurações.")
+
+    with _col_rec:
+        st.markdown("#### 🧾 Recebíveis")
+        _rec_fin2 = _est_g.get("recebiveis")
+        if _rec_fin2 and _rec_fin2.get("por_tipo"):
+            _tipos_rec = _rec_fin2["por_tipo"]
+            import pandas as _pd_rec
+            _df_rec = _pd_rec.DataFrame([
+                {
+                    "Tipo": t,
+                    "Unidades": v.get("unidades", 0),
+                    "Parcelas": v.get("parcelas", 0),
+                    "Total": fmt(v.get("total", 0)),
+                    "": "✅" if t != "PE — Permuta" else "❌"
+                }
+                for t, v in _tipos_rec.items()
+            ])
+            st.dataframe(_df_rec, use_container_width=True, hide_index=True, height=220)
+            st.caption(f"Total recebível: **{fmt(_rec_fin2.get('total_recebivel', 0))}**")
+        else:
+            st.info("Carregue o Relatório de Recebíveis nas ⚙️ Configurações.")
+
+    st.divider()
+
+    # ── 4 Gráficos DRE (2×2) ────────────────────────────────────────────────
+    if _dre_fin_g:
+        _visao_f = st.session_state.get("visao_sel", "💰 Caixa")
+        _ano_g   = st.selectbox("Ano de Análise:",
+                                [2024, 2025, 2026, 2027],
+                                index=1,
+                                key="_gestao_ano_sel")
+
+        # Calcular slice para o ano selecionado
+        _di_sl = _est_g.get("data_inicio", {"ano": 2024, "mes": 1})
+        _dre_m = _emp_g.get("dre_mensal", {})
+        if _dre_m:
+            _meses_em = sorted(_dre_m.keys())
+            if _meses_em:
+                _a0 = int(_meses_em[0][:4]); _m0 = int(_meses_em[0][5:7])
+                if (_a0, _m0) < (_di_sl["ano"], _di_sl["mes"]):
+                    _di_sl = {"ano": _a0, "mes": _m0}
+        _start_sl = max(0, (_ano_g - _di_sl["ano"]) * 12 + (1 - _di_sl["mes"]))
+        _end_sl   = _start_sl + 12
+
+        def _sl(campo):
+            _full = _dre_fin_g.get(campo, [0.0] * _N_fin)
+            return [_full[i] if 0 <= i < len(_full) else 0.0
+                    for i in range(_start_sl, _end_sl)]
+
+        _rb  = _sl("rec_bruta");  _rl  = _sl("rec_liq")
+        _ebt = _sl("ebitda");     _ll  = _sl("lucro_liq")
+        _dop = _sl("desp_op")
+
+        # Indicadores financeiros
+        _rl_t  = sum(_rl);   _ll_t  = sum(_ll);   _dop_t = sum(_dop)
+        _mg_l  = (_ll_t / sum(_rb) * 100) if sum(_rb) != 0 else 0
+        _mg_do = (_dop_t / _rl_t * 100)   if _rl_t != 0 else 0
+
+        st.markdown("#### 📊 Indicadores Financeiros")
+        _if1, _if2, _if3 = st.columns(3)
+        _if1.metric("Receita Líquida",       fmt(_rl_t))
+        _if2.metric("Despesas Operacionais", fmt(abs(_dop_t)),
+                    delta=f"{abs(_mg_do):.1f}% s/ Rec. Líq.",
+                    delta_color="inverse")
+        _if3.metric("Lucro Líquido",         fmt(_ll_t),
+                    delta=f"{abs(_mg_l):.1f}% Mg Líquida",
+                    delta_color="normal" if _ll_t >= 0 else "inverse")
+
+        st.divider()
+
+        # 4 Gráficos em 2 colunas
+        st.markdown("#### 📈 DRE Projetada — Gráficos")
+        _gc1, _gc2 = st.columns(2, gap="large")
+
+        with _gc1:
+            # Gráfico 1: Receita Mensal
+            _fg1 = go.Figure()
+            _fg1.add_bar(x=MESES, y=_rb,  name="Rec. Bruta",   marker_color=CHART_BLUE)
+            _fg1.add_bar(x=MESES, y=_rl,  name="Rec. Líquida", marker_color=CHART_NAVY)
+            _fg1.update_layout(title="Receita Mensal", barmode="group", **PL())
+            _fg1.update_xaxes(showgrid=False)
+            _fg1.update_yaxes(gridcolor=BORDER, tickprefix="R$ ", tickformat=",.0f")
+            st.plotly_chart(_fg1, use_container_width=True)
+
+            # Gráfico 3: Composição Mensal
+            _fg3 = go.Figure()
+            _fg3.add_bar(x=MESES, y=_rl,  name="Rec. Líquida", marker_color=CHART_NAVY, opacity=0.85)
+            _fg3.add_bar(x=MESES, y=_dop, name="Desp. Op.",    marker_color=CHART_BLUE, opacity=0.75)
+            _fg3.add_scatter(x=MESES, y=_ebt, name="EBITDA",
+                             mode="lines+markers",
+                             line=dict(color=GOLD, width=2.5), marker=dict(size=7, color=GOLD))
+            _fg3.add_hline(y=0, line_dash="dash", line_color=GRAY, line_width=1)
+            _fg3.update_layout(title="Composição Mensal", barmode="relative", **PL(420))
+            _fg3.update_xaxes(showgrid=False)
+            _fg3.update_yaxes(gridcolor=BORDER, tickprefix="R$ ", tickformat=",.0f")
+            st.plotly_chart(_fg3, use_container_width=True)
+
+        with _gc2:
+            # Gráfico 2: EBITDA e Lucro Líquido
+            _cores2 = [CHART_BLUE if v >= 0 else SOFT_RED for v in _ebt]
+            _fg2 = go.Figure()
+            _fg2.add_bar(x=MESES, y=_ebt, name="EBITDA",
+                         marker_color=_cores2, opacity=0.85)
+            _fg2.add_scatter(x=MESES, y=_ll, name="Lucro Líquido",
+                             mode="lines+markers",
+                             line=dict(color=GOLD, width=2.5), marker=dict(size=7))
+            _fg2.update_layout(title="EBITDA e Lucro Líquido", **PL())
+            _fg2.update_xaxes(showgrid=False)
+            _fg2.update_yaxes(gridcolor=BORDER, tickprefix="R$ ", tickformat=",.0f")
+            st.plotly_chart(_fg2, use_container_width=True)
+
+            # Gráfico 4: Margens Mensais
+            _rb_arr = np.array(_rb)
+            _me = np.clip(np.where(_rb_arr != 0, np.array(_ebt) / _rb_arr * 100, np.nan), -150, 150)
+            _ml = np.clip(np.where(_rb_arr != 0, np.array(_ll)  / _rb_arr * 100, np.nan), -150, 150)
+            _fg4 = go.Figure()
+            _fg4.add_scatter(x=MESES, y=_me, name="Mg EBITDA",
+                             mode="lines+markers",
+                             line=dict(color=CHART_BLUE, width=2.5), marker=dict(size=6))
+            _fg4.add_scatter(x=MESES, y=_ml, name="Mg Líquida",
+                             mode="lines+markers",
+                             line=dict(color=GOLD, width=2.5), marker=dict(size=6))
+            _fg4.add_hline(y=0, line_dash="dash", line_color=GRAY, line_width=1)
+            _fg4.update_layout(title="Margens Mensais (%)", **PL(420))
+            _fg4.update_yaxes(ticksuffix="%", gridcolor=BORDER, range=[-160, 60])
+            _fg4.update_xaxes(showgrid=False)
+            st.plotly_chart(_fg4, use_container_width=True)
+
+    st.divider()
+
+    # ── Fluxo de Caixa — Entradas vs Saídas ─────────────────────────────────
+    if _dre_fin_g and "Caixa" in visao:
+        st.markdown("#### 💸 Fluxo de Caixa — Entradas vs Saídas")
+        _labels_all = _LABELS_fin
+        _rec_fc  = list(_dre_fin_g.get("rec_bruta", []))
+        _cpv_fc  = [abs(v) for v in _dre_fin_g.get("cpv", [])]
+        _dop_fc  = [abs(v) for v in _dre_fin_g.get("desp_op", [])]
+        _saidas  = [c + d for c, d in zip(_cpv_fc, _dop_fc)]
+        _saldo   = []
+        _acc_fc  = 0.0
+        for r, s in zip(_rec_fc, _saidas):
+            _acc_fc += r - s
+            _saldo.append(_acc_fc)
+
+        _fg_fc = go.Figure()
+        _fg_fc.add_bar(x=_labels_all, y=_rec_fc,  name="Entradas",
+                       marker_color="#22C55E", opacity=0.8)
+        _fg_fc.add_bar(x=_labels_all, y=[-v for v in _saidas], name="Saídas",
+                       marker_color=SOFT_RED, opacity=0.8)
+        _fg_fc.add_scatter(x=_labels_all, y=_saldo, name="Saldo Acumulado",
+                           mode="lines", line=dict(color=GOLD, width=2.5))
+        _fg_fc.add_hline(y=0, line_dash="dash", line_color=GRAY, line_width=1)
+        _fg_fc.update_layout(
+            barmode="relative",
+            title="Fluxo de Caixa — Entradas vs Saídas",
+            **PL(380)
+        )
+        _fg_fc.update_xaxes(showgrid=False)
+        _fg_fc.update_yaxes(gridcolor=BORDER, tickprefix="R$ ", tickformat=",.0f")
+        st.plotly_chart(_fg_fc, use_container_width=True)
+        st.divider()
+
+    # ── DRE Projetada Mês a Mês (tabela) ────────────────────────────────────
+    if _dre_fin_g:
+        st.markdown("#### 📋 DRE Projetada — Mês a Mês")
+        _n_hist_g = _dre_fin_g.get("n_hist", 0)
+
+        _linhas_dre = [
+            ("(=) Receita Bruta",          "rec_bruta",   True),
+            ("(-) Impostos s/ Receita",    "imp_rec",     False),
+            ("(=) Receita Líquida",        "rec_liq",     True),
+            ("(-) CPV / CSP",              "cpv",         False),
+            ("(=) Lucro Bruto",            "lucro_bruto", True),
+            ("(-) Despesas Operacionais",  "desp_op",     False),
+            ("(=) EBITDA",                 "ebitda",      True),
+            ("(+/-) Resultado Financeiro", "res_fin",     False),
+            ("(=) Lucro antes IR",         "lai",         True),
+            ("(-) IR / CSLL",              "ir",          False),
+            ("(=) Lucro Líquido",          "lucro_liq",   True),
+        ]
+        _tots_dre = {l for l, _, t in _linhas_dre if t}
+
+        _rows_dre = []
+        for _label, _key, _ in _linhas_dre:
+            _row = {"Linha DRE": _label}
+            _vals = _dre_fin_g.get(_key, [0.0] * _N_fin)
+            for _ii, _lbl in enumerate(_LABELS_fin):
+                _row[_lbl] = _vals[_ii] if _ii < len(_vals) else 0.0
+            _row["TOTAL"] = float(sum(_vals[:_N_fin]))
+            _rows_dre.append(_row)
+
+        import pandas as _pd_dre
+        _df_dre = _pd_dre.DataFrame(_rows_dre).set_index("Linha DRE")
+
+        # Estilo: totalizadores em negrito, negativos em vermelho
+        def _estilo_dre_g(df):
+            def hl(row):
+                return (
+                    [f"background-color:{BLIGHT};font-weight:700;color:{NAVY}"] * len(row)
+                    if row.name in _tots_dre else [""] * len(row)
+                )
+            def cn(v):
+                try: return f"color:{SOFT_RED}" if float(v) < 0 else ""
+                except: return ""
+            try:
+                return df.style.format("R$ {:,.0f}").apply(hl, axis=1).map(cn)
+            except AttributeError:
+                return df.style.format("R$ {:,.0f}").apply(hl, axis=1).applymap(cn)
+
+        st.dataframe(
+            _estilo_dre_g(_df_dre),
+            use_container_width=True,
+            height=440,
+        )
+
 # ── Navegação ─────────────────────────────────────────────────────────────────
 TABS=[
     "⚙️ Configurações",
+    "📋 Gestão",
     "📊 DRE Analítica",
     "🏗️ Resumo de Obras",
     "📅 Forecast",
@@ -4371,11 +4902,12 @@ def render_rolling_forecast():
 
 # ── Roteamento ────────────────────────────────────────────────────────────────
 if   _tab == TABS[0]: render_configuracoes()
-elif _tab == TABS[1]: render_dre()
-elif _tab == TABS[2]: render_resumo_obras()
-elif _tab == TABS[3]: render_rolling_forecast()
-elif _tab == TABS[4]: render_indicadores()
-elif _tab == TABS[5]: render_sensibilidade()
-elif _tab == TABS[6]: render_fcff_dcf()
+elif _tab == TABS[1]: render_gestao()
+elif _tab == TABS[2]: render_dre()
+elif _tab == TABS[3]: render_resumo_obras()
+elif _tab == TABS[4]: render_rolling_forecast()
+elif _tab == TABS[5]: render_indicadores()
+elif _tab == TABS[6]: render_sensibilidade()
+elif _tab == TABS[7]: render_fcff_dcf()
 
 # redeploy
