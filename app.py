@@ -927,17 +927,52 @@ def render_gestao():
             return "🟢" if ok else ("🟡" if warn else "🔴")
 
         # Variáveis de caixa (Recebíveis + CPV restante)
-        _rec_cx   = _est_g.get("recebiveis")
-        _hoje_cx  = datetime.date.today()
-        _cpv_rest = 0.0
-        if _cr_g:
-            for _mi_f, _mv_f in zip(
-                _cr_g.get("meses", []), _cr_g.get("custos_por_mes", [])
-            ):
-                if (_mi_f["ano"], _mi_f["mes"]) > (_hoje_cx.year, _hoje_cx.month):
-                    _cpv_rest += _mv_f
-        _rec_fut = _rec_cx.get("total_recebiveis", 0) if _rec_cx else 0
-        _nec_cx  = _cpv_rest - _rec_fut
+        # ── Custo Restante: EAC − Realizado ──────────────────────
+        # EAC e Realizado vêm do CPL (snap mais recente)
+        _eac_cx  = _snap_g.get("eac", 0) if _snap_g else 0
+        _rea_cx  = _snap_g.get("realizado_acum", 0) if _snap_g else 0
+        _cmp_cx  = _snap_g.get("comprometido", 0) if _snap_g else 0
+        _custo_rest = max(_eac_cx - _rea_cx, 0)
+
+        # ── Recebíveis: separar até fim da obra e total ───────────
+        # Data fim da obra vem do CFF
+        _df_cx = _cr_g.get("data_fim", {"ano": 2026, "mes": 12}) if _cr_g else {"ano": 2026, "mes": 12}
+        _fim_obra_cx = datetime.date(_df_cx["ano"], _df_cx["mes"], 28)
+
+        _rec_ate_obra = 0.0   # recebíveis até fim da obra (sem FI e PE)
+        _rec_total_cx = 0.0   # recebíveis totais (com repasse, sem PE)
+        _TC_EXCLUIR   = {"PE", "pe"}  # permuta sempre excluída
+
+        _rec_cx2 = _est_g.get("recebiveis")
+        if _rec_cx2 and _rec_cx2.get("parcelas"):
+            # parser_recebiveis_sienge retorna lista de parcelas
+            for _parc in _rec_cx2["parcelas"]:
+                _tc_p  = str(_parc.get("tc", "")).strip().upper()
+                _val_p = float(_parc.get("valor", 0))
+                _dt_p  = _parc.get("data_venc")  # string "AAAA-MM-DD" ou date
+
+                if _tc_p in _TC_EXCLUIR:
+                    continue
+
+                _rec_total_cx += _val_p
+
+                # Converter data se necessário
+                try:
+                    if isinstance(_dt_p, str):
+                        _dt_p = datetime.date.fromisoformat(_dt_p[:10])
+                    if _dt_p <= _fim_obra_cx:
+                        _rec_ate_obra += _val_p
+                except Exception:
+                    # Se não conseguir converter a data, conta no total mas não no até-obra
+                    pass
+
+        elif _rec_cx2:
+            # Fallback: usar total_recebiveis se não tiver parcelas detalhadas
+            _rec_total_cx = _rec_cx2.get("total_recebiveis", 0)
+            _rec_ate_obra = _rec_total_cx  # sem como filtrar por data
+
+        # ── Necessidade de Caixa ──────────────────────────────────
+        _nec_cx2 = _custo_rest - _rec_ate_obra
 
         # 4 colunas: SPI | CPI | % Físico | Orçado Total
         _ka, _kb, _kc, _kd = st.columns(4)
@@ -962,26 +997,43 @@ def render_gestao():
             help="Custo total previsto na planilha orçamentária"
         )
 
-        # 3 colunas: CPV Restante | Recebíveis Futuros | Necessidade de Caixa
+        # ── Exibição dos 3 cards de caixa ─────────────────────────
         st.markdown("")  # espaço visual
         _ke, _kf, _kg = st.columns(3)
+
         _ke.metric(
-            "CPV Restante",
-            fmt(_cpv_rest),
-            help="Custo de obra previsto nos meses futuros do CFF"
+            "Custo Restante",
+            fmt(_custo_rest),
+            delta=f"Comprometido: {fmt(_cmp_cx)}",
+            delta_color="off",
+            help=(
+                "EAC − Realizado — projeção do custo restante "
+                "baseada no desempenho real da obra (CPI atual). "
+                f"EAC = {fmt(_eac_cx)} | Realizado = {fmt(_rea_cx)}"
+            )
         )
         _kf.metric(
-            "Recebíveis Futuros",
-            fmt(_rec_fut),
-            help="Total a receber — relatório SIENGE (exclui permuta)"
+            "Recebíveis",
+            fmt(_rec_ate_obra),
+            delta=f"Total c/ repasse: {fmt(_rec_total_cx)}",
+            delta_color="off",
+            help=(
+                "Recebíveis com vencimento até o fim da obra "
+                f"({MESES[_df_cx['mes']-1]}/{_df_cx['ano']}). "
+                "Exclui permuta (PE) e repasse bancário (FI) pós-obra."
+            )
         )
-        _nec_label = "✅ Coberto" if _nec_cx <= 0 else "⚠️ Aporte necessário"
+        _nec_label2 = "✅ Coberto" if _nec_cx2 <= 0 else "⚠️ Aporte necessário"
         _kg.metric(
             "🎯 Necessidade de Caixa",
-            fmt(abs(_nec_cx)),
-            delta=_nec_label,
-            delta_color="normal" if _nec_cx <= 0 else "inverse",
-            help="CPV Restante − Recebíveis Futuros"
+            fmt(abs(_nec_cx2)),
+            delta=_nec_label2,
+            delta_color="normal" if _nec_cx2 <= 0 else "inverse",
+            help=(
+                "Custo Restante − Recebíveis até fim da obra. "
+                "Positivo = aporte necessário antes da entrega. "
+                "Negativo = recebíveis cobrem o custo restante."
+            )
         )
     else:
         st.info("Carregue o CPL nas ⚙️ Configurações.")

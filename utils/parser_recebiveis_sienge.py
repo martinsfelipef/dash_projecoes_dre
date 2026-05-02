@@ -145,6 +145,29 @@ def parse_recebiveis_sienge(data: bytes, arquivo_nome: str = "") -> dict:
     n_unidades_pm = len(resumo_tipos.get("PM",{}).get("unidades",set()))
     n_unidades_fi = len(resumo_tipos.get("FI",{}).get("unidades",set()))
 
+    # Lista detalhada para cálculos de caixa
+    parcelas_lista = []
+    for row in rows[9:]:
+        if not row[0]: continue
+        tc  = str(row[10]).strip().upper() if len(row) > 10 and row[10] else ""
+        val = float(row[13]) if len(row) > 13 and row[13] and isinstance(row[13], (int,float)) else 0.0
+        un  = str(row[11]).strip() if len(row) > 11 and row[11] else ""
+        dt  = _parse_data(row[0])
+        
+        if tc in ["", "A VENCER NO PERÍODO", "TOTAL DE CLIENTES", "VALOR MÉDIO"]:
+            continue
+        if tc == "PE": # Excluir permuta
+            continue
+        if val == 0 or dt is None:
+            continue
+            
+        parcelas_lista.append({
+            "tc":        tc,
+            "valor":     val,
+            "data_venc": dt.strftime("%Y-%m-%d"),
+            "unidade":   un
+        })
+
     return {
         "obra_nome":         obra_nome,
         "data_exportacao":   data_exportacao,
@@ -152,6 +175,7 @@ def parse_recebiveis_sienge(data: bytes, arquivo_nome: str = "") -> dict:
         "pm_por_mes":        dict(pm_por_mes),
         "fi_por_mes":        dict(fi_por_mes),
         "resumo_tipos":      resumo_final,
+        "parcelas":          parcelas_lista,
         "total_recebiveis":  total_recebiveis,
         "total_futuro":      total_futuro,
         "total_pm":          total_pm,
