@@ -994,9 +994,19 @@ def render_gestao():
                 _rows_t5 = []
                 for _e in _etapas_sorted:
                     _cpi_e = _e.get("cpi", 1.0)
+                    # Se cpi for NaN ou inf, trata
+                    if not (0 <= _cpi_e <= 1000): _cpi_e = 0.0
+                    
                     _sem   = "🟢" if _cpi_e >= 0.95 else ("🟡" if _cpi_e >= 0.85 else "🔴")
+                    
+                    # Tratar descrição nula ou nan
+                    _desc = _e.get("descricao")
+                    if not _desc or str(_desc).lower() == "nan":
+                        _desc = _e.get("codigo", "Sem Descrição")
+                    _desc = str(_desc).strip()
+                    
                     _rows_t5.append({
-                        "Etapa":      _e.get("descricao", _e.get("codigo",""))[:35],
+                        "Etapa":      _desc[:35],
                         "CPI":        f"{_sem} {_cpi_e:.3f}",
                         "Medido":     fmt(_e.get("medido", 0)),
                         "Realizado":  fmt(_e.get("realizado", 0)),
