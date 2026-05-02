@@ -681,7 +681,4192 @@
     "arquivo_nome": "Relatório de Vendas Marta Darela_02_05_2026.xlsx",
     "data_upload": "2026-05-02T11:35:34.362397"
   },
-  "recebiveis": null,
+  "recebiveis": {
+    "obra_nome": "",
+    "data_exportacao": "",
+    "por_mes": {
+      "2026-05": 59123.51,
+      "2026-06": 56346.51,
+      "2026-07": 61346.51,
+      "2026-08": 54770.51,
+      "2026-09": 464583.51,
+      "2026-10": 41867.51,
+      "2026-11": 7956620.6,
+      "2026-12": 92405.26,
+      "2027-01": 42132.51,
+      "2027-02": 40707.51,
+      "2027-03": 40707.51,
+      "2027-04": 40707.51,
+      "2027-05": 40707.51,
+      "2027-06": 40707.51,
+      "2027-07": 40707.51,
+      "2027-08": 40707.51,
+      "2027-09": 40707.51,
+      "2027-10": 39154.47,
+      "2027-11": 33158.45,
+      "2027-12": 72626.45,
+      "2028-01": 34583.45,
+      "2028-02": 33158.45,
+      "2028-03": 33158.45,
+      "2028-04": 31306.45,
+      "2028-05": 29881.45,
+      "2028-06": 25131.45,
+      "2028-07": 25131.45,
+      "2028-08": 25131.45,
+      "2028-09": 21780.45,
+      "2028-10": 19174.45,
+      "2028-11": 16422.45,
+      "2028-12": 33089.45,
+      "2029-01": 14717.45,
+      "2029-02": 14717.45,
+      "2029-03": 10810.45,
+      "2029-04": 10810.45,
+      "2029-05": 10810.45,
+      "2029-06": 10810.45,
+      "2029-07": 10810.45,
+      "2029-08": 10810.45,
+      "2029-09": 4338.0,
+      "2029-10": 4338.0,
+      "2029-11": 4338.0,
+      "2029-12": 4338.0
+    },
+    "pm_por_mes": {
+      "2026-05": 50948.51,
+      "2026-06": 49323.51,
+      "2026-07": 49323.51,
+      "2026-08": 47747.51,
+      "2026-09": 47747.51,
+      "2026-10": 41867.51,
+      "2026-11": 41867.51,
+      "2026-12": 41468.51,
+      "2027-01": 40707.51,
+      "2027-02": 40707.51,
+      "2027-03": 40707.51,
+      "2027-04": 40707.51,
+      "2027-05": 40707.51,
+      "2027-06": 40707.51,
+      "2027-07": 40707.51,
+      "2027-08": 40707.51,
+      "2027-09": 40707.51,
+      "2027-10": 39154.47,
+      "2027-11": 33158.45,
+      "2027-12": 33158.45,
+      "2028-01": 33158.45,
+      "2028-02": 33158.45,
+      "2028-03": 33158.45,
+      "2028-04": 31306.45,
+      "2028-05": 29881.45,
+      "2028-06": 25131.45,
+      "2028-07": 25131.45,
+      "2028-08": 25131.45,
+      "2028-09": 21780.45,
+      "2028-10": 19174.45,
+      "2028-11": 16422.45,
+      "2028-12": 16422.45,
+      "2029-01": 14717.45,
+      "2029-02": 14717.45,
+      "2029-03": 10810.45,
+      "2029-04": 10810.45,
+      "2029-05": 10810.45,
+      "2029-06": 10810.45,
+      "2029-07": 10810.45,
+      "2029-08": 10810.45,
+      "2029-09": 4338.0,
+      "2029-10": 4338.0,
+      "2029-11": 4338.0,
+      "2029-12": 4338.0
+    },
+    "fi_por_mes": {
+      "2026-11": 7914753.09
+    },
+    "resumo_tipos": {
+      "PM": {
+        "unidades": 25,
+        "parcelas": 611,
+        "valor": 1263640.04
+      },
+      "PI": {
+        "unidades": 2,
+        "parcelas": 6,
+        "valor": 36267.0
+      },
+      "RF": {
+        "unidades": 18,
+        "parcelas": 31,
+        "valor": 114921.75
+      },
+      "CH": {
+        "unidades": 2,
+        "parcelas": 2,
+        "valor": 409813.0
+      },
+      "FI": {
+        "unidades": 24,
+        "parcelas": 24,
+        "valor": 7914753.09
+      }
+    },
+    "parcelas": [
+      {
+        "tc": "PM",
+        "valor": 1500.0,
+        "data_venc": "2026-05-10",
+        "unidade": "APTO 703"
+      },
+      {
+        "tc": "PM",
+        "valor": 1425.0,
+        "data_venc": "2026-05-10",
+        "unidade": "APTO 202"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2026-05-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2026-05-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2026-05-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 2000.0,
+        "data_venc": "2026-05-10",
+        "unidade": "APTO 402"
+      },
+      {
+        "tc": "PM",
+        "valor": 1852.0,
+        "data_venc": "2026-05-10",
+        "unidade": "APTO 605"
+      },
+      {
+        "tc": "PM",
+        "valor": 1903.0,
+        "data_venc": "2026-05-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 4720.62,
+        "data_venc": "2026-05-10",
+        "unidade": "APTO 403"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2026-05-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 1250.0,
+        "data_venc": "2026-05-10",
+        "unidade": "APTO 903"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2026-05-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1553.04,
+        "data_venc": "2026-05-10",
+        "unidade": "APTO 201"
+      },
+      {
+        "tc": "PM",
+        "valor": 1275.4,
+        "data_venc": "2026-05-10",
+        "unidade": "APTO 302"
+      },
+      {
+        "tc": "PM",
+        "valor": 1823.0,
+        "data_venc": "2026-05-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1960.0,
+        "data_venc": "2026-05-10",
+        "unidade": "APTO 205"
+      },
+      {
+        "tc": "PM",
+        "valor": 1960.0,
+        "data_venc": "2026-05-10",
+        "unidade": "APTO 805"
+      },
+      {
+        "tc": "PM",
+        "valor": 1960.0,
+        "data_venc": "2026-05-10",
+        "unidade": "APTO 804"
+      },
+      {
+        "tc": "PM",
+        "valor": 1576.0,
+        "data_venc": "2026-05-10",
+        "unidade": "APTO 305"
+      },
+      {
+        "tc": "PM",
+        "valor": 1772.0,
+        "data_venc": "2026-05-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2026-05-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1680.0,
+        "data_venc": "2026-05-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "PM",
+        "valor": 1625.0,
+        "data_venc": "2026-05-15",
+        "unidade": "APTO 405"
+      },
+      {
+        "tc": "PI",
+        "valor": 1152.0,
+        "data_venc": "2026-05-15",
+        "unidade": "APTO 303"
+      },
+      {
+        "tc": "PI",
+        "valor": 7023.0,
+        "data_venc": "2026-05-15",
+        "unidade": "SALA 01"
+      },
+      {
+        "tc": "PM",
+        "valor": 1671.0,
+        "data_venc": "2026-05-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2026-05-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1500.0,
+        "data_venc": "2026-06-10",
+        "unidade": "APTO 703"
+      },
+      {
+        "tc": "PM",
+        "valor": 1425.0,
+        "data_venc": "2026-06-10",
+        "unidade": "APTO 202"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2026-06-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2026-06-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2026-06-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 2000.0,
+        "data_venc": "2026-06-10",
+        "unidade": "APTO 402"
+      },
+      {
+        "tc": "PM",
+        "valor": 1852.0,
+        "data_venc": "2026-06-10",
+        "unidade": "APTO 605"
+      },
+      {
+        "tc": "PM",
+        "valor": 1903.0,
+        "data_venc": "2026-06-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 4720.62,
+        "data_venc": "2026-06-10",
+        "unidade": "APTO 403"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2026-06-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 1250.0,
+        "data_venc": "2026-06-10",
+        "unidade": "APTO 903"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2026-06-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1553.04,
+        "data_venc": "2026-06-10",
+        "unidade": "APTO 201"
+      },
+      {
+        "tc": "PM",
+        "valor": 1275.4,
+        "data_venc": "2026-06-10",
+        "unidade": "APTO 302"
+      },
+      {
+        "tc": "PM",
+        "valor": 1823.0,
+        "data_venc": "2026-06-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1960.0,
+        "data_venc": "2026-06-10",
+        "unidade": "APTO 205"
+      },
+      {
+        "tc": "PM",
+        "valor": 1960.0,
+        "data_venc": "2026-06-10",
+        "unidade": "APTO 805"
+      },
+      {
+        "tc": "PM",
+        "valor": 1960.0,
+        "data_venc": "2026-06-10",
+        "unidade": "APTO 804"
+      },
+      {
+        "tc": "PM",
+        "valor": 1576.0,
+        "data_venc": "2026-06-10",
+        "unidade": "APTO 305"
+      },
+      {
+        "tc": "PM",
+        "valor": 1772.0,
+        "data_venc": "2026-06-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2026-06-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1680.0,
+        "data_venc": "2026-06-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "PI",
+        "valor": 7023.0,
+        "data_venc": "2026-06-15",
+        "unidade": "SALA 01"
+      },
+      {
+        "tc": "PM",
+        "valor": 1671.0,
+        "data_venc": "2026-06-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2026-06-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1500.0,
+        "data_venc": "2026-07-10",
+        "unidade": "APTO 703"
+      },
+      {
+        "tc": "PM",
+        "valor": 1425.0,
+        "data_venc": "2026-07-10",
+        "unidade": "APTO 202"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2026-07-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2026-07-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2026-07-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 2000.0,
+        "data_venc": "2026-07-10",
+        "unidade": "APTO 402"
+      },
+      {
+        "tc": "PM",
+        "valor": 1852.0,
+        "data_venc": "2026-07-10",
+        "unidade": "APTO 605"
+      },
+      {
+        "tc": "RF",
+        "valor": 5000.0,
+        "data_venc": "2026-07-10",
+        "unidade": "APTO 605"
+      },
+      {
+        "tc": "PM",
+        "valor": 1903.0,
+        "data_venc": "2026-07-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 4720.62,
+        "data_venc": "2026-07-10",
+        "unidade": "APTO 403"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2026-07-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 1250.0,
+        "data_venc": "2026-07-10",
+        "unidade": "APTO 903"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2026-07-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1553.04,
+        "data_venc": "2026-07-10",
+        "unidade": "APTO 201"
+      },
+      {
+        "tc": "PM",
+        "valor": 1275.4,
+        "data_venc": "2026-07-10",
+        "unidade": "APTO 302"
+      },
+      {
+        "tc": "PM",
+        "valor": 1823.0,
+        "data_venc": "2026-07-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1960.0,
+        "data_venc": "2026-07-10",
+        "unidade": "APTO 205"
+      },
+      {
+        "tc": "PM",
+        "valor": 1960.0,
+        "data_venc": "2026-07-10",
+        "unidade": "APTO 805"
+      },
+      {
+        "tc": "PM",
+        "valor": 1960.0,
+        "data_venc": "2026-07-10",
+        "unidade": "APTO 804"
+      },
+      {
+        "tc": "PM",
+        "valor": 1576.0,
+        "data_venc": "2026-07-10",
+        "unidade": "APTO 305"
+      },
+      {
+        "tc": "PM",
+        "valor": 1772.0,
+        "data_venc": "2026-07-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2026-07-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1680.0,
+        "data_venc": "2026-07-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "PI",
+        "valor": 7023.0,
+        "data_venc": "2026-07-15",
+        "unidade": "SALA 01"
+      },
+      {
+        "tc": "PM",
+        "valor": 1671.0,
+        "data_venc": "2026-07-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2026-07-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1500.0,
+        "data_venc": "2026-08-10",
+        "unidade": "APTO 703"
+      },
+      {
+        "tc": "PM",
+        "valor": 1425.0,
+        "data_venc": "2026-08-10",
+        "unidade": "APTO 202"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2026-08-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2026-08-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2026-08-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 2000.0,
+        "data_venc": "2026-08-10",
+        "unidade": "APTO 402"
+      },
+      {
+        "tc": "PM",
+        "valor": 1852.0,
+        "data_venc": "2026-08-10",
+        "unidade": "APTO 605"
+      },
+      {
+        "tc": "PM",
+        "valor": 1903.0,
+        "data_venc": "2026-08-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 4720.62,
+        "data_venc": "2026-08-10",
+        "unidade": "APTO 403"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2026-08-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 1250.0,
+        "data_venc": "2026-08-10",
+        "unidade": "APTO 903"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2026-08-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1553.04,
+        "data_venc": "2026-08-10",
+        "unidade": "APTO 201"
+      },
+      {
+        "tc": "PM",
+        "valor": 1275.4,
+        "data_venc": "2026-08-10",
+        "unidade": "APTO 302"
+      },
+      {
+        "tc": "PM",
+        "valor": 1823.0,
+        "data_venc": "2026-08-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1960.0,
+        "data_venc": "2026-08-10",
+        "unidade": "APTO 205"
+      },
+      {
+        "tc": "PM",
+        "valor": 1960.0,
+        "data_venc": "2026-08-10",
+        "unidade": "APTO 805"
+      },
+      {
+        "tc": "PM",
+        "valor": 1960.0,
+        "data_venc": "2026-08-10",
+        "unidade": "APTO 804"
+      },
+      {
+        "tc": "PM",
+        "valor": 1772.0,
+        "data_venc": "2026-08-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2026-08-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1680.0,
+        "data_venc": "2026-08-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "PI",
+        "valor": 7023.0,
+        "data_venc": "2026-08-15",
+        "unidade": "SALA 01"
+      },
+      {
+        "tc": "PM",
+        "valor": 1671.0,
+        "data_venc": "2026-08-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2026-08-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1500.0,
+        "data_venc": "2026-09-10",
+        "unidade": "APTO 703"
+      },
+      {
+        "tc": "PM",
+        "valor": 1425.0,
+        "data_venc": "2026-09-10",
+        "unidade": "APTO 202"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2026-09-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2026-09-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2026-09-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 2000.0,
+        "data_venc": "2026-09-10",
+        "unidade": "APTO 402"
+      },
+      {
+        "tc": "PM",
+        "valor": 1852.0,
+        "data_venc": "2026-09-10",
+        "unidade": "APTO 605"
+      },
+      {
+        "tc": "PM",
+        "valor": 1903.0,
+        "data_venc": "2026-09-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 4720.62,
+        "data_venc": "2026-09-10",
+        "unidade": "APTO 403"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2026-09-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 1250.0,
+        "data_venc": "2026-09-10",
+        "unidade": "APTO 903"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2026-09-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1553.04,
+        "data_venc": "2026-09-10",
+        "unidade": "APTO 201"
+      },
+      {
+        "tc": "PM",
+        "valor": 1275.4,
+        "data_venc": "2026-09-10",
+        "unidade": "APTO 302"
+      },
+      {
+        "tc": "PM",
+        "valor": 1823.0,
+        "data_venc": "2026-09-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1960.0,
+        "data_venc": "2026-09-10",
+        "unidade": "APTO 205"
+      },
+      {
+        "tc": "PM",
+        "valor": 1960.0,
+        "data_venc": "2026-09-10",
+        "unidade": "APTO 805"
+      },
+      {
+        "tc": "PM",
+        "valor": 1960.0,
+        "data_venc": "2026-09-10",
+        "unidade": "APTO 804"
+      },
+      {
+        "tc": "PM",
+        "valor": 1772.0,
+        "data_venc": "2026-09-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2026-09-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1680.0,
+        "data_venc": "2026-09-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "PI",
+        "valor": 7023.0,
+        "data_venc": "2026-09-15",
+        "unidade": "SALA 01"
+      },
+      {
+        "tc": "PM",
+        "valor": 1671.0,
+        "data_venc": "2026-09-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2026-09-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "CH",
+        "valor": 198511.0,
+        "data_venc": "2026-09-30",
+        "unidade": "APTO 805"
+      },
+      {
+        "tc": "CH",
+        "valor": 211302.0,
+        "data_venc": "2026-09-30",
+        "unidade": "APTO 804"
+      },
+      {
+        "tc": "PM",
+        "valor": 1500.0,
+        "data_venc": "2026-10-10",
+        "unidade": "APTO 703"
+      },
+      {
+        "tc": "PM",
+        "valor": 1425.0,
+        "data_venc": "2026-10-10",
+        "unidade": "APTO 202"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2026-10-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2026-10-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2026-10-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 2000.0,
+        "data_venc": "2026-10-10",
+        "unidade": "APTO 402"
+      },
+      {
+        "tc": "PM",
+        "valor": 1852.0,
+        "data_venc": "2026-10-10",
+        "unidade": "APTO 605"
+      },
+      {
+        "tc": "PM",
+        "valor": 1903.0,
+        "data_venc": "2026-10-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 4720.62,
+        "data_venc": "2026-10-10",
+        "unidade": "APTO 403"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2026-10-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 1250.0,
+        "data_venc": "2026-10-10",
+        "unidade": "APTO 903"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2026-10-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1553.04,
+        "data_venc": "2026-10-10",
+        "unidade": "APTO 201"
+      },
+      {
+        "tc": "PM",
+        "valor": 1275.4,
+        "data_venc": "2026-10-10",
+        "unidade": "APTO 302"
+      },
+      {
+        "tc": "PM",
+        "valor": 1823.0,
+        "data_venc": "2026-10-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1772.0,
+        "data_venc": "2026-10-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2026-10-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1680.0,
+        "data_venc": "2026-10-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "PM",
+        "valor": 1671.0,
+        "data_venc": "2026-10-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2026-10-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1500.0,
+        "data_venc": "2026-11-10",
+        "unidade": "APTO 703"
+      },
+      {
+        "tc": "PM",
+        "valor": 1425.0,
+        "data_venc": "2026-11-10",
+        "unidade": "APTO 202"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2026-11-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2026-11-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2026-11-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 2000.0,
+        "data_venc": "2026-11-10",
+        "unidade": "APTO 402"
+      },
+      {
+        "tc": "PM",
+        "valor": 1852.0,
+        "data_venc": "2026-11-10",
+        "unidade": "APTO 605"
+      },
+      {
+        "tc": "PM",
+        "valor": 1903.0,
+        "data_venc": "2026-11-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 4720.62,
+        "data_venc": "2026-11-10",
+        "unidade": "APTO 403"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2026-11-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 1250.0,
+        "data_venc": "2026-11-10",
+        "unidade": "APTO 903"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2026-11-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1553.04,
+        "data_venc": "2026-11-10",
+        "unidade": "APTO 201"
+      },
+      {
+        "tc": "PM",
+        "valor": 1275.4,
+        "data_venc": "2026-11-10",
+        "unidade": "APTO 302"
+      },
+      {
+        "tc": "PM",
+        "valor": 1823.0,
+        "data_venc": "2026-11-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1772.0,
+        "data_venc": "2026-11-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2026-11-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1680.0,
+        "data_venc": "2026-11-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "PM",
+        "valor": 1671.0,
+        "data_venc": "2026-11-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2026-11-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "FI",
+        "valor": 252956.0,
+        "data_venc": "2026-11-30",
+        "unidade": "APTO 703"
+      },
+      {
+        "tc": "FI",
+        "valor": 297062.0,
+        "data_venc": "2026-11-30",
+        "unidade": "APTO 202"
+      },
+      {
+        "tc": "FI",
+        "valor": 406014.0,
+        "data_venc": "2026-11-30",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "FI",
+        "valor": 297503.0,
+        "data_venc": "2026-11-30",
+        "unidade": "APTO 405"
+      },
+      {
+        "tc": "FI",
+        "valor": 344238.0,
+        "data_venc": "2026-11-30",
+        "unidade": "APTO 704"
+      },
+      {
+        "tc": "FI",
+        "valor": 268400.0,
+        "data_venc": "2026-11-30",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "FI",
+        "valor": 444219.0,
+        "data_venc": "2026-11-30",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "FI",
+        "valor": 67968.0,
+        "data_venc": "2026-11-30",
+        "unidade": "APTO 402"
+      },
+      {
+        "tc": "FI",
+        "valor": 210809.0,
+        "data_venc": "2026-11-30",
+        "unidade": "APTO 303"
+      },
+      {
+        "tc": "FI",
+        "valor": 405390.0,
+        "data_venc": "2026-11-30",
+        "unidade": "APTO 605"
+      },
+      {
+        "tc": "FI",
+        "valor": 474727.0,
+        "data_venc": "2026-11-30",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "FI",
+        "valor": 403568.0,
+        "data_venc": "2026-11-30",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "FI",
+        "valor": 204848.0,
+        "data_venc": "2026-11-30",
+        "unidade": "APTO 203"
+      },
+      {
+        "tc": "FI",
+        "valor": 269197.0,
+        "data_venc": "2026-11-30",
+        "unidade": "APTO 903"
+      },
+      {
+        "tc": "FI",
+        "valor": 351277.5,
+        "data_venc": "2026-11-30",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "FI",
+        "valor": 286884.68,
+        "data_venc": "2026-11-30",
+        "unidade": "APTO 201"
+      },
+      {
+        "tc": "FI",
+        "valor": 293164.2,
+        "data_venc": "2026-11-30",
+        "unidade": "APTO 302"
+      },
+      {
+        "tc": "FI",
+        "valor": 449392.0,
+        "data_venc": "2026-11-30",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "FI",
+        "valor": 325503.0,
+        "data_venc": "2026-11-30",
+        "unidade": "APTO 205"
+      },
+      {
+        "tc": "FI",
+        "valor": 315235.71,
+        "data_venc": "2026-11-30",
+        "unidade": "APTO 305"
+      },
+      {
+        "tc": "FI",
+        "valor": 434398.0,
+        "data_venc": "2026-11-30",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "FI",
+        "valor": 376170.0,
+        "data_venc": "2026-11-30",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "FI",
+        "valor": 364948.0,
+        "data_venc": "2026-11-30",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "FI",
+        "valor": 370881.0,
+        "data_venc": "2026-11-30",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "PM",
+        "valor": 1500.0,
+        "data_venc": "2026-12-10",
+        "unidade": "APTO 703"
+      },
+      {
+        "tc": "RF",
+        "valor": 1500.0,
+        "data_venc": "2026-12-10",
+        "unidade": "APTO 703"
+      },
+      {
+        "tc": "PM",
+        "valor": 1425.0,
+        "data_venc": "2026-12-10",
+        "unidade": "APTO 202"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2026-12-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2026-12-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "RF",
+        "valor": 3000.0,
+        "data_venc": "2026-12-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2026-12-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 2000.0,
+        "data_venc": "2026-12-10",
+        "unidade": "APTO 402"
+      },
+      {
+        "tc": "RF",
+        "valor": 3000.0,
+        "data_venc": "2026-12-10",
+        "unidade": "APTO 402"
+      },
+      {
+        "tc": "PM",
+        "valor": 1852.0,
+        "data_venc": "2026-12-10",
+        "unidade": "APTO 605"
+      },
+      {
+        "tc": "PM",
+        "valor": 1903.0,
+        "data_venc": "2026-12-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "RF",
+        "valor": 5710.0,
+        "data_venc": "2026-12-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 4720.62,
+        "data_venc": "2026-12-10",
+        "unidade": "APTO 403"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2026-12-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 1250.0,
+        "data_venc": "2026-12-10",
+        "unidade": "APTO 903"
+      },
+      {
+        "tc": "RF",
+        "valor": 1250.0,
+        "data_venc": "2026-12-10",
+        "unidade": "APTO 903"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2026-12-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1553.04,
+        "data_venc": "2026-12-10",
+        "unidade": "APTO 201"
+      },
+      {
+        "tc": "RF",
+        "valor": 3168.85,
+        "data_venc": "2026-12-10",
+        "unidade": "APTO 201"
+      },
+      {
+        "tc": "PM",
+        "valor": 1275.4,
+        "data_venc": "2026-12-10",
+        "unidade": "APTO 302"
+      },
+      {
+        "tc": "RF",
+        "valor": 1275.4,
+        "data_venc": "2026-12-10",
+        "unidade": "APTO 302"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2026-12-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1772.0,
+        "data_venc": "2026-12-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2026-12-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "RF",
+        "valor": 3305.0,
+        "data_venc": "2026-12-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1680.0,
+        "data_venc": "2026-12-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "RF",
+        "valor": 3358.0,
+        "data_venc": "2026-12-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "RF",
+        "valor": 5640.0,
+        "data_venc": "2026-12-15",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "RF",
+        "valor": 5317.0,
+        "data_venc": "2026-12-15",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "RF",
+        "valor": 3676.0,
+        "data_venc": "2026-12-20",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "RF",
+        "valor": 3995.0,
+        "data_venc": "2026-12-20",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 1671.0,
+        "data_venc": "2026-12-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "RF",
+        "valor": 3341.5,
+        "data_venc": "2026-12-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2026-12-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "RF",
+        "valor": 3400.0,
+        "data_venc": "2026-12-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1500.0,
+        "data_venc": "2027-01-10",
+        "unidade": "APTO 703"
+      },
+      {
+        "tc": "PM",
+        "valor": 1425.0,
+        "data_venc": "2027-01-10",
+        "unidade": "APTO 202"
+      },
+      {
+        "tc": "RF",
+        "valor": 1425.0,
+        "data_venc": "2027-01-10",
+        "unidade": "APTO 202"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2027-01-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2027-01-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2027-01-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 2000.0,
+        "data_venc": "2027-01-10",
+        "unidade": "APTO 402"
+      },
+      {
+        "tc": "PM",
+        "valor": 1852.0,
+        "data_venc": "2027-01-10",
+        "unidade": "APTO 605"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2027-01-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 4720.62,
+        "data_venc": "2027-01-10",
+        "unidade": "APTO 403"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2027-01-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 1250.0,
+        "data_venc": "2027-01-10",
+        "unidade": "APTO 903"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2027-01-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1553.04,
+        "data_venc": "2027-01-10",
+        "unidade": "APTO 201"
+      },
+      {
+        "tc": "PM",
+        "valor": 1275.4,
+        "data_venc": "2027-01-10",
+        "unidade": "APTO 302"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2027-01-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2027-01-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2027-01-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1680.0,
+        "data_venc": "2027-01-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "PM",
+        "valor": 1671.0,
+        "data_venc": "2027-01-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2027-01-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1500.0,
+        "data_venc": "2027-02-10",
+        "unidade": "APTO 703"
+      },
+      {
+        "tc": "PM",
+        "valor": 1425.0,
+        "data_venc": "2027-02-10",
+        "unidade": "APTO 202"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2027-02-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2027-02-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2027-02-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 2000.0,
+        "data_venc": "2027-02-10",
+        "unidade": "APTO 402"
+      },
+      {
+        "tc": "PM",
+        "valor": 1852.0,
+        "data_venc": "2027-02-10",
+        "unidade": "APTO 605"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2027-02-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 4720.62,
+        "data_venc": "2027-02-10",
+        "unidade": "APTO 403"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2027-02-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 1250.0,
+        "data_venc": "2027-02-10",
+        "unidade": "APTO 903"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2027-02-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1553.04,
+        "data_venc": "2027-02-10",
+        "unidade": "APTO 201"
+      },
+      {
+        "tc": "PM",
+        "valor": 1275.4,
+        "data_venc": "2027-02-10",
+        "unidade": "APTO 302"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2027-02-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2027-02-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2027-02-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1680.0,
+        "data_venc": "2027-02-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "PM",
+        "valor": 1671.0,
+        "data_venc": "2027-02-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2027-02-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1500.0,
+        "data_venc": "2027-03-10",
+        "unidade": "APTO 703"
+      },
+      {
+        "tc": "PM",
+        "valor": 1425.0,
+        "data_venc": "2027-03-10",
+        "unidade": "APTO 202"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2027-03-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2027-03-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2027-03-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 2000.0,
+        "data_venc": "2027-03-10",
+        "unidade": "APTO 402"
+      },
+      {
+        "tc": "PM",
+        "valor": 1852.0,
+        "data_venc": "2027-03-10",
+        "unidade": "APTO 605"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2027-03-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 4720.62,
+        "data_venc": "2027-03-10",
+        "unidade": "APTO 403"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2027-03-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 1250.0,
+        "data_venc": "2027-03-10",
+        "unidade": "APTO 903"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2027-03-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1553.04,
+        "data_venc": "2027-03-10",
+        "unidade": "APTO 201"
+      },
+      {
+        "tc": "PM",
+        "valor": 1275.4,
+        "data_venc": "2027-03-10",
+        "unidade": "APTO 302"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2027-03-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2027-03-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2027-03-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1680.0,
+        "data_venc": "2027-03-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "PM",
+        "valor": 1671.0,
+        "data_venc": "2027-03-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2027-03-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1500.0,
+        "data_venc": "2027-04-10",
+        "unidade": "APTO 703"
+      },
+      {
+        "tc": "PM",
+        "valor": 1425.0,
+        "data_venc": "2027-04-10",
+        "unidade": "APTO 202"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2027-04-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2027-04-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2027-04-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 2000.0,
+        "data_venc": "2027-04-10",
+        "unidade": "APTO 402"
+      },
+      {
+        "tc": "PM",
+        "valor": 1852.0,
+        "data_venc": "2027-04-10",
+        "unidade": "APTO 605"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2027-04-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 4720.62,
+        "data_venc": "2027-04-10",
+        "unidade": "APTO 403"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2027-04-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 1250.0,
+        "data_venc": "2027-04-10",
+        "unidade": "APTO 903"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2027-04-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1553.04,
+        "data_venc": "2027-04-10",
+        "unidade": "APTO 201"
+      },
+      {
+        "tc": "PM",
+        "valor": 1275.4,
+        "data_venc": "2027-04-10",
+        "unidade": "APTO 302"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2027-04-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2027-04-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2027-04-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1680.0,
+        "data_venc": "2027-04-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "PM",
+        "valor": 1671.0,
+        "data_venc": "2027-04-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2027-04-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1500.0,
+        "data_venc": "2027-05-10",
+        "unidade": "APTO 703"
+      },
+      {
+        "tc": "PM",
+        "valor": 1425.0,
+        "data_venc": "2027-05-10",
+        "unidade": "APTO 202"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2027-05-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2027-05-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2027-05-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 2000.0,
+        "data_venc": "2027-05-10",
+        "unidade": "APTO 402"
+      },
+      {
+        "tc": "PM",
+        "valor": 1852.0,
+        "data_venc": "2027-05-10",
+        "unidade": "APTO 605"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2027-05-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 4720.62,
+        "data_venc": "2027-05-10",
+        "unidade": "APTO 403"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2027-05-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 1250.0,
+        "data_venc": "2027-05-10",
+        "unidade": "APTO 903"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2027-05-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1553.04,
+        "data_venc": "2027-05-10",
+        "unidade": "APTO 201"
+      },
+      {
+        "tc": "PM",
+        "valor": 1275.4,
+        "data_venc": "2027-05-10",
+        "unidade": "APTO 302"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2027-05-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2027-05-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2027-05-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1680.0,
+        "data_venc": "2027-05-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "PM",
+        "valor": 1671.0,
+        "data_venc": "2027-05-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2027-05-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1500.0,
+        "data_venc": "2027-06-10",
+        "unidade": "APTO 703"
+      },
+      {
+        "tc": "PM",
+        "valor": 1425.0,
+        "data_venc": "2027-06-10",
+        "unidade": "APTO 202"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2027-06-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2027-06-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2027-06-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 2000.0,
+        "data_venc": "2027-06-10",
+        "unidade": "APTO 402"
+      },
+      {
+        "tc": "PM",
+        "valor": 1852.0,
+        "data_venc": "2027-06-10",
+        "unidade": "APTO 605"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2027-06-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 4720.62,
+        "data_venc": "2027-06-10",
+        "unidade": "APTO 403"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2027-06-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 1250.0,
+        "data_venc": "2027-06-10",
+        "unidade": "APTO 903"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2027-06-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1553.04,
+        "data_venc": "2027-06-10",
+        "unidade": "APTO 201"
+      },
+      {
+        "tc": "PM",
+        "valor": 1275.4,
+        "data_venc": "2027-06-10",
+        "unidade": "APTO 302"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2027-06-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2027-06-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2027-06-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1680.0,
+        "data_venc": "2027-06-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "PM",
+        "valor": 1671.0,
+        "data_venc": "2027-06-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2027-06-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1500.0,
+        "data_venc": "2027-07-10",
+        "unidade": "APTO 703"
+      },
+      {
+        "tc": "PM",
+        "valor": 1425.0,
+        "data_venc": "2027-07-10",
+        "unidade": "APTO 202"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2027-07-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2027-07-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2027-07-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 2000.0,
+        "data_venc": "2027-07-10",
+        "unidade": "APTO 402"
+      },
+      {
+        "tc": "PM",
+        "valor": 1852.0,
+        "data_venc": "2027-07-10",
+        "unidade": "APTO 605"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2027-07-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 4720.62,
+        "data_venc": "2027-07-10",
+        "unidade": "APTO 403"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2027-07-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 1250.0,
+        "data_venc": "2027-07-10",
+        "unidade": "APTO 903"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2027-07-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1553.04,
+        "data_venc": "2027-07-10",
+        "unidade": "APTO 201"
+      },
+      {
+        "tc": "PM",
+        "valor": 1275.4,
+        "data_venc": "2027-07-10",
+        "unidade": "APTO 302"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2027-07-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2027-07-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2027-07-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1680.0,
+        "data_venc": "2027-07-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "PM",
+        "valor": 1671.0,
+        "data_venc": "2027-07-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2027-07-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1500.0,
+        "data_venc": "2027-08-10",
+        "unidade": "APTO 703"
+      },
+      {
+        "tc": "PM",
+        "valor": 1425.0,
+        "data_venc": "2027-08-10",
+        "unidade": "APTO 202"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2027-08-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2027-08-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2027-08-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 2000.0,
+        "data_venc": "2027-08-10",
+        "unidade": "APTO 402"
+      },
+      {
+        "tc": "PM",
+        "valor": 1852.0,
+        "data_venc": "2027-08-10",
+        "unidade": "APTO 605"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2027-08-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 4720.62,
+        "data_venc": "2027-08-10",
+        "unidade": "APTO 403"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2027-08-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 1250.0,
+        "data_venc": "2027-08-10",
+        "unidade": "APTO 903"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2027-08-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1553.04,
+        "data_venc": "2027-08-10",
+        "unidade": "APTO 201"
+      },
+      {
+        "tc": "PM",
+        "valor": 1275.4,
+        "data_venc": "2027-08-10",
+        "unidade": "APTO 302"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2027-08-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2027-08-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2027-08-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1680.0,
+        "data_venc": "2027-08-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "PM",
+        "valor": 1671.0,
+        "data_venc": "2027-08-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2027-08-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1500.0,
+        "data_venc": "2027-09-10",
+        "unidade": "APTO 703"
+      },
+      {
+        "tc": "PM",
+        "valor": 1425.0,
+        "data_venc": "2027-09-10",
+        "unidade": "APTO 202"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2027-09-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2027-09-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2027-09-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 2000.0,
+        "data_venc": "2027-09-10",
+        "unidade": "APTO 402"
+      },
+      {
+        "tc": "PM",
+        "valor": 1852.0,
+        "data_venc": "2027-09-10",
+        "unidade": "APTO 605"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2027-09-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 4720.62,
+        "data_venc": "2027-09-10",
+        "unidade": "APTO 403"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2027-09-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 1250.0,
+        "data_venc": "2027-09-10",
+        "unidade": "APTO 903"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2027-09-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1553.04,
+        "data_venc": "2027-09-10",
+        "unidade": "APTO 201"
+      },
+      {
+        "tc": "PM",
+        "valor": 1275.4,
+        "data_venc": "2027-09-10",
+        "unidade": "APTO 302"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2027-09-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2027-09-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2027-09-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1680.0,
+        "data_venc": "2027-09-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "PM",
+        "valor": 1671.0,
+        "data_venc": "2027-09-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2027-09-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1500.0,
+        "data_venc": "2027-10-10",
+        "unidade": "APTO 703"
+      },
+      {
+        "tc": "PM",
+        "valor": 1425.0,
+        "data_venc": "2027-10-10",
+        "unidade": "APTO 202"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2027-10-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2027-10-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2027-10-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 2000.0,
+        "data_venc": "2027-10-10",
+        "unidade": "APTO 402"
+      },
+      {
+        "tc": "PM",
+        "valor": 1852.0,
+        "data_venc": "2027-10-10",
+        "unidade": "APTO 605"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2027-10-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 4720.62,
+        "data_venc": "2027-10-10",
+        "unidade": "APTO 403"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2027-10-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 1250.0,
+        "data_venc": "2027-10-10",
+        "unidade": "APTO 903"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2027-10-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1275.4,
+        "data_venc": "2027-10-10",
+        "unidade": "APTO 302"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2027-10-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2027-10-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2027-10-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1680.0,
+        "data_venc": "2027-10-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "PM",
+        "valor": 1671.0,
+        "data_venc": "2027-10-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2027-10-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1500.0,
+        "data_venc": "2027-11-10",
+        "unidade": "APTO 703"
+      },
+      {
+        "tc": "PM",
+        "valor": 1425.0,
+        "data_venc": "2027-11-10",
+        "unidade": "APTO 202"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2027-11-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2027-11-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2027-11-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 2000.0,
+        "data_venc": "2027-11-10",
+        "unidade": "APTO 402"
+      },
+      {
+        "tc": "PM",
+        "valor": 1852.0,
+        "data_venc": "2027-11-10",
+        "unidade": "APTO 605"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2027-11-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2027-11-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 1250.0,
+        "data_venc": "2027-11-10",
+        "unidade": "APTO 903"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2027-11-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2027-11-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2027-11-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2027-11-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1680.0,
+        "data_venc": "2027-11-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "PM",
+        "valor": 1671.0,
+        "data_venc": "2027-11-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2027-11-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1500.0,
+        "data_venc": "2027-12-10",
+        "unidade": "APTO 703"
+      },
+      {
+        "tc": "RF",
+        "valor": 1500.0,
+        "data_venc": "2027-12-10",
+        "unidade": "APTO 703"
+      },
+      {
+        "tc": "PM",
+        "valor": 1425.0,
+        "data_venc": "2027-12-10",
+        "unidade": "APTO 202"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2027-12-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2027-12-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2027-12-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 2000.0,
+        "data_venc": "2027-12-10",
+        "unidade": "APTO 402"
+      },
+      {
+        "tc": "PM",
+        "valor": 1852.0,
+        "data_venc": "2027-12-10",
+        "unidade": "APTO 605"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2027-12-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "RF",
+        "valor": 5710.0,
+        "data_venc": "2027-12-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2027-12-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "RF",
+        "valor": 5675.0,
+        "data_venc": "2027-12-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 1250.0,
+        "data_venc": "2027-12-10",
+        "unidade": "APTO 903"
+      },
+      {
+        "tc": "RF",
+        "valor": 1250.0,
+        "data_venc": "2027-12-10",
+        "unidade": "APTO 903"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2027-12-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2027-12-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2027-12-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2027-12-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "RF",
+        "valor": 3305.0,
+        "data_venc": "2027-12-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1680.0,
+        "data_venc": "2027-12-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "RF",
+        "valor": 5640.0,
+        "data_venc": "2027-12-15",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "RF",
+        "valor": 5317.0,
+        "data_venc": "2027-12-15",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "RF",
+        "valor": 3676.0,
+        "data_venc": "2027-12-20",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "RF",
+        "valor": 3995.0,
+        "data_venc": "2027-12-20",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 1671.0,
+        "data_venc": "2027-12-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2027-12-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "RF",
+        "valor": 3400.0,
+        "data_venc": "2027-12-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1500.0,
+        "data_venc": "2028-01-10",
+        "unidade": "APTO 703"
+      },
+      {
+        "tc": "PM",
+        "valor": 1425.0,
+        "data_venc": "2028-01-10",
+        "unidade": "APTO 202"
+      },
+      {
+        "tc": "RF",
+        "valor": 1425.0,
+        "data_venc": "2028-01-10",
+        "unidade": "APTO 202"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2028-01-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2028-01-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2028-01-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 2000.0,
+        "data_venc": "2028-01-10",
+        "unidade": "APTO 402"
+      },
+      {
+        "tc": "PM",
+        "valor": 1852.0,
+        "data_venc": "2028-01-10",
+        "unidade": "APTO 605"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2028-01-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2028-01-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 1250.0,
+        "data_venc": "2028-01-10",
+        "unidade": "APTO 903"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2028-01-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2028-01-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2028-01-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2028-01-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1680.0,
+        "data_venc": "2028-01-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "PM",
+        "valor": 1671.0,
+        "data_venc": "2028-01-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2028-01-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1500.0,
+        "data_venc": "2028-02-10",
+        "unidade": "APTO 703"
+      },
+      {
+        "tc": "PM",
+        "valor": 1425.0,
+        "data_venc": "2028-02-10",
+        "unidade": "APTO 202"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2028-02-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2028-02-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2028-02-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 2000.0,
+        "data_venc": "2028-02-10",
+        "unidade": "APTO 402"
+      },
+      {
+        "tc": "PM",
+        "valor": 1852.0,
+        "data_venc": "2028-02-10",
+        "unidade": "APTO 605"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2028-02-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2028-02-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 1250.0,
+        "data_venc": "2028-02-10",
+        "unidade": "APTO 903"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2028-02-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2028-02-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2028-02-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2028-02-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1680.0,
+        "data_venc": "2028-02-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "PM",
+        "valor": 1671.0,
+        "data_venc": "2028-02-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2028-02-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1500.0,
+        "data_venc": "2028-03-10",
+        "unidade": "APTO 703"
+      },
+      {
+        "tc": "PM",
+        "valor": 1425.0,
+        "data_venc": "2028-03-10",
+        "unidade": "APTO 202"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2028-03-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2028-03-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2028-03-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 2000.0,
+        "data_venc": "2028-03-10",
+        "unidade": "APTO 402"
+      },
+      {
+        "tc": "PM",
+        "valor": 1852.0,
+        "data_venc": "2028-03-10",
+        "unidade": "APTO 605"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2028-03-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2028-03-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 1250.0,
+        "data_venc": "2028-03-10",
+        "unidade": "APTO 903"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2028-03-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2028-03-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2028-03-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2028-03-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1680.0,
+        "data_venc": "2028-03-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "PM",
+        "valor": 1671.0,
+        "data_venc": "2028-03-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2028-03-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1500.0,
+        "data_venc": "2028-04-10",
+        "unidade": "APTO 703"
+      },
+      {
+        "tc": "PM",
+        "valor": 1425.0,
+        "data_venc": "2028-04-10",
+        "unidade": "APTO 202"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2028-04-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2028-04-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2028-04-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 2000.0,
+        "data_venc": "2028-04-10",
+        "unidade": "APTO 402"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2028-04-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2028-04-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 1250.0,
+        "data_venc": "2028-04-10",
+        "unidade": "APTO 903"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2028-04-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2028-04-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2028-04-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2028-04-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1680.0,
+        "data_venc": "2028-04-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "PM",
+        "valor": 1671.0,
+        "data_venc": "2028-04-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2028-04-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1500.0,
+        "data_venc": "2028-05-10",
+        "unidade": "APTO 703"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2028-05-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2028-05-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2028-05-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 2000.0,
+        "data_venc": "2028-05-10",
+        "unidade": "APTO 402"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2028-05-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2028-05-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 1250.0,
+        "data_venc": "2028-05-10",
+        "unidade": "APTO 903"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2028-05-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2028-05-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2028-05-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2028-05-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1680.0,
+        "data_venc": "2028-05-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "PM",
+        "valor": 1671.0,
+        "data_venc": "2028-05-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2028-05-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2028-06-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2028-06-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2028-06-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2028-06-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2028-06-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2028-06-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2028-06-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2028-06-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2028-06-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1680.0,
+        "data_venc": "2028-06-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "PM",
+        "valor": 1671.0,
+        "data_venc": "2028-06-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2028-06-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2028-07-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2028-07-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2028-07-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2028-07-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2028-07-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2028-07-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2028-07-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2028-07-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2028-07-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1680.0,
+        "data_venc": "2028-07-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "PM",
+        "valor": 1671.0,
+        "data_venc": "2028-07-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2028-07-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2028-08-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2028-08-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2028-08-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2028-08-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2028-08-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2028-08-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2028-08-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2028-08-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2028-08-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1680.0,
+        "data_venc": "2028-08-10",
+        "unidade": "APTO 501"
+      },
+      {
+        "tc": "PM",
+        "valor": 1671.0,
+        "data_venc": "2028-08-20",
+        "unidade": "APTO 502"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2028-08-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2028-09-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2028-09-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2028-09-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2028-09-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 2606.0,
+        "data_venc": "2028-09-10",
+        "unidade": "APTO 304"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2028-09-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2028-09-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2028-09-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2028-09-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2028-09-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2028-10-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 1100.0,
+        "data_venc": "2028-10-10",
+        "unidade": "APTO 803"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2028-10-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2028-10-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2028-10-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2028-10-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2028-10-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1652.0,
+        "data_venc": "2028-10-10",
+        "unidade": "APTO 301"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2028-10-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2028-11-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2028-11-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2028-11-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2028-11-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2028-11-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2028-11-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2028-11-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2028-12-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2028-12-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2028-12-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "RF",
+        "valor": 5710.0,
+        "data_venc": "2028-12-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2028-12-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2028-12-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2028-12-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "RF",
+        "valor": 5640.0,
+        "data_venc": "2028-12-15",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "RF",
+        "valor": 5317.0,
+        "data_venc": "2028-12-15",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1705.0,
+        "data_venc": "2028-12-20",
+        "unidade": "APTO 401"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2029-01-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2029-01-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2029-01-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2029-01-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2029-01-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2029-01-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1838.0,
+        "data_venc": "2029-02-10",
+        "unidade": "APTO 801"
+      },
+      {
+        "tc": "PM",
+        "valor": 2069.0,
+        "data_venc": "2029-02-10",
+        "unidade": "APTO 901"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2029-02-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2029-02-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2029-02-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2029-02-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2029-03-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2029-03-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2029-03-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2029-03-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2029-04-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2029-04-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2029-04-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2029-04-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2029-05-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2029-05-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2029-05-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2029-05-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2029-06-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2029-06-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2029-06-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2029-06-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2029-07-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2029-07-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2029-07-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2029-07-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2029-08-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 6472.45,
+        "data_venc": "2029-08-10",
+        "unidade": "APTO 602"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2029-08-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2029-08-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2029-09-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2029-09-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2029-09-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2029-10-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2029-10-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2029-10-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2029-11-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2029-11-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2029-11-10",
+        "unidade": "APTO 601"
+      },
+      {
+        "tc": "PM",
+        "valor": 1487.0,
+        "data_venc": "2029-12-10",
+        "unidade": "APTO 705"
+      },
+      {
+        "tc": "PM",
+        "valor": 1424.0,
+        "data_venc": "2029-12-10",
+        "unidade": "APTO 701"
+      },
+      {
+        "tc": "PM",
+        "valor": 1427.0,
+        "data_venc": "2029-12-10",
+        "unidade": "APTO 601"
+      }
+    ],
+    "total_recebiveis": 9739394.879999999,
+    "total_futuro": 9680271.369999962,
+    "total_pm": 1263640.04,
+    "total_fi": 7914753.09,
+    "unidades_permuta": [
+      "APTO 704",
+      "APTO 404",
+      "APTO 402",
+      "APTO 604"
+    ],
+    "n_unidades_pm": 25,
+    "n_unidades_fi": 24,
+    "arquivo_nome": "Contas a receber - recebíveis Marta Darela - 02-05-2026.xlsx",
+    "data_upload": "2026-05-02T21:16:20.998898"
+  },
   "unidades_report": {
     "total_unidades": 41,
     "vendidas": 33,
