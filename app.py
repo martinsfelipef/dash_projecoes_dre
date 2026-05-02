@@ -895,133 +895,96 @@ def render_gestao():
 
     st.divider()
 
-    # ── KPIs da Obra  |  Top 5 Etapas ───────────────────────────────────────
-    _col_kpi, _col_top5 = st.columns(2, gap="large")
+    # ── KPIs da Obra + Posição de Caixa (largura total) ─────────────────────
+    st.markdown("#### 📊 KPIs da Obra e Posição de Caixa")
 
-    with _col_kpi:
-        st.markdown("#### 📊 KPIs da Obra")
-        if _snap_g:
-            _orc  = _snap_g.get("orcado_total", 0)
-            _med  = _snap_g.get("medido_acum", 0)
-            _rea  = _snap_g.get("realizado_acum", 0)
-            _verb = _snap_g.get("verba_disponivel", 0)
-            _ctp  = _snap_g.get("saldo_ctp", 0)
-            _cpi  = _snap_g.get("cpi", 0)
-            _eac  = _snap_g.get("eac", 0)
-            _pct_med = _snap_g.get("pct_medido", 0)
+    if _snap_g:
+        # Variáveis do CPL
+        _orc     = _snap_g.get("orcado_total", 0)
+        _cpi     = _snap_g.get("cpi", 0)
+        _pct_med = _snap_g.get("pct_medido", 0)
 
-            # SPI
-            _spi_val = 1.0
-            if _cr_g and _snap_g.get("periodo_final"):
-                try:
-                    _pf = _snap_g["periodo_final"]
-                    _mes_pf, _ano_pf = int(_pf[5:7]), int(_pf[:4])
-                    _acum_plan = 0.0
-                    _tot_obra  = _cr_g.get("total_obra", 1)
-                    for _mi, _mv in zip(_cr_g.get("meses", []), _cr_g.get("custos_por_mes", [])):
-                        _acum_plan += _mv
-                        if _mi["mes"] == _mes_pf and _mi["ano"] == _ano_pf:
-                            break
-                    _pct_plan = (_acum_plan / _tot_obra * 100) if _tot_obra > 0 else 0
-                    _spi_val  = (_pct_med / _pct_plan) if _pct_plan > 0 else 1.0
-                except Exception:
-                    _spi_val = 1.0
+        # SPI
+        _spi_val = 1.0
+        if _cr_g and _snap_g.get("periodo_final"):
+            try:
+                _pf = _snap_g["periodo_final"]
+                _mes_pf, _ano_pf = int(_pf[5:7]), int(_pf[:4])
+                _acum_plan = 0.0
+                _tot_obra  = _cr_g.get("total_obra", 1)
+                for _mi, _mv in zip(_cr_g.get("meses", []), _cr_g.get("custos_por_mes", [])):
+                    _acum_plan += _mv
+                    if _mi["mes"] == _mes_pf and _mi["ano"] == _ano_pf:
+                        break
+                _pct_plan = (_acum_plan / _tot_obra * 100) if _tot_obra > 0 else 0
+                _spi_val  = (_pct_med / _pct_plan) if _pct_plan > 0 else 1.0
+            except Exception:
+                _spi_val = 1.0
 
-            def _semaforo(v, inv=False):
-                ok = v >= 0.95 if not inv else v <= 1.05
-                warn = v >= 0.85 if not inv else v <= 1.15
-                return "🟢" if ok else ("🟡" if warn else "🔴")
+        def _semaforo(v, inv=False):
+            ok   = v >= 0.95 if not inv else v <= 1.05
+            warn = v >= 0.85 if not inv else v <= 1.15
+            return "🟢" if ok else ("🟡" if warn else "🔴")
 
-            # Linha 1: SPI | CPI
-            _k1, _k2 = st.columns(2)
-            _k1.metric("SPI " + _semaforo(_spi_val),
-                       f"{_spi_val:.3f}",
-                       help="Schedule Performance Index — progresso físico ÷ planejado")
-            _k2.metric("CPI " + _semaforo(_cpi),
-                       f"{_cpi:.3f}",
-                       help="Cost Performance Index — medido ÷ realizado")
+        # Variáveis de caixa (Recebíveis + CPV restante)
+        _rec_cx   = _est_g.get("recebiveis")
+        _hoje_cx  = datetime.date.today()
+        _cpv_rest = 0.0
+        if _cr_g:
+            for _mi_f, _mv_f in zip(
+                _cr_g.get("meses", []), _cr_g.get("custos_por_mes", [])
+            ):
+                if (_mi_f["ano"], _mi_f["mes"]) > (_hoje_cx.year, _hoje_cx.month):
+                    _cpv_rest += _mv_f
+        _rec_fut = _rec_cx.get("total_recebiveis", 0) if _rec_cx else 0
+        _nec_cx  = _cpv_rest - _rec_fut
 
-            # Linha 2: % Avanço | Verba Disponível
-            _k3, _k4 = st.columns(2)
-            _k3.metric("% Avanço Físico", f"{_pct_med:.1f}%",
-                       help="Medido acumulado ÷ Orçado total")
-            _k4.metric("Verba Disponível", fmt(_verb),
-                       help="Orçado − Realizado − Comprometido")
+        # 4 colunas: SPI | CPI | % Físico | Orçado Total
+        _ka, _kb, _kc, _kd = st.columns(4)
+        _ka.metric(
+            "SPI " + _semaforo(_spi_val),
+            f"{_spi_val:.3f}",
+            help="Schedule Performance Index — progresso físico ÷ planejado"
+        )
+        _kb.metric(
+            "CPI " + _semaforo(_cpi),
+            f"{_cpi:.3f}",
+            help="Cost Performance Index — medido ÷ realizado"
+        )
+        _kc.metric(
+            "% Avanço Físico",
+            f"{_pct_med:.1f}%",
+            help="Medido acumulado ÷ Orçado total"
+        )
+        _kd.metric(
+            "Orçado Total",
+            fmt(_orc),
+            help="Custo total previsto na planilha orçamentária"
+        )
 
-            # Linha 3: Orçado Total | EAC
-            _k5, _k6 = st.columns(2)
-            _k5.metric("Orçado Total", fmt(_orc),
-                       help="Custo total previsto na planilha orçamentária")
-            _k6.metric("EAC", fmt(_eac),
-                       help="Estimate at Completion — projeção do custo final (Orçado ÷ CPI)")
-
-            # Linha 4: EAC vs Orçado | Saldo CTP
-            _variacao_eac  = _eac - _orc
-            _variacao_pct  = (_variacao_eac / _orc * 100) if _orc > 0 else 0
-            _delta_eac_str = f"{'+' if _variacao_pct >= 0 else ''}{_variacao_pct:.1f}% vs orçado"
-            # Se EAC > Orçado → vai estourar → delta_color inverse (vermelho)
-            # Se EAC < Orçado → vai economizar → delta_color normal (verde)
-            _eac_color = "inverse" if _variacao_eac > 0 else "normal"
-
-            _k7, _k8 = st.columns(2)
-            _k7.metric(
-                "EAC vs Orçado",
-                fmt(abs(_variacao_eac)),
-                delta=("▲ Estouro projetado" if _variacao_eac > 0
-                       else "▼ Economia projetada") + f" ({_delta_eac_str})",
-                delta_color=_eac_color,
-                help=(
-                    "Diferença entre o custo final projetado (EAC) e o orçamento original. "
-                    "Verde = obra abaixo do orçado. Vermelho = risco de estouro."
-                )
-            )
-            _k8.metric("Saldo CTP", fmt(_ctp),
-                       help="Saldo de Contratos e Pedidos em aberto")
-        else:
-            st.info("Carregue o CPL nas ⚙️ Configurações.")
-
-    with _col_top5:
-        st.markdown("#### 🔍 Top 5 Etapas — Eficiência de Custo")
-        if _snap_g and _snap_g.get("etapas_nivel2"):
-            _etapas = [e for e in _snap_g["etapas_nivel2"]
-                       if e.get("realizado", 0) > 0]
-            _etapas_sorted = sorted(
-                _etapas,
-                key=lambda e: e.get("realizado", 0),
-                reverse=True
-            )[:5]
-            if _etapas_sorted:
-                import pandas as _pd_top5
-                _rows_t5 = []
-                for _e in _etapas_sorted:
-                    _cpi_e = _e.get("cpi", 1.0)
-                    # Se cpi for NaN ou inf, trata
-                    if not (0 <= _cpi_e <= 1000): _cpi_e = 0.0
-                    
-                    _sem   = "🟢" if _cpi_e >= 0.95 else ("🟡" if _cpi_e >= 0.85 else "🔴")
-                    
-                    # Tratar descrição nula ou nan
-                    _desc = _e.get("descricao")
-                    if not _desc or str(_desc).lower() == "nan":
-                        _desc = _e.get("codigo", "Sem Descrição")
-                    _desc = str(_desc).strip()
-                    
-                    _rows_t5.append({
-                        "Etapa":      _desc[:35],
-                        "CPI":        f"{_sem} {_cpi_e:.3f}",
-                        "Medido":     fmt(_e.get("medido", 0)),
-                        "Realizado":  fmt(_e.get("realizado", 0)),
-                    })
-                st.dataframe(
-                    _pd_top5.DataFrame(_rows_t5),
-                    use_container_width=True,
-                    hide_index=True,
-                    height=220,
-                )
-            else:
-                st.info("Sem etapas com custo realizado.")
-        else:
-            st.info("Carregue o CPL nas ⚙️ Configurações.")
+        # 3 colunas: CPV Restante | Recebíveis Futuros | Necessidade de Caixa
+        st.markdown("")  # espaço visual
+        _ke, _kf, _kg = st.columns(3)
+        _ke.metric(
+            "CPV Restante",
+            fmt(_cpv_rest),
+            help="Custo de obra previsto nos meses futuros do CFF"
+        )
+        _kf.metric(
+            "Recebíveis Futuros",
+            fmt(_rec_fut),
+            help="Total a receber — relatório SIENGE (exclui permuta)"
+        )
+        _nec_label = "✅ Coberto" if _nec_cx <= 0 else "⚠️ Aporte necessário"
+        _kg.metric(
+            "🎯 Necessidade de Caixa",
+            fmt(abs(_nec_cx)),
+            delta=_nec_label,
+            delta_color="normal" if _nec_cx <= 0 else "inverse",
+            help="CPV Restante − Recebíveis Futuros"
+        )
+    else:
+        st.info("Carregue o CPL nas ⚙️ Configurações.")
 
     st.divider()
 
@@ -1125,35 +1088,51 @@ def render_gestao():
     except Exception:
         pass
 
-    # ── Posição de Caixa + Necessidade  |  Recebíveis ───────────────────────
-    _col_cx, _col_rec = st.columns(2, gap="large")
+    # ── Top 5 Etapas  |  Recebíveis ─────────────────────────────────────────
+    _col_t5, _col_rec = st.columns(2, gap="large")
 
-    with _col_cx:
-        st.markdown("#### 💵 Posição de Caixa e Necessidade")
-        _rec_fin = _est_g.get("recebiveis")
-        if _dre_fin_g:
-            # CPV Restante (meses futuros do CFF)
-            _hoje_fin = datetime.date.today()
-            _cpv_rest = 0.0
-            if _cr_g:
-                for _mi_f, _mv_f in zip(_cr_g.get("meses", []), _cr_g.get("custos_por_mes", [])):
-                    if (_mi_f["ano"], _mi_f["mes"]) > (_hoje_fin.year, _hoje_fin.month):
-                        _cpv_rest += _mv_f
-
-            _rec_fut = (_rec_fin.get("total_recebiveis", 0) if _rec_fin else 0)
-            _nec_cx  = _cpv_rest - _rec_fut
-
-            _pcx1, _pcx2 = st.columns(2)
-            _pcx1.metric("CPV Restante", fmt(_cpv_rest),
-                         help="Custo de obra nos meses futuros do CFF")
-            _pcx2.metric("Recebíveis Futuros", fmt(_rec_fut),
-                         help="Total a receber — relatório SIENGE")
-            _nec_label = "✅ Coberto" if _nec_cx <= 0 else f"⚠️ Aporte necessário"
-            st.metric("🎯 Necessidade de Caixa", fmt(abs(_nec_cx)),
-                      delta=_nec_label,
-                      delta_color="normal" if _nec_cx <= 0 else "inverse")
+    with _col_t5:
+        st.markdown("#### 🔍 Top 5 Etapas — Eficiência de Custo")
+        if _snap_g and _snap_g.get("etapas_nivel2"):
+            _etapas = [e for e in _snap_g["etapas_nivel2"]
+                       if e.get("realizado", 0) > 0]
+            _etapas_sorted = sorted(
+                _etapas,
+                key=lambda e: e.get("realizado", 0),
+                reverse=True
+            )[:5]
+            if _etapas_sorted:
+                import pandas as _pd_top5
+                _rows_t5 = []
+                for _e in _etapas_sorted:
+                    _cpi_e = _e.get("cpi", 1.0)
+                    # Se cpi for NaN ou inf, trata
+                    if not (0 <= _cpi_e <= 1000): _cpi_e = 0.0
+                    
+                    _sem   = "🟢" if _cpi_e >= 0.95 else ("🟡" if _cpi_e >= 0.85 else "🔴")
+                    
+                    # Tratar descrição nula ou nan
+                    _desc = _e.get("descricao")
+                    if not _desc or str(_desc).lower() == "nan":
+                        _desc = _e.get("codigo", "Sem Descrição")
+                    _desc = str(_desc).strip()
+                    
+                    _rows_t5.append({
+                        "Etapa":      _desc[:35],
+                        "CPI":        f"{_sem} {_cpi_e:.3f}",
+                        "Medido":     fmt(_e.get("medido", 0)),
+                        "Realizado":  fmt(_e.get("realizado", 0)),
+                    })
+                st.dataframe(
+                    _pd_top5.DataFrame(_rows_t5),
+                    use_container_width=True,
+                    hide_index=True,
+                    height=220,
+                )
+            else:
+                st.info("Sem etapas com custo realizado.")
         else:
-            st.info("Carregue CFF e Recebíveis nas ⚙️ Configurações.")
+            st.info("Carregue o CPL nas ⚙️ Configurações.")
 
     with _col_rec:
         st.markdown("#### 🧾 Recebíveis")
