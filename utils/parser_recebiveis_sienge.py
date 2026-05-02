@@ -84,45 +84,58 @@ def parse_recebiveis_sienge(data: bytes, arquivo_nome: str = "") -> dict:
     fi_por_mes   = defaultdict(float)
     resumo_tipos = defaultdict(lambda: {"parcelas":0,"valor":0.0,"unidades":set()})
     unidades_permuta = []
+    parcelas_lista = []
     
     hoje = datetime.today()
     total_futuro = 0.0
 
-    for row in rows[9:]:
+    for row in rows[7:]: # Inicia em L8 (index 7)
         if not row[0]: continue
-        tc  = str(row[10]).strip() if len(row) > 10 and row[10] else ""
+        
+        # Extração básica
+        _dt_obj = _parse_data(row[0])
+        tc  = str(row[10]).strip().upper() if len(row) > 10 and row[10] else ""
         val = float(row[13]) if len(row) > 13 and row[13] and isinstance(row[13], (int,float)) else 0.0
         un  = str(row[11]).strip() if len(row) > 11 and row[11] else ""
-        dt  = _parse_data(row[0])
 
-        if not tc or tc in ["A vencer no período","Total de clientes","Valor médio"]:
+        # Ignorar linhas de rodapé ou sem TC válido
+        if not tc or tc in ["A VENCER NO PERÍODO", "TOTAL DE CLIENTES", "VALOR MÉDIO", "TOTAL DO DIA", "TOTAL DA EMPRESA", "NAN"]:
             continue
-
-        # Registra no resumo
+        
+        # Registra no resumo (mesmo que seja PE, registramos a existência)
         resumo_tipos[tc]["parcelas"] += 1
         resumo_tipos[tc]["valor"]    += val
         if un: resumo_tipos[tc]["unidades"].add(un)
 
-        # PE: apenas registra unidade, não soma ao fluxo
-        if tc in _TC_EXCLUIR:
+        # PE: apenas registra unidade, não soma ao fluxo financeiro
+        if tc == "PE":
             if un and un not in unidades_permuta:
                 unidades_permuta.append(un)
             continue
 
-        if val == 0 or dt is None:
+        if val == 0 or _dt_obj is None:
             continue
 
-        chave = f"{dt.year}-{dt.month:02d}"
+        # Lista detalhada para cálculos de caixa (exclui PE e valores zerados)
+        parcelas_lista.append({
+            "tc":        tc,
+            "valor":     val,
+            "data_venc": _dt_obj.strftime("%Y-%m-%d"),
+            "unidade":   un
+        })
+
+        # Agregações por mês
+        chave = f"{_dt_obj.year}-{_dt_obj.month:02d}"
         por_mes[chave]   += val
         if tc == "PM":
             pm_por_mes[chave] += val
         elif tc == "FI":
             fi_por_mes[chave] += val
             
-        if (dt.year, dt.month) > (hoje.year, hoje.month):
+        if (_dt_obj.year, _dt_obj.month) > (hoje.year, hoje.month):
             total_futuro += val
 
-    if not por_mes:
+    if not por_mes and not resumo_tipos:
         return {"erro": (
             "Nenhum recebível encontrado. "
             "Verifique se é o relatório 'Contas a Receber — Recebíveis' do SIENGE."
@@ -144,29 +157,6 @@ def parse_recebiveis_sienge(data: bytes, arquivo_nome: str = "") -> dict:
 
     n_unidades_pm = len(resumo_tipos.get("PM",{}).get("unidades",set()))
     n_unidades_fi = len(resumo_tipos.get("FI",{}).get("unidades",set()))
-
-    # Lista detalhada para cálculos de caixa
-    parcelas_lista = []
-    for row in rows[9:]:
-        if not row[0]: continue
-        tc  = str(row[10]).strip().upper() if len(row) > 10 and row[10] else ""
-        val = float(row[13]) if len(row) > 13 and row[13] and isinstance(row[13], (int,float)) else 0.0
-        un  = str(row[11]).strip() if len(row) > 11 and row[11] else ""
-        dt  = _parse_data(row[0])
-        
-        if tc in ["", "A VENCER NO PERÍODO", "TOTAL DE CLIENTES", "VALOR MÉDIO"]:
-            continue
-        if tc == "PE": # Excluir permuta
-            continue
-        if val == 0 or dt is None:
-            continue
-            
-        parcelas_lista.append({
-            "tc":        tc,
-            "valor":     val,
-            "data_venc": dt.strftime("%Y-%m-%d"),
-            "unidade":   un
-        })
 
     return {
         "obra_nome":         obra_nome,
