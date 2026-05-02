@@ -979,27 +979,67 @@ def render_gestao():
         _ka.metric(
             "SPI " + _semaforo(_spi_val),
             f"{_spi_val:.3f}",
-            help="Schedule Performance Index — progresso físico ÷ planejado"
+            help=(
+                "**Schedule Performance Index** — Índice de desempenho de prazo.\n\n"
+                "**Como é calculado:** % avanço físico medido ÷ % planejado "
+                "no cronograma (CFF) até a data do último CPL.\n\n"
+                "🟢 ≥ 0.95 — no prazo\n"
+                "🟡 0.85–0.94 — atenção\n"
+                "🔴 < 0.85 — atrasado\n\n"
+                "SPI < 1 significa que a obra executou menos do que deveria "
+                "até este momento."
+            )
         )
         _kb.metric(
             "CPI " + _semaforo(_cpi),
             f"{_cpi:.3f}",
-            help="Cost Performance Index — medido ÷ realizado"
+            help=(
+                "**Cost Performance Index** — Índice de eficiência de custo.\n\n"
+                "**Como é calculado:** Medido acumulado ÷ Realizado acumulado\n\n"
+                "🟢 ≥ 0.95 — dentro do custo\n"
+                "🟡 0.85–0.94 — atenção\n"
+                "🔴 < 0.85 — acima do custo previsto\n\n"
+                "CPI > 1 = cada R$1 medido custou menos que R$1 pago. "
+                "CPI < 1 = obra está custando mais do que o medido."
+            )
         )
         _kc.metric(
             "% Avanço Físico",
             f"{_pct_med:.1f}%",
-            help="Medido acumulado ÷ Orçado total"
+            help=(
+                "**Como é calculado:** Medido acumulado ÷ Orçado total × 100\n\n"
+                "Representa quanto da obra foi medido (boletim de medição) "
+                "em relação ao orçamento total.\n\n"
+                "Fonte: último CPL (Custo por Nível) carregado nas Configurações."
+            )
         )
         _kd.metric(
             "Orçado Total",
             fmt(_orc),
-            help="Custo total previsto na planilha orçamentária"
+            help=(
+                "**Custo total previsto** na planilha orçamentária da obra.\n\n"
+                "É a referência base para todos os índices (CPI, EAC, "
+                "Verba Disponível). Não muda — é o orçamento original aprovado.\n\n"
+                "Fonte: CPL (Custo por Nível) — linha total da obra."
+            )
         )
 
-        # ── Exibição dos 3 cards de caixa ─────────────────────────
+        # ── Calcular saldo negativo das etapas (metodologia operacional) ──
+        # Etapas onde realizado > orçado "consumiram" verba de outras etapas
+        _etapas_cx = _snap_g.get("etapas_nivel2", []) if _snap_g else []
+        _negativos_etapas = sum(
+            e.get("realizado", 0) - e.get("orcado", 0)
+            for e in _etapas_cx
+            if e.get("realizado", 0) > e.get("orcado", 0)
+        )
+        _verb_cx = _snap_g.get("verba_disponivel", 0) if _snap_g else 0
+
+        # Necessidade Operacional = Verba Disponível + Negativos − Recebíveis até obra
+        _nec_op = _verb_cx + _negativos_etapas - _rec_ate_obra
+
+        # ── Exibição dos 4 cards de caixa ─────────────────────────
         st.markdown("")  # espaço visual
-        _ke, _kf, _kg = st.columns(3)
+        _ke, _kf, _kg, _kh = st.columns(4)
 
         _ke.metric(
             "Custo Restante",
@@ -1007,32 +1047,68 @@ def render_gestao():
             delta=f"Comprometido: {fmt(_cmp_cx)}",
             delta_color="off",
             help=(
-                "EAC − Realizado — projeção do custo restante "
-                "baseada no desempenho real da obra (CPI atual). "
-                f"EAC = {fmt(_eac_cx)} | Realizado = {fmt(_rea_cx)}"
+                "**Como é calculado:** EAC − Realizado\n\n"
+                "**EAC** (Estimate at Completion) = Orçado Total ÷ CPI\n"
+                "Projeção do custo final baseada no desempenho real atual.\n\n"
+                "**Realizado** = tudo que foi efetivamente pago até hoje.\n\n"
+                "**Comprometido** = contratos assinados ainda não pagos "
+                "(valor mínimo que com certeza vai sair).\n\n"
+                f"EAC = {fmt(_eac_cx)} | Realizado = {fmt(_rea_cx)} | "
+                f"CPI = {_cpi:.3f}"
             )
         )
         _kf.metric(
-            "Recebíveis",
+            "Recebíveis até a Obra",
             fmt(_rec_ate_obra),
             delta=f"Total c/ repasse: {fmt(_rec_total_cx)}",
             delta_color="off",
             help=(
-                "Recebíveis com vencimento até o fim da obra "
-                f"({MESES[_df_cx['mes']-1]}/{_df_cx['ano']}). "
-                "Exclui permuta (PE) e repasse bancário (FI) pós-obra."
+                "**Como é calculado:** soma das parcelas com vencimento "
+                f"até {MESES[_df_cx['mes']-1]}/{_df_cx['ano']} "
+                "(fim da obra conforme CFF).\n\n"
+                "**Inclui:** PM (parcelas mensais), PI (entrada/sinal), "
+                "RF (reforço), CH (cheque/à vista).\n\n"
+                "**Exclui:** FI (repasse bancário — vence após entrega das chaves) "
+                "e PE (permuta).\n\n"
+                f"Total com repasse: {fmt(_rec_total_cx)} "
+                f"(diferença = FI {fmt(_rec_total_cx - _rec_ate_obra)})"
             )
         )
         _nec_label2 = "✅ Coberto" if _nec_cx2 <= 0 else "⚠️ Aporte necessário"
         _kg.metric(
-            "🎯 Necessidade de Caixa",
+            "🎯 Necessidade (Financeira)",
             fmt(abs(_nec_cx2)),
             delta=_nec_label2,
             delta_color="normal" if _nec_cx2 <= 0 else "inverse",
             help=(
-                "Custo Restante − Recebíveis até fim da obra. "
-                "Positivo = aporte necessário antes da entrega. "
-                "Negativo = recebíveis cobrem o custo restante."
+                "**Como é calculado:** Custo Restante − Recebíveis até fim da obra\n\n"
+                "Usa o EAC como base do custo — projeção financeira "
+                "baseada no CPI atual.\n\n"
+                "✅ Coberto = recebíveis suficientes para cobrir o custo restante.\n"
+                "⚠️ Aporte = será necessário injetar capital antes da entrega.\n\n"
+                "**Limitação:** não captura estouros por etapa individualmente."
+            )
+        )
+        _nec_op_label = "✅ Coberto" if _nec_op <= 0 else "⚠️ Aporte necessário"
+        _kh.metric(
+            "🔧 Necessidade (Operacional)",
+            fmt(abs(_nec_op)),
+            delta=_nec_op_label,
+            delta_color="normal" if _nec_op <= 0 else "inverse",
+            help=(
+                "**Como é calculado:** Verba Disponível + Saldo negativo "
+                "das etapas − Recebíveis até fim da obra\n\n"
+                "**Verba Disponível** = Orçado − Realizado − Comprometido "
+                "(o que ainda cabe no orçamento).\n\n"
+                "**Saldo negativo das etapas** = soma dos valores onde "
+                "realizado > orçado por etapa. Quando um serviço estourou "
+                "o orçamento, ele 'tomou emprestado' da verba disponível — "
+                "esse valor precisa ser devolvido.\n\n"
+                f"Verba disponível: {fmt(_verb_cx)} | "
+                f"Negativos: {fmt(_negativos_etapas)} | "
+                f"Recebíveis até obra: {fmt(_rec_ate_obra)}\n\n"
+                "**Fonte:** metodologia operacional (engenharia de obras). "
+                "Conta grossa — para análise item a item consultar o CPL."
             )
         )
     else:
