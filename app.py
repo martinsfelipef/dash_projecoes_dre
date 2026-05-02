@@ -1099,7 +1099,7 @@ def render_gestao():
                     if (_mi_f["ano"], _mi_f["mes"]) > (_hoje_fin.year, _hoje_fin.month):
                         _cpv_rest += _mv_f
 
-            _rec_fut = (_rec_fin.get("total_recebivel", 0) if _rec_fin else 0)
+            _rec_fut = (_rec_fin.get("total_recebiveis", 0) if _rec_fin else 0)
             _nec_cx  = _cpv_rest - _rec_fut
 
             _pcx1, _pcx2 = st.columns(2)
@@ -1117,21 +1117,21 @@ def render_gestao():
     with _col_rec:
         st.markdown("#### 🧾 Recebíveis")
         _rec_fin2 = _est_g.get("recebiveis")
-        if _rec_fin2 and _rec_fin2.get("por_tipo"):
-            _tipos_rec = _rec_fin2["por_tipo"]
+        if _rec_fin2 and _rec_fin2.get("resumo_tipos"):
+            _tipos_rec = _rec_fin2["resumo_tipos"]
             import pandas as _pd_rec
             _df_rec = _pd_rec.DataFrame([
                 {
                     "Tipo": t,
                     "Unidades": v.get("unidades", 0),
                     "Parcelas": v.get("parcelas", 0),
-                    "Total": fmt(v.get("total", 0)),
+                    "Total": fmt(v.get("valor", 0)),
                     "": "✅" if t != "PE — Permuta" else "❌"
                 }
                 for t, v in _tipos_rec.items()
             ])
             st.dataframe(_df_rec, use_container_width=True, hide_index=True, height=220)
-            st.caption(f"Total recebível: **{fmt(_rec_fin2.get('total_recebivel', 0))}**")
+            st.caption(f"Total recebível: **{fmt(_rec_fin2.get('total_recebiveis', 0))}**")
         else:
             st.info("Carregue o Relatório de Recebíveis nas ⚙️ Configurações.")
 
