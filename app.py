@@ -987,7 +987,8 @@ def render_gestao():
                        if e.get("realizado", 0) > 0]
             _etapas_sorted = sorted(
                 _etapas,
-                key=lambda e: e.get("cpi", 1.0)
+                key=lambda e: e.get("realizado", 0),
+                reverse=True
             )[:5]
             if _etapas_sorted:
                 import pandas as _pd_top5
