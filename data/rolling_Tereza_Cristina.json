@@ -36,119 +36,119 @@
     },
     "9": {
       "unidades": 0,
-      "preco": 434571.92
+      "preco": 478029.11
     },
     "10": {
       "unidades": 1,
-      "preco": 4291397.72
+      "preco": 1075565.5
     },
     "11": {
       "unidades": 1,
-      "preco": 4291397.72
+      "preco": 1075565.5
     },
     "12": {
       "unidades": 1,
-      "preco": 4291397.72
+      "preco": 1075565.5
     },
     "13": {
       "unidades": 1,
-      "preco": 4291397.72
+      "preco": 1075565.5
     },
     "14": {
       "unidades": 1,
-      "preco": 4291397.72
+      "preco": 1075565.5
     },
     "15": {
       "unidades": 1,
-      "preco": 4291397.72
+      "preco": 1075565.5
     },
     "16": {
       "unidades": 1,
-      "preco": 4291397.72
+      "preco": 1075565.5
     },
     "17": {
       "unidades": 1,
-      "preco": 4291397.72
+      "preco": 1075565.5
     },
     "18": {
       "unidades": 0,
-      "preco": 434571.92
+      "preco": 478029.11
     },
     "19": {
       "unidades": 0,
-      "preco": 434571.92
+      "preco": 478029.11
     },
     "20": {
       "unidades": 0,
-      "preco": 434571.92
+      "preco": 478029.11
     },
     "21": {
       "unidades": 0,
-      "preco": 434571.92
+      "preco": 478029.11
     },
     "22": {
       "unidades": 0,
-      "preco": 434571.92
+      "preco": 478029.11
     },
     "23": {
       "unidades": 0,
-      "preco": 434571.92
+      "preco": 478029.11
     },
     "24": {
       "unidades": 0,
-      "preco": 434571.92
+      "preco": 478029.11
     },
     "25": {
       "unidades": 0,
-      "preco": 434571.92
+      "preco": 478029.11
     },
     "26": {
       "unidades": 0,
-      "preco": 434571.92
+      "preco": 478029.11
     },
     "27": {
       "unidades": 0,
-      "preco": 434571.92
+      "preco": 478029.11
     },
     "28": {
       "unidades": 0,
-      "preco": 434571.92
+      "preco": 478029.11
     },
     "29": {
       "unidades": 0,
-      "preco": 434571.92
+      "preco": 478029.11
     },
     "30": {
       "unidades": 0,
-      "preco": 434571.92
+      "preco": 478029.11
     },
     "31": {
       "unidades": 0,
-      "preco": 434571.92
+      "preco": 478029.11
     },
     "32": {
       "unidades": 0,
-      "preco": 434571.92
+      "preco": 478029.11
     },
     "33": {
       "unidades": 0,
-      "preco": 434571.92
+      "preco": 478029.11
     },
     "34": {
       "unidades": 0,
-      "preco": 434571.92
+      "preco": 478029.11
     },
     "35": {
       "unidades": 0,
-      "preco": 434571.92
+      "preco": 478029.11
     },
     "36": {
       "unidades": 0,
-      "preco": 434571.92
+      "preco": 478029.11
     },
     "37": {
       "unidades": 0,
-      "preco": 434571.92
+      "preco": 478029.11
     }
   },
   "poc_acum": [
@@ -829,8 +829,19 @@
     "arquivo_nome": "Contas a receber - recebíveis Tereza.xlsx",
     "data_upload": "2026-05-01T22:50:14.484791"
   },
-  "unidades_report": null,
-  "total_unidades": 187,
+  "unidades_report": {
+    "total_unidades": 69,
+    "vendidas": 50,
+    "disponiveis": 18,
+    "permuta": 0,
+    "terceiros": 0,
+    "vgv_vendido": 23901455.63,
+    "preco_medio": 478029.11,
+    "unidades_permuta": [],
+    "arquivo_nome": "Relatório de unidades Tereza Cristina.xlsx",
+    "data_upload": "2026-05-02T00:14:10.621802"
+  },
+  "total_unidades": 69,
   "cronograma": {
     "obra_nome": "85 - Residencial Tereza Cristina",
     "data_inicio": {
