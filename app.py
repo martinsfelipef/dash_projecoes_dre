@@ -1187,32 +1187,32 @@ def render_gestao():
     # ═════════════════════════════════════════════════════════════════════════
     st.markdown("## 💰 Gestão Financeira")
 
-    # Preparar dados financeiros (DRE projetada)
+    # Preparar dados financeiros — mesma lógica da DRE Analítica
+    # Horizonte: data_inicio efetiva até dez/2028 (cobre qualquer ano do seletor)
     _di_fin = _est_g.get("data_inicio", {"ano": 2024, "mes": 1})
-    _df_fin = _est_g.get("data_fim",    {"ano": 2026, "mes": 12})
-    if _cr_g:
-        _di_fin = _cr_g.get("data_inicio", _di_fin)
-        _df_fin = _cr_g.get("data_fim",    _df_fin)
+    _dre_m_fin = _emp_g.get("dre_mensal", {})
+    if _dre_m_fin:
+        _meses_dm_fin = sorted(_dre_m_fin.keys())
+        try:
+            _a0f = int(_meses_dm_fin[0][:4]); _m0f = int(_meses_dm_fin[0][5:7])
+            if (_a0f, _m0f) < (_di_fin["ano"], _di_fin["mes"]):
+                _di_fin = {"ano": _a0f, "mes": _m0f}
+        except Exception:
+            pass
+    _vendas_fin = _est_g.get("vendas", {})
+    if _vendas_fin and _vendas_fin.get("vendas_por_mes"):
+        _meses_v_fin = sorted(_vendas_fin["vendas_por_mes"].keys())
+        if _meses_v_fin:
+            _pv_ano_f = int(_meses_v_fin[0][:4]); _pv_mes_f = int(_meses_v_fin[0][5:7])
+            if (_pv_ano_f, _pv_mes_f) < (_di_fin["ano"], _di_fin["mes"]):
+                _di_fin = {"ano": _pv_ano_f, "mes": _pv_mes_f}
+
+    _N_fin = max((2029 - _di_fin["ano"]) * 12 - (_di_fin["mes"] - 1), 60)
+    _LABELS_fin = gen_labels(_N_fin, _di_fin)
 
     _dre_fin_g = None
     try:
-        _vendas_fin = _est_g.get("vendas", {})
-        if _vendas_fin and _vendas_fin.get("vendas_por_mes"):
-            _meses_v = sorted(_vendas_fin["vendas_por_mes"].keys())
-            if _meses_v:
-                _pv_ano = int(_meses_v[0][:4]); _pv_mes = int(_meses_v[0][5:7])
-                _di_dt2 = (_di_fin["ano"] - 2000) * 12 + _di_fin["mes"]
-                _pv_dt2 = (_pv_ano - 2000) * 12 + _pv_mes
-                if _pv_dt2 < _di_dt2:
-                    _di_fin = {"ano": _pv_ano, "mes": _pv_mes}
-
-        _N_fin = max(
-            (_df_fin["ano"] - _di_fin["ano"]) * 12 +
-            (_df_fin["mes"] - _di_fin["mes"]) + 1, 1
-        )
-        _N_fin = min(_N_fin, 120)
-        _LABELS_fin = gen_labels(_N_fin, _di_fin)
-        _dre_fin_g  = build_dre_projetada(_emp_g, _est_g, visao, _N_fin, _LABELS_fin, _di_fin)
+        _dre_fin_g = build_dre_projetada(_emp_g, _est_g, visao, _N_fin, _LABELS_fin, _di_fin)
     except Exception:
         pass
 
@@ -1302,16 +1302,8 @@ def render_gestao():
                                 index=1,
                                 key="_gestao_ano_sel")
 
-        # Calcular slice para o ano selecionado
-        _di_sl = _est_g.get("data_inicio", {"ano": 2024, "mes": 1})
-        _dre_m = _emp_g.get("dre_mensal", {})
-        if _dre_m:
-            _meses_em = sorted(_dre_m.keys())
-            if _meses_em:
-                _a0 = int(_meses_em[0][:4]); _m0 = int(_meses_em[0][5:7])
-                if (_a0, _m0) < (_di_sl["ano"], _di_sl["mes"]):
-                    _di_sl = {"ano": _a0, "mes": _m0}
-        _start_sl = max(0, (_ano_g - _di_sl["ano"]) * 12 + (1 - _di_sl["mes"]))
+        # Slice do ano selecionado — usa _di_fin (já ajustado para primeira venda/dre_mensal)
+        _start_sl = max(0, (_ano_g - _di_fin["ano"]) * 12 + (1 - _di_fin["mes"]))
         _end_sl   = _start_sl + 12
 
         def _sl(campo):
