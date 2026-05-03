@@ -4183,6 +4183,29 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
         except Exception:
             pass
 
+    # ── Ratio Caixa/Competência para proxy histórico ──────────────────
+    # Meses onde temos ambos: caixa real (dre_mensal rec_bruta) e competência real (vendas)
+    _ratio_cx_comp_vals = []
+
+    for _ym_r, _vals_r in _dre_mensal.items():
+        try:
+            _ano_r = int(_ym_r[:4])
+            _mes_r = int(_ym_r[5:7])
+            _idx_r = (_ano_r - data_inicio["ano"]) * 12 + (_mes_r - data_inicio["mes"])
+            _cx_r  = float(_vals_r.get("rec_bruta", 0.0))
+            _comp_r = _rec_real_por_idx.get(_idx_r, 0.0)
+            # Só inclui se competência > 0 e caixa > 0
+            if _comp_r > 0 and _cx_r > 0:
+                _ratio_cx_comp_vals.append(_cx_r / _comp_r)
+        except Exception:
+            pass
+
+    # Fallback: ratio = 1.0 se não há meses em comum
+    _ratio_cx_comp = (
+        sum(_ratio_cx_comp_vals) / len(_ratio_cx_comp_vals)
+        if _ratio_cx_comp_vals else 1.0
+    )
+
     # VGV total vendido (para POC)
     _vgv_total_vendido = _vendas_state.get("vgv_vendido", 0.0) if _vendas_state else 0.0
     # VGV total projetado (vendido + futuro)
@@ -4442,10 +4465,15 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
 
         elif i < _idx_inicio_dre:
             # ── Mês anterior à DRE histórica (ex: 2023, 2024) ───────
-            # Não temos dados reais — mas podemos ter vendas reais (Competência)
-            _rec_h = _receita_mes(i)
-            _imp_pct_efetivo2 = _ret_pct if _is_spe_ret else imp_pct_proj
-            _imp_h = -abs(_rec_h * _imp_pct_efetivo2) if _rec_h != 0 else 0.0
+            if "Caixa" in visao:
+                # Proxy: competência real × ratio Caixa/Competência
+                _comp_h = _rec_real_por_idx.get(i, 0.0)
+                _rec_h  = _comp_h * _ratio_cx_comp if _comp_h > 0 else 0.0
+            else:
+                _rec_h = _receita_mes(i)
+
+            _imp_pct_efetivo3 = _ret_pct if _is_spe_ret else imp_pct_proj
+            _imp_h = -abs(_rec_h * _imp_pct_efetivo3) if _rec_h != 0 else 0.0
 
             rec_bruta.append(_rec_h)
             imp_rec.append(_imp_h)
