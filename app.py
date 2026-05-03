@@ -4363,6 +4363,18 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
     _is_spe_ret = not is_matriz  # SPEs usam RET 4%; Matriz usa lógica existente
     _ret_pct = 0.04
 
+    # ── Data-limite para desp_op das SPEs (entrega das chaves) ───────
+    # SPEs: desp_op zera após data_fim + 2 meses
+    # Matriz: sem limite
+    _df_obra = _cr.get("data_fim", {"ano": 2099, "mes": 12}) if _cr else {"ano": 2099, "mes": 12}
+    _idx_chaves = (
+        (_df_obra["ano"] - data_inicio["ano"]) * 12 +
+        (_df_obra["mes"] - data_inicio["mes"]) + 2  # +2 meses após fim da obra
+    )
+    # Para Matriz, nunca zera (índice muito alto)
+    if is_matriz:
+        _idx_chaves = N + 9999
+
     for i in range(N):
         _drift = (1 + 0.005) ** i  # 0,5%/mês ≈ 6%/ano
 
@@ -4430,7 +4442,8 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
                 ir.append(0.0)
             else:
                 cpv.append(_cpv_cff(i) if not is_matriz else 0.0)
-                desp_op.append(dop_media * _drift if dop_media != 0 else 0.0)
+                _dop_proj = (dop_media * _drift if dop_media != 0 else 0.0) if i < _idx_chaves else 0.0
+                desp_op.append(_dop_proj)
                 desp_bdi.append(0.0)
                 rec_bdi.append(0.0)
                 res_fin.append(rf_media  * _drift if rf_media  != 0 else 0.0)
@@ -4443,7 +4456,7 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
             if is_matriz:
                 _rec = _rec_bdi_mes(i, abs(_cpv_cff(i)))
 
-            _dop  = dop_media * _drift if dop_media != 0 else 0.0
+            _dop  = (dop_media * _drift if dop_media != 0 else 0.0) if i < _idx_chaves else 0.0
             _rf   = rf_media  * _drift if rf_media  != 0 else 0.0
             _ir_v = ir_media  * _drift if ir_media  != 0 else 0.0
             _imp_pct_efetivo = _ret_pct if _is_spe_ret else imp_pct_proj
