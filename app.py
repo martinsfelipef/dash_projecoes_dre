@@ -4378,7 +4378,7 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
         "ir":            ir,
         "lucro_liq":     lucro_liq,
         "n_hist":        _idx_fim_dre,   # índice até onde temos DRE histórica
-        "idx_obra":      _idx_inicio_dre + _idx_inicio_dre,  # índice de início da obra
+        "idx_obra":      _offset_obra,   # índice de início da obra no horizonte
     }
 
 
