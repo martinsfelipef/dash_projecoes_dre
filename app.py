@@ -4183,6 +4183,99 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
     mes_ent   = estado.get("mes_entrega", N)
     bdi_lista = estado.get("bdi_mensal", [estado.get("bdi_rate", 14.0)]*N)
 
+    # ── Curva de avanço POC (histórico CPL + projeção CFF) ────────────
+    _poc_acum_real = [0.0] * N  # % avanço acumulado por índice
+
+    # 1. Histórico: popular a partir do historico_cpl
+    _hist_cpl_sorted = sorted(
+        estado.get("historico_cpl", []),
+        key=lambda s: s.get("periodo_final", "")
+    )
+    _pct_anterior = 0.0
+    _idx_anterior = -1
+
+    for _snap_poc in _hist_cpl_sorted:
+        _pf_poc = _snap_poc.get("periodo_final", "")
+        if not _pf_poc:
+            continue
+        try:
+            _ano_poc = int(_pf_poc[:4])
+            _mes_poc = int(_pf_poc[5:7])
+            _idx_poc = (_ano_poc - data_inicio["ano"]) * 12 + (_mes_poc - data_inicio["mes"])
+            _pct_poc = float(_snap_poc.get("pct_medido", 0.0))
+            if 0 <= _idx_poc < N:
+                # Primeiro CPL: distribuir igualmente desde o início da obra
+                if _idx_anterior < 0:
+                    _idx_ini_obra = _offset_obra
+                    _n_dist = max(_idx_poc - _idx_ini_obra + 1, 1)
+                    for _jj in range(_idx_ini_obra, _idx_poc + 1):
+                        if 0 <= _jj < N:
+                            _poc_acum_real[_jj] = _pct_poc * (_jj - _idx_ini_obra + 1) / _n_dist
+                else:
+                    # Interpolar linearmente entre o snapshot anterior e este
+                    _n_int = _idx_poc - _idx_anterior
+                    for _jj in range(_idx_anterior + 1, _idx_poc + 1):
+                        if 0 <= _jj < N:
+                            _poc_acum_real[_jj] = _pct_anterior + (
+                                (_pct_poc - _pct_anterior) * (_jj - _idx_anterior) / _n_int
+                            )
+                _pct_anterior = _pct_poc
+                _idx_anterior = _idx_poc
+        except Exception:
+            pass
+
+    # 2. Futuro: projetar com curva S do CFF a partir do último CPL
+    _pct_ultimo_cpl = _pct_anterior  # % avanço no último mês medido
+    _idx_ultimo_cpl = _idx_anterior  # índice do último mês medido
+
+    if _custos_m and _idx_ultimo_cpl >= 0:
+        # Calcula acumulado planejado do CFF
+        _acum_cff = []
+        _acc_cff = 0.0
+        _tot_cff = _cr.get("total_obra", 1) or 1
+        for _cv in _custos_m:
+            _acc_cff += _cv
+            _acum_cff.append(_acc_cff / _tot_cff * 100)
+
+        _pct_cff_no_ultimo = 0.0
+        _offset_cff = _offset_obra  # índice onde a obra começa no horizonte
+        if _idx_ultimo_cpl >= _offset_cff:
+            _idx_cff_ref = _idx_ultimo_cpl - _offset_cff
+            if 0 <= _idx_cff_ref < len(_acum_cff):
+                _pct_cff_no_ultimo = _acum_cff[_idx_cff_ref]
+
+        for _jj in range(_idx_ultimo_cpl + 1, N):
+            _idx_cff_j = _jj - _offset_cff
+            if 0 <= _idx_cff_j < len(_acum_cff):
+                _pct_cff_j = _acum_cff[_idx_cff_j]
+                # Escala a curva CFF para partir do pct_ultimo_cpl e ir até 100%
+                _escala = (100.0 - _pct_ultimo_cpl) / (100.0 - _pct_cff_no_ultimo) if (100.0 - _pct_cff_no_ultimo) > 0 else 0.0
+                _poc_acum_real[_jj] = _pct_ultimo_cpl + (_pct_cff_j - _pct_cff_no_ultimo) * _escala
+            else:
+                # Após fim do CFF: mantém 100%
+                _poc_acum_real[_jj] = 100.0
+
+    # Garante monotonicidade e clipa em [0, 100]
+    for _jj in range(1, N):
+        _poc_acum_real[_jj] = max(_poc_acum_real[_jj], _poc_acum_real[_jj - 1])
+        _poc_acum_real[_jj] = min(_poc_acum_real[_jj], 100.0)
+
+    # ── VGV vendido acumulado por mês (para POC) ──────────────────────
+    _vgv_vendido_acum = [0.0] * N
+    _acc_vgv = 0.0
+    for _jj in range(N):
+        # Vendas reais registradas neste mês
+        if _jj in _rec_real_por_idx:
+            _acc_vgv += _rec_real_por_idx[_jj]
+        # Projeção futura de vendas (vgv_cfg para meses sem venda real)
+        elif _jj > _idx_ultimo_cpl:
+            _m_obra_jj = _jj - _offset_obra + 1
+            if _m_obra_jj >= 1:
+                _un_proj = vgv_cfg.get(_m_obra_jj, {}).get("unidades", 0)
+                _prc_proj = vgv_cfg.get(_m_obra_jj, {}).get("preco", 350000.0)
+                _acc_vgv += float(_un_proj) * float(_prc_proj)
+        _vgv_vendido_acum[_jj] = _acc_vgv
+
     def _receita_mes(i):
         """Receita do mês i (0-based, relativo ao início do horizonte completo)."""
         # m_obra: índice 1-based relativo ao início da obra (para vgv_cfg)
@@ -4200,10 +4293,11 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
             return float(un) * float(prc)
 
         elif "POC" in visao:
-            poc_atual = poc_cfg[i] if i < len(poc_cfg) else 0
-            poc_ant   = poc_cfg[i-1] if i > 0 and i-1 < len(poc_cfg) else 0
-            delta_poc = max(poc_atual - poc_ant, 0) / 100
-            return _vgv_total_completo * delta_poc
+            _poc_at  = _poc_acum_real[i]     if i < len(_poc_acum_real) else 0.0
+            _poc_ant = _poc_acum_real[i - 1] if i > 0 else 0.0
+            _delta   = max(_poc_at - _poc_ant, 0.0) / 100.0
+            _vgv_base = _vgv_vendido_acum[i] if i < len(_vgv_vendido_acum) else 0.0
+            return _vgv_base * _delta
 
         else:  # Caixa
             if m_obra < 1:
