@@ -1268,13 +1268,22 @@ def render_gestao():
         if _rec_fin2 and _rec_fin2.get("resumo_tipos"):
             _tipos_rec = _rec_fin2["resumo_tipos"]
             import pandas as _pd_rec
+            _SIGLAS_REC = {
+                "PM": "Parcela Mensal",
+                "PI": "Parcela Intermediária",
+                "FI": "Financiamento (Repasse Bancário)",
+                "RF": "Recursos Próprios",
+                "CH": "Chaves",
+                "PE": "Permuta",
+            }
             _df_rec = _pd_rec.DataFrame([
                 {
-                    "Tipo": t,
+                    "Sigla": t,
+                    "Descrição": _SIGLAS_REC.get(t.upper(), t),
                     "Unidades": v.get("unidades", 0),
                     "Parcelas": v.get("parcelas", 0),
                     "Total": fmt(v.get("valor", 0)),
-                    "": "✅" if t != "PE — Permuta" else "❌"
+                    "Compõe caixa": "✅" if t.upper() not in ("PE",) else "❌",
                 }
                 for t, v in _tipos_rec.items()
             ])
