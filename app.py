@@ -1315,6 +1315,12 @@ def render_gestao():
         _ebt = _sl("ebitda");     _ll  = _sl("lucro_liq")
         _dop = _sl("desp_op")
 
+        # Labels reais do período selecionado (ex: "Mai/26", "Jun/26"...)
+        _labels_ano_g = _LABELS_fin[_start_sl:_end_sl]
+        # Garante sempre 12 elementos (preenche com string vazia se necessário)
+        while len(_labels_ano_g) < 12:
+            _labels_ano_g.append("")
+
         # Indicadores financeiros
         _rl_t  = sum(_rl);   _ll_t  = sum(_ll);   _dop_t = sum(_dop)
         _mg_l  = (_ll_t / sum(_rb) * 100) if sum(_rb) != 0 else 0
@@ -1339,8 +1345,8 @@ def render_gestao():
         with _gc1:
             # Gráfico 1: Receita Mensal
             _fg1 = go.Figure()
-            _fg1.add_bar(x=MESES, y=_rb,  name="Rec. Bruta",   marker_color=CHART_BLUE)
-            _fg1.add_bar(x=MESES, y=_rl,  name="Rec. Líquida", marker_color=CHART_NAVY)
+            _fg1.add_bar(x=_labels_ano_g, y=_rb,  name="Rec. Bruta",   marker_color=CHART_BLUE)
+            _fg1.add_bar(x=_labels_ano_g, y=_rl,  name="Rec. Líquida", marker_color=CHART_NAVY)
             _fg1.update_layout(title="Receita Mensal", barmode="group", **PL())
             _fg1.update_xaxes(showgrid=False)
             _fg1.update_yaxes(gridcolor=BORDER, tickprefix="R$ ", tickformat=",.0f")
@@ -1348,9 +1354,9 @@ def render_gestao():
 
             # Gráfico 3: Composição Mensal
             _fg3 = go.Figure()
-            _fg3.add_bar(x=MESES, y=_rl,  name="Rec. Líquida", marker_color=CHART_NAVY, opacity=0.85)
-            _fg3.add_bar(x=MESES, y=_dop, name="Desp. Op.",    marker_color=CHART_BLUE, opacity=0.75)
-            _fg3.add_scatter(x=MESES, y=_ebt, name="EBITDA",
+            _fg3.add_bar(x=_labels_ano_g, y=_rl,  name="Rec. Líquida", marker_color=CHART_NAVY, opacity=0.85)
+            _fg3.add_bar(x=_labels_ano_g, y=_dop, name="Desp. Op.",    marker_color=CHART_BLUE, opacity=0.75)
+            _fg3.add_scatter(x=_labels_ano_g, y=_ebt, name="EBITDA",
                              mode="lines+markers",
                              line=dict(color=GOLD, width=2.5), marker=dict(size=7, color=GOLD))
             _fg3.add_hline(y=0, line_dash="dash", line_color=GRAY, line_width=1)
@@ -1363,9 +1369,9 @@ def render_gestao():
             # Gráfico 2: EBITDA e Lucro Líquido
             _cores2 = [CHART_BLUE if v >= 0 else SOFT_RED for v in _ebt]
             _fg2 = go.Figure()
-            _fg2.add_bar(x=MESES, y=_ebt, name="EBITDA",
+            _fg2.add_bar(x=_labels_ano_g, y=_ebt, name="EBITDA",
                          marker_color=_cores2, opacity=0.85)
-            _fg2.add_scatter(x=MESES, y=_ll, name="Lucro Líquido",
+            _fg2.add_scatter(x=_labels_ano_g, y=_ll, name="Lucro Líquido",
                              mode="lines+markers",
                              line=dict(color=GOLD, width=2.5), marker=dict(size=7))
             _fg2.update_layout(title="EBITDA e Lucro Líquido", **PL())
@@ -1378,10 +1384,10 @@ def render_gestao():
             _me = np.clip(np.where(_rb_arr != 0, np.array(_ebt) / _rb_arr * 100, np.nan), -150, 150)
             _ml = np.clip(np.where(_rb_arr != 0, np.array(_ll)  / _rb_arr * 100, np.nan), -150, 150)
             _fg4 = go.Figure()
-            _fg4.add_scatter(x=MESES, y=_me, name="Mg EBITDA",
+            _fg4.add_scatter(x=_labels_ano_g, y=_me, name="Mg EBITDA",
                              mode="lines+markers",
                              line=dict(color=CHART_BLUE, width=2.5), marker=dict(size=6))
-            _fg4.add_scatter(x=MESES, y=_ml, name="Mg Líquida",
+            _fg4.add_scatter(x=_labels_ano_g, y=_ml, name="Mg Líquida",
                              mode="lines+markers",
                              line=dict(color=GOLD, width=2.5), marker=dict(size=6))
             _fg4.add_hline(y=0, line_dash="dash", line_color=GRAY, line_width=1)
