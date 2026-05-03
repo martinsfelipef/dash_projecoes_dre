@@ -1044,8 +1044,9 @@ def render_gestao():
         _ke.metric(
             "Custo Restante",
             fmt(_custo_rest),
-            delta=f"Comprometido: {fmt(_cmp_cx)}",
-            delta_color="off",
+            # TODO: reativar após conciliação medição x pagamento no Sienge
+            # delta=f"Comprometido: {fmt(_cmp_cx)}",
+            # delta_color="off",
             help=(
                 "**Como é calculado:** EAC − Realizado\n\n"
                 "**EAC** (Estimate at Completion) = Orçado Total ÷ CPI\n"
@@ -1090,27 +1091,28 @@ def render_gestao():
             )
         )
         _nec_op_label = "✅ Coberto" if _nec_op <= 0 else "⚠️ Aporte necessário"
-        _kh.metric(
-            "🔧 Necessidade (Operacional)",
-            fmt(abs(_nec_op)),
-            delta=_nec_op_label,
-            delta_color="normal" if _nec_op <= 0 else "inverse",
-            help=(
-                "**Como é calculado:** Verba Disponível + Saldo negativo "
-                "das etapas − Recebíveis até fim da obra\n\n"
-                "**Verba Disponível** = Orçado − Realizado − Comprometido "
-                "(o que ainda cabe no orçamento).\n\n"
-                "**Saldo negativo das etapas** = soma dos valores onde "
-                "realizado > orçado por etapa. Quando um serviço estourou "
-                "o orçamento, ele 'tomou emprestado' da verba disponível — "
-                "esse valor precisa ser devolvido.\n\n"
-                f"Verba disponível: {fmt(_verb_cx)} | "
-                f"Negativos: {fmt(_negativos_etapas)} | "
-                f"Recebíveis até obra: {fmt(_rec_ate_obra)}\n\n"
-                "**Fonte:** metodologia operacional (engenharia de obras). "
-                "Conta grossa — para análise item a item consultar o CPL."
-            )
-        )
+        # TODO: reativar após revisão metodológica (abacaxi 2)
+        # _kh.metric(
+        #     "🔧 Necessidade (Operacional)",
+        #     fmt(abs(_nec_op)),
+        #     delta=_nec_op_label,
+        #     delta_color="normal" if _nec_op <= 0 else "inverse",
+        #     help=(
+        #         "**Como é calculado:** Verba Disponível + Saldo negativo "
+        #         "das etapas − Recebíveis até fim da obra\n\n"
+        #         "**Verba Disponível** = Orçado − Realizado − Comprometido "
+        #         "(o que ainda cabe no orçamento).\n\n"
+        #         "**Saldo negativo das etapas** = soma dos valores onde "
+        #         "realizado > orçado por etapa. Quando um serviço estourou "
+        #         "o orçamento, ele 'tomou emprestado' da verba disponível — "
+        #         "esse valor precisa ser devolvido.\n\n"
+        #         f"Verba disponível: {fmt(_verb_cx)} | "
+        #         f"Negativos: {fmt(_negativos_etapas)} | "
+        #         f"Recebíveis até obra: {fmt(_rec_ate_obra)}\n\n"
+        #         "**Fonte:** metodologia operacional (engenharia de obras). "
+        #         "Conta grossa — para análise item a item consultar o CPL."
+        #     )
+        # )
     else:
         st.info("Carregue o CPL nas ⚙️ Configurações.")
 
