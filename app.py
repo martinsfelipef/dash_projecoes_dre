@@ -4274,6 +4274,8 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
     ir         = []
 
     is_matriz = "matriz" in emp_base.get("nome", "").lower()
+    _is_spe_ret = not is_matriz  # SPEs usam RET 4%; Matriz usa lógica existente
+    _ret_pct = 0.04
 
     for i in range(N):
         _drift = (1 + 0.005) ** i  # 0,5%/mês ≈ 6%/ano
@@ -4292,12 +4294,15 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
             res_fin.append(float(_dm.get("res_fin",  0.0)))
             ir.append(float(_dm.get("ir",      0.0)))
             if "Caixa" in visao:
-                rec_bruta.append(float(_dm.get("rec_bruta", 0.0)))
-                imp_rec.append(float(_dm.get("imp_rec",   0.0)))
+                _rb_dm = float(_dm.get("rec_bruta", 0.0))
+                rec_bruta.append(_rb_dm)
+                _imp_dm = -abs(_rb_dm * _ret_pct) if _is_spe_ret else float(_dm.get("imp_rec", 0.0))
+                imp_rec.append(_imp_dm)
             else:
                 _rec_h = _receita_mes(i)
                 rec_bruta.append(_rec_h)
-                imp_rec.append(float(_dm.get("imp_rec", 0.0)))
+                _imp_dm = -abs(_rec_h * _ret_pct) if _is_spe_ret else float(_dm.get("imp_rec", 0.0))
+                imp_rec.append(_imp_dm)
 
         elif 0 <= _i_dre < n_hist_len:
             # ── Mês coberto pela DRE histórica de 2025 ──────────────
@@ -4310,20 +4315,22 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
 
             # Receita: depende da visão
             if "Caixa" in visao:
-                rec_bruta.append(float(rb_hist[_i_dre]))
-                imp_rec.append(float(imp_hist[_i_dre]))
+                _rb_h = float(rb_hist[_i_dre])
+                rec_bruta.append(_rb_h)
+                _imp_h = -abs(_rb_h * _ret_pct) if _is_spe_ret else float(imp_hist[_i_dre])
+                imp_rec.append(_imp_h)
             else:
-                # Competência ou POC: usa VGV real do relatório de vendas
                 _rec_h = _receita_mes(i)
-                _imp_h = float(imp_hist[_i_dre])
                 rec_bruta.append(_rec_h)
+                _imp_h = -abs(_rec_h * _ret_pct) if _is_spe_ret else float(imp_hist[_i_dre])
                 imp_rec.append(_imp_h)
 
         elif i < _idx_inicio_dre:
             # ── Mês anterior à DRE histórica (ex: 2023, 2024) ───────
             # Não temos dados reais — mas podemos ter vendas reais (Competência)
             _rec_h = _receita_mes(i)
-            _imp_h = -abs(_rec_h * imp_pct_proj) if _rec_h != 0 else 0.0
+            _imp_pct_efetivo2 = _ret_pct if _is_spe_ret else imp_pct_proj
+            _imp_h = -abs(_rec_h * _imp_pct_efetivo2) if _rec_h != 0 else 0.0
 
             rec_bruta.append(_rec_h)
             imp_rec.append(_imp_h)
@@ -4353,7 +4360,8 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
             _dop  = dop_media * _drift if dop_media != 0 else 0.0
             _rf   = rf_media  * _drift if rf_media  != 0 else 0.0
             _ir_v = ir_media  * _drift if ir_media  != 0 else 0.0
-            _imp  = -abs(_rec * imp_pct_proj) if _rec != 0 else 0.0
+            _imp_pct_efetivo = _ret_pct if _is_spe_ret else imp_pct_proj
+            _imp  = -abs(_rec * _imp_pct_efetivo) if _rec != 0 else 0.0
 
             rec_bruta.append(_rec)
             imp_rec.append(_imp)
