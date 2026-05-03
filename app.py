@@ -4089,7 +4089,24 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
         vals = [v for v in lst if v != 0]
         return sum(vals)/len(vals) if vals else 0.0
 
-    dop_media  = _media(dop_hist)   # negativo
+    # Últimos 6 meses reais de desp_op (prioridade: dre_mensal; fallback: dre anual 2025)
+    # Constrói lista ordenada de valores reais de desp_op
+    _dop_reais = []
+
+    # 1. dre_mensal (mais recente, prioridade)
+    for _ym_d in sorted(_dre_mensal.keys()):
+        _v_dop = float(_dre_mensal[_ym_d].get("desp_op", 0.0))
+        if _v_dop != 0.0:
+            _dop_reais.append(_v_dop)
+
+    # 2. Fallback: DRE anual 2025 se dre_mensal não tem dados suficientes
+    if len(_dop_reais) < 3:
+        _dop_reais = [v for v in dop_hist if v != 0.0]
+
+    # Média simples dos últimos 6 meses não-zero (sem drift)
+    _ultimos_6_dop = _dop_reais[-6:] if len(_dop_reais) >= 6 else _dop_reais
+    dop_media = sum(_ultimos_6_dop) / len(_ultimos_6_dop) if _ultimos_6_dop else 0.0
+
     rf_media   = _media(rf_hist)
     ir_media   = _media(ir_hist)    # negativo
     imp_pct_hist = (sum(imp_hist) / sum(rb_hist)) if sum(rb_hist) != 0 else 0.0
@@ -4442,7 +4459,7 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
                 ir.append(0.0)
             else:
                 cpv.append(_cpv_cff(i) if not is_matriz else 0.0)
-                _dop_proj = (dop_media * _drift if dop_media != 0 else 0.0) if i < _idx_chaves else 0.0
+                _dop_proj = (dop_media if dop_media != 0 else 0.0) if i < _idx_chaves else 0.0
                 desp_op.append(_dop_proj)
                 desp_bdi.append(0.0)
                 rec_bdi.append(0.0)
@@ -4456,7 +4473,7 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
             if is_matriz:
                 _rec = _rec_bdi_mes(i, abs(_cpv_cff(i)))
 
-            _dop  = (dop_media * _drift if dop_media != 0 else 0.0) if i < _idx_chaves else 0.0
+            _dop  = (dop_media if dop_media != 0 else 0.0) if i < _idx_chaves else 0.0
             _rf   = rf_media  * _drift if rf_media  != 0 else 0.0
             _ir_v = ir_media  * _drift if ir_media  != 0 else 0.0
             _imp_pct_efetivo = _ret_pct if _is_spe_ret else imp_pct_proj
