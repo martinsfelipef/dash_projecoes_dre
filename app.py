@@ -1667,7 +1667,14 @@ def render_dre():
 
     st.divider()
     st.markdown(f"#### 📋 DRE Detalhada — {titulo}")
-    linhas=[("(=) Receita Bruta","rec_bruta",True),("   ↳ Receita de BDI","rec_bdi",False),
+    
+    # Task 13: Suprimir linha "Receita de BDI" quando valor = 0
+    _rbdi_vals = final.get("rec_bdi", np.array([0.0]*12))
+    linhas = [("(=) Receita Bruta","rec_bruta",True)]
+    if _rbdi_vals.any():
+        linhas.append(("   ↳ Receita de BDI","rec_bdi",False))
+    
+    linhas += [
             ("(-) Impostos s/ Receita","imp_rec",False),
             ("(=) Receita Líquida","rec_liq",True),("(-) CPV / CSP","cpv",False),
             ("(=) Lucro Bruto","lucro_bruto",True),("(-) Despesas Operacionais","desp_op",False),
@@ -4028,6 +4035,7 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
     ir_hist   = list(emp_base.get("ir",        [0.0]*12))
     bdi_hist  = list(emp_base.get("desp_bdi",  [0.0]*12))
     rbdi_hist = list(emp_base.get("rec_bdi",   [0.0]*12))
+    is_matriz = "matriz" in emp_base.get("nome", "").lower()
 
     # ── dre_mensal: dict indexado por índice absoluto do horizonte ──────
     # Chave: índice absoluto i (0 = data_inicio)
@@ -4114,6 +4122,37 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
     # Média simples dos últimos 6 meses não-zero (sem drift)
     _ultimos_6_dop = _dop_reais[-6:] if len(_dop_reais) >= 6 else _dop_reais
     dop_media = sum(_ultimos_6_dop) / len(_ultimos_6_dop) if _ultimos_6_dop else 0.0
+
+    # ── Projeção de receita para a Matriz (flat, média 6 meses) ──────
+    _rec_media_matriz = 0.0
+    _idx_ultimo_dm_matriz = -1
+
+    if is_matriz and _dre_mensal:
+        # Ordena os meses da dre_mensal e pega os últimos 6 com rec_bruta > 0
+        _ym_sorted_m = sorted(_dre_mensal.keys())
+        _rb_reais_m  = []
+        for _ym_m in _ym_sorted_m:
+            _rb_m = float(_dre_mensal[_ym_m].get("rec_bruta", 0.0))
+            if _rb_m > 0:
+                _rb_reais_m.append(_rb_m)
+        _rec_media_matriz = (
+            sum(_rb_reais_m[-6:]) / len(_rb_reais_m[-6:])
+            if _rb_reais_m else 0.0
+        )
+
+        # Índice do último mês carregado na dre_mensal
+        _ult_ym_m = _ym_sorted_m[-1]
+        try:
+            _a_ult = int(_ult_ym_m[:4]); _m_ult = int(_ult_ym_m[5:7])
+            _idx_ultimo_dm_matriz = (
+                (_a_ult - data_inicio["ano"]) * 12 +
+                (_m_ult - data_inicio["mes"])
+            )
+        except Exception:
+            _idx_ultimo_dm_matriz = -1
+
+    # Limite: 18 meses após o último mês carregado
+    _idx_fim_proj_matriz = _idx_ultimo_dm_matriz + 18 if _idx_ultimo_dm_matriz >= 0 else -1
 
     rf_media   = _media(rf_hist)
     ir_media   = _media(ir_hist)    # negativo
@@ -4326,6 +4365,13 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
 
     def _receita_mes(i):
         """Receita do mês i (0-based, relativo ao início do horizonte completo)."""
+        # Matriz: receita projetada flat por 18 meses a partir do último mês real
+        if is_matriz and _rec_media_matriz > 0:
+            if _idx_ultimo_dm_matriz < i <= _idx_fim_proj_matriz:
+                return _rec_media_matriz
+            elif i > _idx_fim_proj_matriz:
+                return 0.0
+            # Para meses históricos da Matriz: continua para a lógica normal abaixo
         # m_obra: índice 1-based relativo ao início da obra (para vgv_cfg)
         m_obra = i - _offset_obra + 1
 
