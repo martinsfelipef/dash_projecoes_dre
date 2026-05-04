@@ -4552,7 +4552,7 @@ def build_dre_projetada(emp_base, estado, visao, N, LABELS, data_inicio):
             # ── Mês futuro (após DRE histórica) ─────────────────────
             _rec     = _receita_mes(i)
             _cpv_fut = _cpv_cff(i) if not is_matriz else 0.0
-            if is_matriz:
+            if is_matriz and _rec == 0:
                 _rec = _rec_bdi_mes(i, abs(_cpv_cff(i)))
 
             _dop  = (dop_media if dop_media != 0 else 0.0) if i < _idx_chaves else 0.0
